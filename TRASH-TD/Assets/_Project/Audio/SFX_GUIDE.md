@@ -118,7 +118,7 @@ SFX/
 | `Defender/Bulkhead` | bash | hit | `Ability`: ATK/DEF buff switches on (blocking 3+) |
 | `Defender/Drawgoo` | attack | hit | `Ability`: draws cards on death (plays after `Death`) |
 | `Defender/Mossmo` | | | `Ability`: reactive heal pulse |
-| `Defender/Mlem` | tongue lash | hit | `Ability`: the gulp when his mouth closes on the catch |
+| `Defender/Mlem` | tongue lash | | `Ability_Swallow` (or plain `Ability`): the gulp when his mouth closes on the catch · `Ability_Digest` (or `Digest`): the digesting sound. It plays when digestion starts and is played again each time it ends, so a short burbling clip covers the whole digestion (4.5–12 s); it fades out when digestion ends, he retreats or dies. *No fallback: silent until the file exists.* |
 | `Defender/Thornchin` | attack | hit | `Ability_Retaliate` (direct counter-spike) · `Ability_Surrounding` (AoE spikes in adjacent/surrounding tiles). *Fallback: Ability or Combat/MeleeAttack.* |
 | `Sniper/Basurocket` | rocket launch | **explosion** | |
 | `Sniper/Deadeye` | rifle shot | bullet hit | |

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using TrashTD.Audio;
 using TrashTD.Combat;
 using TrashTD.Core.Grid;
 using TrashTD.Data;
@@ -85,6 +86,11 @@ namespace TrashTD.Operators
         private int appliedDefBonus;
         private float regenAccumulator;
         private float regenTickTimer;
+
+        // The digesting sound plays on its own voice for as long as he digests (see UpdateDigestSound)
+        private AudioSource digestVoice;
+        private AudioClip digestClip;
+        private bool digestSoundMissing;
 
         private MlemSpriteAnimation spriteAnimation;
         private GridManager gridManager;
@@ -209,6 +215,7 @@ namespace TrashTD.Operators
 
         protected override void OnRetreated()
         {
+            StopDigestSound();
             AbortLash();
             if (IsDigesting) EndDigestion();
             SpriteAnimation?.CancelAttack();
@@ -237,6 +244,7 @@ namespace TrashTD.Operators
                 WatchLash();
             }
 
+            UpdateDigestSound();
             base.Update();
         }
 
@@ -471,7 +479,7 @@ namespace TrashTD.Operators
             if (swallowed.Count == 0) return;
 
             EnemiesSwallowed += swallowed.Count;
-            PlayAbilitySound();
+            PlayAbilitySound("Swallow"); // Ability_Swallow, else the plain Ability clip
             CombatFx.Sparks(mouth, new Color(1f, 0.55f, 0.45f, 1f), 8, 2.2f);
             FloatingCombatNumber.ShowText(mouth + Vector3.up * 0.3f, "GULP!", new Color(1f, 0.62f, 0.5f, 1f), this);
 
@@ -538,6 +546,7 @@ namespace TrashTD.Operators
 
             digestRemaining = digestTotal;
             IsDigesting = true;
+            digestSoundMissing = false;
             regenAccumulator = 0f;
             regenTickTimer = 0f;
 
@@ -554,6 +563,40 @@ namespace TrashTD.Operators
         {
             if (IsCombatPaused) return;
             AdvanceDigestion(Time.deltaTime);
+        }
+
+        /// <summary>
+        /// The digesting sound: <c>Ability_Digest</c> (or <c>Digest</c>) in Mlem's SFX folder plays when digestion starts and
+        /// is played again each time it ends, so a short clip covers the whole digestion; it fades out when digestion ends,
+        /// he retreats, dies or combat pauses. It has no fallback (the plain Ability clip is the swallow), so it stays
+        /// silent until a file exists.
+        /// </summary>
+        private void UpdateDigestSound()
+        {
+            if (!IsDigesting || !isDeployed || IsCombatPaused || data == null)
+            {
+                StopDigestSound();
+                return;
+            }
+
+            if (digestSoundMissing) return;
+            if (digestVoice != null && digestVoice.isPlaying && digestVoice.clip == digestClip) return;
+
+            string folder = UnitSfx.GetFolder(data);
+            if (!UnitSfx.PlayFromFolder(folder, "Ability_Digest", out digestVoice, out digestClip, 1f, true) &&
+                !UnitSfx.PlayFromFolder(folder, "Digest", out digestVoice, out digestClip, 1f, true))
+            {
+                digestSoundMissing = true;
+                digestVoice = null;
+                digestClip = null;
+            }
+        }
+
+        private void StopDigestSound()
+        {
+            if (digestVoice != null) AudioManager.Instance?.StopSfx(digestVoice, digestClip);
+            digestVoice = null;
+            digestClip = null;
         }
 
         /// <summary>Moves digestion forward by <paramref name="dt"/> seconds (Update does this every frame; tests call it directly).</summary>
@@ -586,6 +629,7 @@ namespace TrashTD.Operators
         /// <summary>Digestion is over: the bonus DEF and whatever temporary HP is left go away, and he can attack again.</summary>
         private void EndDigestion()
         {
+            StopDigestSound();
             IsDigesting = false;
             digestRemaining = 0f;
             digestTotal = 0f;
