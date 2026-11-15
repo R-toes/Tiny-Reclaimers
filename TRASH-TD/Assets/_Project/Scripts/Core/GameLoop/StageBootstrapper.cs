@@ -263,7 +263,8 @@ namespace TrashTD.Core.GameLoop
             if (operatorPool != null && operatorPool.Count > 0)
             {
                 cardDraftSystem.SetOperatorPool(operatorPool);
-                cardDraftSystem.OnCardSelected += HandleCardSelectedForDeployment;
+                // Not subscribed to cardDraftSystem.OnCardSelected: confirming a draft pick raises it too, and the picked
+                // card must not start placement by itself. Clicking a deck card selects it through playerDeck below.
             }
             if (playerDeck != null)
             {
@@ -589,11 +590,6 @@ namespace TrashTD.Core.GameLoop
 
         private void OnDestroy()
         {
-            if (cardDraftSystem != null)
-            {
-                cardDraftSystem.OnCardSelected -= HandleCardSelectedForDeployment;
-            }
-
             if (playerDeck != null)
             {
                 playerDeck.OnCardSelectedForDeployment -= HandleCardSelectedForDeployment;

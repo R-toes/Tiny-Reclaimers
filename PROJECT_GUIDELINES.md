@@ -906,6 +906,7 @@ Added by the team between 2026-11-04 and 2026-11-07 (Chester and R-toes, one com
 - **Skill text format:** every `skillDescription` with upgrades has three lines: `<color=#FFD700>Base (N★):</color> …`, `<color=#FFD700>1st upgrade (N★):</color> …`, `<color=#FFD700>2nd upgrade (N★):</color> …`. The draft card, details panel and Intel show it as rich text. The asset is the authoritative description; the table below is a summary.
 - **Range that grows with rank** goes through `OperatorData.GetRangePatternForRarity(rarity)` (name checks, §3). Use it instead of `rangePattern` wherever range is drawn or tested.
 - **Card ranks come from merges or from Drawgoo / Framiliar**, never from the draft (the draft still offers only base rarity, §1.4).
+- **Confirming a draft pick never selects the card for placement** (2026-11-15). The pick goes into the deck and nothing is pending. `StageBootstrapper` used to subscribe to `CardDraftSystem.OnCardSelected`, which `SelectCard` raises on confirm, so the new card started placement (tile hints, pending card) by itself. It now only listens to `PlayerDeck.OnCardSelectedForDeployment`, raised when a deck card is clicked.
 - Castiel and Basurocket have no upgrades yet: their `skillDescription` is still a single line.
 
 | Operator | Draft | 1st upgrade | 2nd upgrade |
