@@ -225,29 +225,8 @@ namespace TrashTD.UI
             Image background = CreateImage(root, "ScreenBackground", null, ScreenColor);
             Stretch(background.rectTransform);
 
-            float pixelsPerTile = stage.visualTilePixelSize > 0 ? stage.visualTilePixelSize : 32f;
-            Vector2 mapOrigin = stage.visualTileOffset;
-            Sprite mapSprite = stage.mapVisualSprite;
-
             // Art layers in gameplay draw order, in tile space (origin = grid bottom-left)
-            var layers = new List<(Sprite sprite, Vector2 min, Vector2 size, Sprite[] frames)>();
-            AddLayer(layers, stage.backgroundVisualSprite, true, mapSprite, mapOrigin, pixelsPerTile);
-            AddLayer(layers, mapSprite, false, mapSprite, mapOrigin, pixelsPerTile);
-            if (stage.upperBackgroundVisualSprites != null)
-            {
-                foreach (Sprite upper in stage.upperBackgroundVisualSprites)
-                {
-                    AddLayer(layers, upper, true, mapSprite, mapOrigin, pixelsPerTile);
-                }
-            }
-            if (stage.midgroundVisualSprites != null)
-            {
-                foreach (Sprite mid in stage.midgroundVisualSprites)
-                {
-                    AddLayer(layers, mid, false, mapSprite, mapOrigin, pixelsPerTile);
-                }
-            }
-            AddLayer(layers, stage.foregroundVisualSprite, false, mapSprite, mapOrigin, pixelsPerTile);
+            var layers = CollectLayers(stage, out float pixelsPerTile);
 
             // Frame the art, falling back to the bare grid
             Vector2 boundsMin = Vector2.zero;
@@ -349,35 +328,81 @@ namespace TrashTD.UI
             BuildBootOverlay();
         }
 
+        /// <summary>
+        /// The stage's art layers in gameplay draw order (StageBootstrapper.SpawnVisualGridTiles), in tile space with the
+        /// grid's bottom-left as the origin. Shared by the stage dossier and the main menu backdrop, which show the
+        /// extended art (bounds art: the map plus the scenery around it) on every stage that has it (Stages 1, 3 and 5).
+        /// An animated background sheet comes as frames; bounds art that replaces the map artwork (Stage 3) takes the map's place.
+        /// </summary>
+        internal static List<(Sprite sprite, Vector2 min, Vector2 size, Sprite[] frames)> CollectLayers(StageData stage, out float pixelsPerTile)
+        {
+            pixelsPerTile = stage.visualTilePixelSize > 0 ? stage.visualTilePixelSize : 32f;
+            Vector2 mapOrigin = stage.visualTileOffset;
+            Sprite mapSprite = stage.mapVisualSprite;
+            bool boundsReplaceMap = stage.boundsVisualSprite != null && stage.boundsReplacesMapArtwork;
+
+            var layers = new List<(Sprite sprite, Vector2 min, Vector2 size, Sprite[] frames)>();
+
+            // The extended art (the map and the scenery around it) goes first, behind everything, like the gameplay's
+            // "BoundsArtwork" layer; the map artwork then covers its middle
+            if (stage.boundsVisualSprite != null && !boundsReplaceMap)
+                AddLayer(layers, stage.boundsVisualSprite, false, null, stage.boundsTileOffset, pixelsPerTile, default);
+
+            AddLayer(layers, stage.backgroundVisualSprite, true, mapSprite, mapOrigin + stage.backgroundTileOffset, pixelsPerTile, stage.backgroundFrameSize);
+            if (boundsReplaceMap)
+                AddLayer(layers, stage.boundsVisualSprite, false, null, stage.boundsTileOffset, pixelsPerTile, default);
+            else
+                AddLayer(layers, mapSprite, false, mapSprite, mapOrigin, pixelsPerTile, default);
+            if (stage.upperBackgroundVisualSprites != null)
+            {
+                foreach (Sprite upper in stage.upperBackgroundVisualSprites)
+                {
+                    AddLayer(layers, upper, true, mapSprite, mapOrigin, pixelsPerTile, default);
+                }
+            }
+            if (stage.midgroundVisualSprites != null)
+            {
+                foreach (Sprite mid in stage.midgroundVisualSprites)
+                {
+                    AddLayer(layers, mid, false, mapSprite, mapOrigin, pixelsPerTile, default);
+                }
+            }
+            AddLayer(layers, stage.foregroundVisualSprite, false, mapSprite, mapOrigin, pixelsPerTile, default);
+            return layers;
+        }
+
         private static void AddLayer(
-            List<(Sprite, Vector2, Vector2, Sprite[])> layers,
+            List<(Sprite sprite, Vector2 min, Vector2 size, Sprite[] frames)> layers,
             Sprite sprite,
             bool alignToSourceRect,
             Sprite mapSprite,
             Vector2 mapOrigin,
-            float pixelsPerTile)
+            float pixelsPerTile,
+            Vector2Int frameSize)
         {
             if (sprite == null) return;
             if (sprite.texture != null) sprite.texture.filterMode = FilterMode.Point;
 
             Rect rect = sprite.rect;
-            Sprite[] frames = GetSheetFrames(sprite, mapSprite);
+            Sprite[] frames = GetSheetFrames(sprite, mapSprite, frameSize);
             Vector2 pixelSize = frames != null ? frames[0].rect.size : rect.size;
             Vector2 min = mapOrigin + (alignToSourceRect ? rect.position / pixelsPerTile : Vector2.zero);
             layers.Add((sprite, min, pixelSize / pixelsPerTile, frames));
         }
 
         /// <summary>
-        /// A layer several map-widths wide (Stage 3's background) is a horizontal animation sheet:
-        /// split it into frames the size of the map art, as StageBootstrapper.CreateSpriteSheetAnimation does.
+        /// A layer several frames wide (Stage 3's background) is a horizontal animation sheet: split it into frames of
+        /// <paramref name="frameSize"/> (the stage's backgroundFrameSize; the map art's size when it is not set), as
+        /// StageBootstrapper.CreateSpriteSheetAnimation does.
         /// </summary>
-        internal static Sprite[] GetSheetFrames(Sprite sprite, Sprite mapSprite)
+        internal static Sprite[] GetSheetFrames(Sprite sprite, Sprite mapSprite, Vector2Int frameSize)
         {
-            if (mapSprite == null || sprite == mapSprite) return null;
+            if (sprite == null || sprite == mapSprite) return null;
 
-            float frameWidth = mapSprite.rect.width;
+            float frameWidth = frameSize.x > 0 ? frameSize.x : (mapSprite != null ? mapSprite.rect.width : 0f);
+            float frameHeight = frameSize.y > 0 ? frameSize.y : (mapSprite != null ? mapSprite.rect.height : 0f);
             Rect rect = sprite.rect;
-            if (frameWidth < 1f || rect.width < frameWidth * 2f || !Mathf.Approximately(rect.height, mapSprite.rect.height)) return null;
+            if (frameWidth < 1f || frameHeight < 1f || rect.width < frameWidth * 2f || !Mathf.Approximately(rect.height, frameHeight)) return null;
             if (!Mathf.Approximately(rect.width % frameWidth, 0f)) return null;
 
             if (SheetFrameCache.TryGetValue(sprite, out Sprite[] cached) && cached != null && cached.Length > 0 && cached[0] != null)

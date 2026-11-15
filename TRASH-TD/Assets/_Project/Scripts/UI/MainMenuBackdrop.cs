@@ -197,41 +197,39 @@ namespace TrashTD.UI
             currentSlide = 1 - currentSlide;
             Slide slide = slides[currentSlide];
             StageData stage = entry.stage;
-            Sprite map = stage.mapVisualSprite;
+            // Same layers, in gameplay draw order, as StageMapPreview (it builds the list). Stage 3's ground has
+            // transparent gaps that its animated background sheet and upper background fill, and its art is bigger
+            // than the map, so every layer is placed by its own rect inside the union of them all.
+            var layers = StageMapPreview.CollectLayers(stage, out float pixelsPerTile);
+            if (layers.Count == 0) return;
 
-            // Same layers, in gameplay draw order, as StageMapPreview. Stage 3's ground has transparent gaps
-            // that its animated background sheet and upper background fill.
+            Vector2 artMin = layers[0].min;
+            Vector2 artMax = layers[0].min + layers[0].size;
+            foreach (var layer in layers)
+            {
+                artMin = Vector2.Min(artMin, layer.min);
+                artMax = Vector2.Max(artMax, layer.min + layer.size);
+            }
+            Vector2 artTiles = artMax - artMin;
+
             int used = 0;
             slide.animatedLayer = null;
             slide.animatedFrames = null;
-            if (stage.backgroundVisualSprite != null)
+            foreach (var layer in layers)
             {
-                slide.animatedFrames = StageMapPreview.GetSheetFrames(stage.backgroundVisualSprite, map);
-                slide.animatedLayer = SetLayer(slide, used++,
-                    slide.animatedFrames != null ? slide.animatedFrames[0] : stage.backgroundVisualSprite);
-                if (slide.animatedFrames == null) slide.animatedLayer = null;
-            }
-            SetLayer(slide, used++, map);
-            if (stage.upperBackgroundVisualSprites != null)
-            {
-                foreach (Sprite upper in stage.upperBackgroundVisualSprites)
+                Rect area = new Rect((layer.min - artMin) / artTiles, layer.size / artTiles);
+                Image image = SetLayer(slide, used++, layer.frames != null ? layer.frames[0] : layer.sprite, area);
+                if (layer.frames != null && slide.animatedFrames == null)
                 {
-                    if (upper != null) SetLayer(slide, used++, upper);
+                    slide.animatedFrames = layer.frames;
+                    slide.animatedLayer = image;
                 }
             }
-            if (stage.midgroundVisualSprites != null)
-            {
-                foreach (Sprite mid in stage.midgroundVisualSprites)
-                {
-                    if (mid != null) SetLayer(slide, used++, mid);
-                }
-            }
-            if (stage.foregroundVisualSprite != null) SetLayer(slide, used++, stage.foregroundVisualSprite);
             for (int i = used; i < slide.layers.Count; i++) slide.layers[i].gameObject.SetActive(false);
 
             // Pick a pan of about MaxPanTravel at the current screen size, stored as fractions of the overflow
             // so LayoutSlide can re-fit it to whatever size the screen has each frame
-            slide.artSize = map.rect.size;
+            slide.artSize = artTiles * pixelsPerTile;
             Vector2 range = GetPanRange(slide.artSize, ViewSize());
             Vector2 from = new Vector2(Random.Range(-range.x, range.x), Random.Range(-range.y, range.y));
             Vector2 direction = Random.insideUnitCircle.normalized;
@@ -258,7 +256,8 @@ namespace TrashTD.UI
             }
         }
 
-        private Image SetLayer(Slide slide, int index, Sprite sprite)
+        /// <summary>Puts a sprite on a layer of the slide, covering <paramref name="area"/> (0-1 of the slide, bottom-left origin).</summary>
+        private Image SetLayer(Slide slide, int index, Sprite sprite, Rect area)
         {
             while (slide.layers.Count <= index)
             {
@@ -268,6 +267,10 @@ namespace TrashTD.UI
             }
 
             Image image = slide.layers[index];
+            image.rectTransform.anchorMin = area.min;
+            image.rectTransform.anchorMax = area.max;
+            image.rectTransform.offsetMin = Vector2.zero;
+            image.rectTransform.offsetMax = Vector2.zero;
             UsePointFilter(sprite);
             image.sprite = sprite;
             image.gameObject.SetActive(true);
