@@ -19,10 +19,13 @@ MonoBehaviour:
   gridHeight: 7
   tileLayout: 0200000002000000020000000200000002000000020000000200000002000000020000000200000002000000020000000200000002000000040000000000000000000000000000000100000002000000010000000100000001000000010000000100000001000000020000000200000001000000010000000100000000000000020000000200000001000000000000000000000000000000000000000100000002000000020000000200000002000000010000000000000002000000020000000100000000000000010000000100000000000000010000000100000002000000020000000200000001000000000000000100000001000000010000000000000001000000010000000000000000000000000000000500000002000000010000000000000000000000000000000000000000000000000000000100000001000000010000000100000001000000020000000200000002000000020000000200000002000000020000000200000002000000020000000200000002000000020000000200000002000000i
   mapVisualSprite: {fileID: 21300000, guid: d762ec1b32f47094d9b050f80bd56ee7, type: 3}
+  loadingScreenMapSprite: {fileID: 0}
   backgroundVisualSprite: {fileID: 0}
   upperBackgroundVisualSprites: []
   visualTilePixelSize: 32
   visualTileOffset: {x: 0, y: 0}
+  boundsVisualSprite: {fileID: 0}
+  boundsTileOffset: {x: 0, y: 0}
   midgroundVisualSprites: []
   foregroundVisualSprite: {fileID: 0}
   trafficVehicleSprites: []
@@ -231,12 +234,12 @@ MonoBehaviour:
       spawnPointIndex: 0
     - enemyData: {fileID: 11400000, guid: c72f001aaeaf4a46967dc2ac65d0fbfd, type: 2}
       count: 6
-      spawnInterval: 1
+      spawnInterval: 1.5
       startDelay: 2
       spawnPointIndex: 0
     - enemyData: {fileID: 11400000, guid: c72f001aaeaf4a46967dc2ac65d0fbfd, type: 2}
       count: 6
-      spawnInterval: 1
+      spawnInterval: 1.5
       startDelay: 2.5
       spawnPointIndex: 0
     - enemyData: {fileID: 11400000, guid: d9c3e7a2b5f8041dc7e4a6b8d2f0c9e3, type: 2}
@@ -417,12 +420,12 @@ MonoBehaviour:
       spawnPointIndex: 0
     - enemyData: {fileID: 11400000, guid: c72f001aaeaf4a46967dc2ac65d0fbfd, type: 2}
       count: 6
-      spawnInterval: 1
+      spawnInterval: 1.5
       startDelay: 2
       spawnPointIndex: 0
     - enemyData: {fileID: 11400000, guid: c72f001aaeaf4a46967dc2ac65d0fbfd, type: 2}
       count: 6
-      spawnInterval: 1
+      spawnInterval: 1.5
       startDelay: 2.5
       spawnPointIndex: 0
     - enemyData: {fileID: 11400000, guid: d9c3e7a2b5f8041dc7e4a6b8d2f0c9e3, type: 2}
@@ -440,7 +443,7 @@ MonoBehaviour:
     entries:
     - enemyData: {fileID: 11400000, guid: a34d018d5b8043748795820c174e25b8, type: 2}
       count: 30
-      spawnInterval: 2
+      spawnInterval: 1
       startDelay: 1.5
       spawnPointIndex: 0
   - waveName: 'Wave 12: New Robodrone'
@@ -803,12 +806,12 @@ MonoBehaviour:
       spawnPointIndex: 0
     - enemyData: {fileID: 11400000, guid: c72f001aaeaf4a46967dc2ac65d0fbfd, type: 2}
       count: 6
-      spawnInterval: 1
+      spawnInterval: 1.5
       startDelay: 2
       spawnPointIndex: 0
     - enemyData: {fileID: 11400000, guid: c72f001aaeaf4a46967dc2ac65d0fbfd, type: 2}
       count: 6
-      spawnInterval: 1
+      spawnInterval: 1.5
       startDelay: 2.5
       spawnPointIndex: 0
     - enemyData: {fileID: 11400000, guid: d9c3e7a2b5f8041dc7e4a6b8d2f0c9e3, type: 2}
@@ -826,7 +829,7 @@ MonoBehaviour:
     entries:
     - enemyData: {fileID: 11400000, guid: a34d018d5b8043748795820c174e25b8, type: 2}
       count: 30
-      spawnInterval: 2
+      spawnInterval: 1
       startDelay: 1.5
       spawnPointIndex: 0
   - waveName: 'Wave 12: New Robodrone'
