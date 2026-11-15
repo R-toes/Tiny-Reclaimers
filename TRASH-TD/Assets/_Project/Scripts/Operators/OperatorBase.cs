@@ -165,6 +165,7 @@ namespace TrashTD.Operators
             // Scale stats by rarity
             maxHP = data.GetScaledHP(rarity);
             currentHP = maxHP;
+            temporaryHP = 0;
             currentATK = data.GetScaledATK(rarity);
             currentDEF = data.GetScaledDEF(rarity);
             currentRES = data.GetScaledRES(rarity);
@@ -492,17 +493,16 @@ namespace TrashTD.Operators
 
         /// <summary>
         /// Modifies this operator's maximum HP by delta (e.g. Coalesce aura, buffs).
-        /// If delta > 0, current HP increases by the same amount (unless <paramref name="healByDelta"/> is off, which
-        /// only raises the cap). If delta < 0, current HP is clamped to new maxHP.
+        /// If delta > 0, current HP increases by the same amount. If delta < 0, current HP is clamped to new maxHP.
         /// </summary>
-        public void ModifyMaxHP(int delta, string source = null, bool healByDelta = true)
+        public void ModifyMaxHP(int delta, string source = null)
         {
             if (delta == 0) return;
             TrackExternalStat(source, OperatorStat.HP, delta);
             maxHP = Mathf.Max(1, maxHP + delta);
             if (currentHP > 0)
             {
-                currentHP = delta > 0 ? (healByDelta ? currentHP + delta : currentHP) : Mathf.Max(1, Mathf.Min(currentHP, maxHP));
+                currentHP = delta > 0 ? currentHP + delta : Mathf.Max(1, Mathf.Min(currentHP, maxHP));
                 TrashTD.Combat.WorldHealthBar.UpdateFor(gameObject, currentHP, maxHP);
             }
         }
@@ -830,6 +830,7 @@ namespace TrashTD.Operators
 
             int calculatedDamage = Combat.DamageCalculator.CalculateDamage(rawATK, CurrentDEF, CurrentRES, damageType);
             int damage = Mathf.Max(0, ModifyDamageAfterMitigation(calculatedDamage, damageType, attacker));
+            damage = AbsorbWithTemporaryHP(damage, damageType);
             int previousHP = currentHP;
             currentHP = Mathf.Max(0, currentHP - damage);
             int actualDamage = previousHP - currentHP;
@@ -870,6 +871,9 @@ namespace TrashTD.Operators
                     return false;
                 }
             }
+
+            damage = AbsorbWithTemporaryHP(damage, DamageType.True);
+            if (damage <= 0) return false;
 
             int previousHP = currentHP;
             currentHP = Mathf.Max(0, currentHP - damage);
@@ -921,6 +925,50 @@ namespace TrashTD.Operators
         protected void HealSelf(int amount)
         {
             ApplyHealing(amount);
+        }
+
+        // ========================
+        // Temporary HP
+        // ========================
+
+        private int temporaryHP;
+
+        /// <summary>
+        /// Temporary HP a buff has given this operator. It soaks up damage (every type, true damage included) before
+        /// real HP does, can't be healed back, and is discarded by whatever granted it (see <see cref="ClearTemporaryHP"/>).
+        /// </summary>
+        public int TemporaryHP => temporaryHP;
+
+        public void GrantTemporaryHP(int amount)
+        {
+            if (amount <= 0) return;
+            temporaryHP += amount;
+            RefreshHealthBar();
+        }
+
+        public void ClearTemporaryHP()
+        {
+            if (temporaryHP == 0) return;
+            temporaryHP = 0;
+            RefreshHealthBar();
+        }
+
+        /// <summary>Temporary HP shows as a yellow segment on the health bar (WorldHealthBar reads it from here).</summary>
+        private void RefreshHealthBar()
+        {
+            if (maxHP > 0 && currentHP > 0) TrashTD.Combat.WorldHealthBar.UpdateFor(gameObject, currentHP, maxHP);
+        }
+
+        /// <summary>Takes as much of the damage as the temporary HP can cover and returns what is left for real HP.</summary>
+        private int AbsorbWithTemporaryHP(int damage, DamageType damageType)
+        {
+            if (temporaryHP <= 0 || damage <= 0) return damage;
+
+            int absorbed = Mathf.Min(temporaryHP, damage);
+            temporaryHP -= absorbed;
+            TrashTD.Combat.FloatingCombatNumber.Show(transform.position, absorbed, damageType, false, this);
+            RefreshHealthBar();
+            return damage - absorbed;
         }
 
         private void ApplyHealing(int amount)

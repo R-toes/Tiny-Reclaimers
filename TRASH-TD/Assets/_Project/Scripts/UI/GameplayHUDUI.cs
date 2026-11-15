@@ -520,6 +520,7 @@ namespace TrashTD.UI
             CreateSelectedOperatorLabel(root);
             CreateSelectedOperatorDetailsPanel(root);
             CreateCooldownToast(root);
+            OperatorDeathNoticeUI.Create(root, operatorManager); // "OPERATOR DOWN" kill feed on the left
             CreatePausePanel(root); // last, so it renders above everything else
         }
 

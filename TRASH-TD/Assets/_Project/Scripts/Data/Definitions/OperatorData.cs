@@ -108,8 +108,8 @@ namespace TrashTD.Data
         [Tooltip("Bonus DEF while digesting, as a fraction of his DEF (0.15 = +15%)")]
         [Min(0f)] public float digestDefBonusFraction = 0.15f;
 
-        [Tooltip("Bonus max HP while digesting, as a fraction of his max HP (0.3 = +30%). It raises the cap only; eating doesn't heal him")]
-        [Min(0f)] public float digestMaxHpBonusFraction = 0.3f;
+        [Tooltip("Temporary HP he gets for as long as he digests, as a fraction of his max HP (0.4 = +40%). It soaks up damage before his real HP and is lost when digestion ends; eating doesn't heal him")]
+        [Min(0f)] public float digestTempHpFraction = 0.4f;
 
         [Tooltip("HP recovered per second while digesting, as a fraction of max HP (base)")]
         [Min(0f)] public float digestRegenFractionPerSecond = 0f;

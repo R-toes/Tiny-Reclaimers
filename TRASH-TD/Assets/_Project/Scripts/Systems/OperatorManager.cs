@@ -29,6 +29,9 @@ namespace TrashTD.Systems
 
         public event Action<OperatorBase> OnOperatorDeployed;
         public event Action<OperatorBase> OnOperatorRetreated;
+
+        /// <summary>An operator died (a retreat doesn't raise this). Fired just before <see cref="OnOperatorRetreated"/>.</summary>
+        public event Action<OperatorBase> OnOperatorDied;
         public event Action<OperatorBase> OnOperatorSelected;
 
         public bool SelectOperator(OperatorBase op)
@@ -491,6 +494,7 @@ namespace TrashTD.Systems
             if (op == null || !deployedOperators.Remove(op)) return;
 
             if (SelectedOperator == op) SelectOperator(null);
+            OnOperatorDied?.Invoke(op);
             OnOperatorRetreated?.Invoke(op);
         }
 

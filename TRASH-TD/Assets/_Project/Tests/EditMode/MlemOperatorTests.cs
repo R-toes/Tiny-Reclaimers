@@ -264,7 +264,7 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void Digestion_GivesBonusDEFAndMaxHP_ThenRemovesThemAndClampsHP()
+        public void Digestion_GivesBonusDEFAndTemporaryHP_ThenRemovesThem()
         {
             int baseMaxHP = mlem.MaxHP;
             int baseDEF = mlem.CurrentDEF;
@@ -274,8 +274,9 @@ namespace TrashTD.Tests
             mlem.Attack(grunt);
 
             Assert.AreEqual(baseDEF + Mathf.RoundToInt(baseDEF * mlemData.digestDefBonusFraction), mlem.CurrentDEF);
-            Assert.AreEqual(baseMaxHP + Mathf.RoundToInt(baseMaxHP * mlemData.digestMaxHpBonusFraction), mlem.MaxHP);
-            Assert.AreEqual(baseMaxHP, mlem.CurrentHP, "Eating raises his max HP but doesn't heal him.");
+            Assert.AreEqual(Mathf.RoundToInt(baseMaxHP * mlemData.digestTempHpFraction), mlem.TemporaryHP);
+            Assert.AreEqual(baseMaxHP, mlem.MaxHP, "Eating doesn't raise his max HP.");
+            Assert.AreEqual(baseMaxHP, mlem.CurrentHP, "Eating doesn't heal him.");
 
             mlem.AdvanceDigestion(4.4f);
             Assert.IsTrue(mlem.IsDigesting);
@@ -283,27 +284,47 @@ namespace TrashTD.Tests
 
             Assert.IsFalse(mlem.IsDigesting);
             Assert.AreEqual(baseDEF, mlem.CurrentDEF);
-            Assert.AreEqual(baseMaxHP, mlem.MaxHP);
-            Assert.AreEqual(baseMaxHP, mlem.CurrentHP, "Current HP is clamped to the normal max.");
+            Assert.AreEqual(0, mlem.TemporaryHP, "The temporary HP is gone when digestion ends.");
+            Assert.AreEqual(baseMaxHP, mlem.CurrentHP);
         }
 
         [Test]
-        public void ExtraMaxHP_IsRemovedWhenDigestionEnds_EvenAfterTheFirstUpgradeHealedIntoIt()
+        public void TemporaryHP_SoaksDamageBeforeRealHP_TrueDamageIncluded()
+        {
+            EnemyBase grunt = CreateEnemy(EnemyArchetype.Grunt, 1);
+            TestUtility.ExpectEditModeDestroy();
+            mlem.Attack(grunt);
+            int temp = mlem.TemporaryHP;
+            int hp = mlem.CurrentHP;
+            Assert.Greater(temp, 10);
+
+            mlem.TakeTrueDamage(10);
+            Assert.AreEqual(hp, mlem.CurrentHP, "The temporary HP takes the hit.");
+            Assert.AreEqual(temp - 10, mlem.TemporaryHP);
+
+            mlem.TakeTrueDamage(temp - 10 + 7);
+            Assert.AreEqual(0, mlem.TemporaryHP);
+            Assert.AreEqual(hp - 7, mlem.CurrentHP, "What the temporary HP can't cover hurts him.");
+        }
+
+        [Test]
+        public void Regen_NeverHealsPastTheNormalMax_AndTemporaryHPEndsWithDigestion()
         {
             Deploy(OperatorRarity.Star3);
             int baseMaxHP = mlem.MaxHP;
             TestUtility.ExpectEditModeDestroy();
             mlem.Attack(CreateEnemy(EnemyArchetype.Grunt, 1));
 
-            mlem.TakeTrueDamage(1);
-            for (int i = 0; i < 4; i++) mlem.AdvanceDigestion(0.5f);
+            mlem.TakeTrueDamage(mlem.TemporaryHP + 20); // through the temporary HP and 20 into real HP
+            Assert.AreEqual(baseMaxHP - 20, mlem.CurrentHP);
+            for (int i = 0; i < 8; i++) mlem.AdvanceDigestion(0.5f);
             Assert.IsTrue(mlem.IsDigesting);
-            Assert.Greater(mlem.CurrentHP, baseMaxHP - 1, "The regen heals him back up.");
+            Assert.AreEqual(baseMaxHP, mlem.CurrentHP, "The 1st upgrade's regen heals him back to the normal max, no further.");
 
             mlem.AdvanceDigestion(5f);
             Assert.IsFalse(mlem.IsDigesting);
             Assert.AreEqual(baseMaxHP, mlem.MaxHP);
-            Assert.LessOrEqual(mlem.CurrentHP, baseMaxHP, "Current HP is clamped to the normal max.");
+            Assert.AreEqual(0, mlem.TemporaryHP);
         }
 
         [Test]

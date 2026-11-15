@@ -12,12 +12,17 @@ namespace TrashTD.Combat
         private const float BarThickness = 0.055f;
         private const float BarOffset = 0.15f;
 
+        /// <summary>Temporary HP (see OperatorBase.TemporaryHP) is the yellow segment after the real HP.</summary>
+        private static readonly Color TemporaryHealthColor = new Color(1f, 0.95f, 0.35f);
+
         private static Material sharedMaterial;
 
         private LineRenderer background;
         private LineRenderer fill;
+        private LineRenderer tempFill;
         private float verticalOffset = 0.55f;
         private float healthRatio = 1f;
+        private float tempRatio;
         private int sortingLayerId;
         private int sortingOrder = 30;
         private EnemyBase enemy;
@@ -82,8 +87,11 @@ namespace TrashTD.Combat
             background = CreateLine("HealthBarBackground", new Color(0.035f, 0.045f, 0.05f, 0.95f), BarThickness);
             fill = CreateLine("HealthBarFill", Color.green, BarThickness * 0.62f);
             fill.sortingOrder = sortingOrder + 1;
+            tempFill = CreateLine("HealthBarTemporary", TemporaryHealthColor, BarThickness * 0.62f);
+            tempFill.sortingOrder = sortingOrder + 1;
             GridSorting.SortAboveUnits(background.gameObject, sortingOrder);
             GridSorting.SortAboveUnits(fill.gameObject, sortingOrder + 1);
+            GridSorting.SortAboveUnits(tempFill.gameObject, sortingOrder + 1);
         }
 
         private void LateUpdate()
@@ -100,6 +108,13 @@ namespace TrashTD.Combat
             Vector3 fillStart = center + Vector3.left * (BarWidth * 0.5f);
             fill.SetPosition(0, fillStart);
             fill.SetPosition(1, fillStart + Vector3.right * (BarWidth * healthRatio));
+
+            if (tempFill != null)
+            {
+                Vector3 tempStart = fillStart + Vector3.right * (BarWidth * healthRatio);
+                tempFill.SetPosition(0, tempStart);
+                tempFill.SetPosition(1, tempStart + Vector3.right * (BarWidth * tempRatio));
+            }
         }
 
         private LineRenderer CreateLine(string objectName, Color color, float width)
@@ -125,25 +140,39 @@ namespace TrashTD.Combat
         private void UpdateHealth(int currentHP, int maxHP)
         {
             EnsureLines();
-            if (currentHP >= maxHP)
+
+            // Temporary HP is read from the operator itself, so every caller that refreshes the bar shows it
+            OperatorBase op = GetComponent<OperatorBase>();
+            int temporaryHP = op != null ? Mathf.Max(0, op.TemporaryHP) : 0;
+
+            if (currentHP >= maxHP && temporaryHP <= 0)
             {
+                healthRatio = 1f;
+                tempRatio = 0f;
                 background.gameObject.SetActive(false);
                 fill.gameObject.SetActive(false);
+                tempFill.gameObject.SetActive(false);
                 return;
             }
 
-            healthRatio = Mathf.Clamp01((float)currentHP / maxHP);
-            fill.startColor = GetHealthColor(healthRatio);
+            // The bar is max HP wide; with temporary HP on top of a full health bar the whole thing is shared out
+            float total = Mathf.Max(maxHP, currentHP + temporaryHP);
+            healthRatio = Mathf.Clamp01(currentHP / total);
+            tempRatio = Mathf.Clamp01(temporaryHP / total);
+            fill.startColor = GetHealthColor(Mathf.Clamp01((float)currentHP / maxHP));
             fill.endColor = fill.startColor;
             background.gameObject.SetActive(true);
             fill.gameObject.SetActive(true);
+            tempFill.gameObject.SetActive(tempRatio > 0f);
         }
 
         public void SetVisible(bool visible)
         {
             EnsureLines();
-            if (background != null) background.gameObject.SetActive(visible && healthRatio < 1f);
-            if (fill != null) fill.gameObject.SetActive(visible && healthRatio < 1f);
+            bool needed = healthRatio < 1f || tempRatio > 0f;
+            if (background != null) background.gameObject.SetActive(visible && needed);
+            if (fill != null) fill.gameObject.SetActive(visible && needed);
+            if (tempFill != null) tempFill.gameObject.SetActive(visible && tempRatio > 0f);
         }
 
         private static Color GetHealthColor(float ratio)

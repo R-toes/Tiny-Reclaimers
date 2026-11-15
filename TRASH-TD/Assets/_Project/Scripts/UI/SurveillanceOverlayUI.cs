@@ -8,8 +8,9 @@ namespace TrashTD.UI
 {
     /// <summary>
     /// Gameplay "surveillance feed" dressing over the stage view, in the style of the main menu's camera viewfinder.
-    /// It covers the playable area between the HUD bars (top bar 90 px, deck bar 170 px at 1080):
-    ///   - viewfinder corner brackets and a soft vignette;
+    /// The viewfinder dressing covers the playable area between the HUD bars (top bar 90 px, deck bar 170 px at 1080);
+    /// the soft dark vignette covers the whole screen, so it doesn't end at the bars' borders:
+    ///   - viewfinder corner brackets and the vignette;
     ///   - top-left: blinking REC + "CAM 03 // RAILYARD DRAIN";
     ///   - top-right: a live date/time stamp and the mission clock (T+ mm:ss);
     ///   - bottom-left: signal bars and the zoom level (from GameplayCameraController).
@@ -84,16 +85,17 @@ namespace TrashTD.UI
             var rootRect = (RectTransform)transform;
             Stretch(rootRect);
 
+            // Soft vignette over the WHOLE screen, not just the playable area: the HUD bars draw over it, so the tint
+            // carries on under (and through) the top and bottom panels instead of stopping at their borders
+            Image vignette = CreateImage(transform, "Vignette", new Color(0f, 0f, 0f, 0.35f));
+            vignette.sprite = CreateVignetteSprite();
+            Stretch(vignette.rectTransform);
+
             area = CreateRect(transform, "FeedArea");
             area.anchorMin = Vector2.zero;
             area.anchorMax = Vector2.one;
             area.offsetMin = new Vector2(0f, BottomInset);
             area.offsetMax = new Vector2(0f, -TopInset);
-
-            // Soft vignette
-            Image vignette = CreateImage(area, "Vignette", new Color(0f, 0f, 0f, 0.35f));
-            vignette.sprite = CreateVignetteSprite();
-            Stretch(vignette.rectTransform);
 
             // Noise tear bars (hidden until interference)
             tearBars = new RawImage[6];

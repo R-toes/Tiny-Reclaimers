@@ -18,8 +18,9 @@ namespace TrashTD.Operators
     /// Targets go by priority Tank, Caster, Rusher, Grunt; within a type, the one closest to the exit goes first.
     /// </para>
     /// <para>
-    /// Digestion is his cooldown: after a swallow he can't attack until it finishes (Rusher 2 s, Grunt 3 s, Caster 4 s,
-    /// Tank 6 s). While digesting he has bonus DEF and max HP, and he keeps blocking.
+    /// Digestion is his cooldown: after a swallow he can't attack until it finishes (Rusher 3 s, Grunt 4.5 s, Caster 6 s,
+    /// Tank 12 s). While digesting he has bonus DEF and temporary HP (a pool that soaks up damage before his real HP and
+    /// is lost when digestion ends), and he keeps blocking.
     /// </para>
     /// <para>
     /// 1st upgrade: digestion is 20% shorter and he recovers HP while digesting. 2nd upgrade: one tongue attack swallows up
@@ -32,7 +33,7 @@ namespace TrashTD.Operators
     [DefaultExecutionOrder(100)] // after GridSpriteSorter's LateUpdate, so caught enemies can be drawn just behind him
     public class MlemOperator : DefenderOperator
     {
-        /// <summary>Source name of the digestion DEF / max HP bonus in the stat effects list.</summary>
+        /// <summary>Source name of the digestion DEF bonus and temporary HP in the stat effects list.</summary>
         public const string DigestSource = "DIGESTING";
 
         /// <summary>Time between HP recovery ticks while digesting (so the heal numbers don't spam).</summary>
@@ -82,7 +83,6 @@ namespace TrashTD.Operators
         private float digestRemaining;
         private float digestTotal;
         private int appliedDefBonus;
-        private int appliedHpBonus;
         private float regenAccumulator;
         private float regenTickTimer;
 
@@ -201,7 +201,7 @@ namespace TrashTD.Operators
             digestRemaining = 0f;
             digestTotal = 0f;
             appliedDefBonus = 0;
-            appliedHpBonus = 0;
+            ClearTemporaryHP();
             regenAccumulator = 0f;
             regenTickTimer = 0f;
             EnemiesSwallowed = 0;
@@ -541,11 +541,11 @@ namespace TrashTD.Operators
             regenAccumulator = 0f;
             regenTickTimer = 0f;
 
-            // Bonus DEF and max HP for as long as it lasts (tracked by source, so the details panel lists them)
+            // Bonus DEF (tracked by source, so the details panel lists it) and temporary HP for as long as it lasts
             appliedDefBonus = Mathf.RoundToInt(currentDEF * data.digestDefBonusFraction);
-            appliedHpBonus = Mathf.RoundToInt(maxHP * data.digestMaxHpBonusFraction);
             ModifyDEF(appliedDefBonus, DigestSource);
-            ModifyMaxHP(appliedHpBonus, DigestSource, healByDelta: false); // a higher cap, not extra HP
+            ClearTemporaryHP();
+            GrantTemporaryHP(Mathf.RoundToInt(maxHP * data.digestTempHpFraction));
 
             SpriteAnimation?.SetDigesting(true);
         }
@@ -583,7 +583,7 @@ namespace TrashTD.Operators
             if (digestRemaining <= 0f) EndDigestion();
         }
 
-        /// <summary>Digestion is over: the bonus goes away (current HP is clamped to the normal max) and he can attack again.</summary>
+        /// <summary>Digestion is over: the bonus DEF and whatever temporary HP is left go away, and he can attack again.</summary>
         private void EndDigestion()
         {
             IsDigesting = false;
@@ -592,9 +592,8 @@ namespace TrashTD.Operators
             regenAccumulator = 0f;
 
             ModifyDEF(-appliedDefBonus, DigestSource);
-            ModifyMaxHP(-appliedHpBonus, DigestSource);
             appliedDefBonus = 0;
-            appliedHpBonus = 0;
+            ClearTemporaryHP();
 
             SpriteAnimation?.SetDigesting(false);
             if (!lashing) attackTimer = GetAttackInterval(); // ready right away
@@ -604,7 +603,10 @@ namespace TrashTD.Operators
         {
             base.CollectStatEffects(effects);
 
-            // The DEF and max HP bonus are listed by the base class (they are tracked under DigestSource)
+            // The DEF bonus is listed by the base class (it is tracked under DigestSource)
+            if (TemporaryHP > 0)
+                effects.Add(new StatEffect(DigestSource, $"+{TemporaryHP} temp HP", "HP"));
+
             float regen = GetRegenFractionPerSecond(data, HasFirstUpgrade);
             if (IsDigesting && regen > 0f)
                 effects.Add(new StatEffect(DigestSource, $"Regen {regen * 100f:0.#}% HP/s", "HP"));
