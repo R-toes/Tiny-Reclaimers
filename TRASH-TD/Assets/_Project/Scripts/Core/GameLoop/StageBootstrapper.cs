@@ -185,6 +185,9 @@ namespace TrashTD.Core.GameLoop
                     stageData.visualTileOffset = mapSource.visualTileOffset;
                     stageData.boundsVisualSprite = mapSource.boundsVisualSprite;
                     stageData.boundsTileOffset = mapSource.boundsTileOffset;
+                    stageData.boundsReplacesMapArtwork = mapSource.boundsReplacesMapArtwork;
+                    stageData.backgroundTileOffset = mapSource.backgroundTileOffset;
+                    stageData.backgroundFrameSize = mapSource.backgroundFrameSize;
                     stageData.spawnPoints = mapSource.spawnPoints;
                     stageData.exitPoints = mapSource.exitPoints;
                     stageData.enemyPaths = mapSource.enemyPaths;
@@ -323,11 +326,13 @@ namespace TrashTD.Core.GameLoop
             Vector3 gridBottomLeft = gridManager.GridToWorldPosition(0, 0) - new Vector3(cellSize * 0.5f, cellSize * 0.5f, 0f);
             Vector3 targetBottomLeft = gridBottomLeft + new Vector3(stageData.visualTileOffset.x * cellSize, stageData.visualTileOffset.y * cellSize, 0f);
 
-            // The scenery around the playable map, behind everything (the map art covers its middle)
+            // The scenery around the playable map. Normally it sits behind everything (the map art covers its middle);
+            // when it is the extended ground layer itself (Stage 3) it takes the map artwork's place above the background.
+            bool boundsReplaceMap = stageData.boundsVisualSprite != null && stageData.boundsReplacesMapArtwork;
             if (stageData.boundsVisualSprite != null)
             {
                 Vector3 boundsBottomLeft = gridBottomLeft + new Vector3(stageData.boundsTileOffset.x * cellSize, stageData.boundsTileOffset.y * cellSize, 0f);
-                DrawMapArtworkLayer(gridContainer.transform, stageData.boundsVisualSprite, "BoundsArtwork", -1, boundsBottomLeft, false);
+                DrawMapArtworkLayer(gridContainer.transform, stageData.boundsVisualSprite, "BoundsArtwork", boundsReplaceMap ? 1 : -1, boundsBottomLeft, false);
             }
 
             DrawMapArtworkLayer(
@@ -335,12 +340,12 @@ namespace TrashTD.Core.GameLoop
                 stageData.backgroundVisualSprite,
                 "BackgroundArtwork",
                 0,
-                targetBottomLeft,
+                targetBottomLeft + new Vector3(stageData.backgroundTileOffset.x * cellSize, stageData.backgroundTileOffset.y * cellSize, 0f),
                 true,
                 EnvironmentStageId == "STAGE_03");
 
             Sprite mapSprite = stageData.mapVisualSprite;
-            DrawMapArtworkLayer(gridContainer.transform, mapSprite, "MapArtwork", 1, targetBottomLeft, false);
+            if (!boundsReplaceMap) DrawMapArtworkLayer(gridContainer.transform, mapSprite, "MapArtwork", 1, targetBottomLeft, false);
 
             if (stageData.upperBackgroundVisualSprites != null)
             {
@@ -466,18 +471,20 @@ namespace TrashTD.Core.GameLoop
         private void CreateSpriteSheetAnimation(SpriteRenderer spriteRenderer, Sprite sourceSprite, float frameDuration)
         {
             Texture2D texture = sourceSprite.texture;
+            int frameWidth = stageData != null && stageData.backgroundFrameSize.x > 0 ? stageData.backgroundFrameSize.x : Stage3BackgroundFrameWidth;
+            int frameHeight = stageData != null && stageData.backgroundFrameSize.y > 0 ? stageData.backgroundFrameSize.y : Stage3BackgroundFrameHeight;
             if (!texture.isReadable ||
-                texture.width % Stage3BackgroundFrameWidth != 0 ||
-                texture.height != Stage3BackgroundFrameHeight ||
+                texture.width % frameWidth != 0 ||
+                texture.height != frameHeight ||
                 frameDuration <= 0f)
             {
                 Debug.LogError(
-                    $"Stage 3 background animation requires a readable sheet of {Stage3BackgroundFrameWidth}x{Stage3BackgroundFrameHeight} frames and a positive frame duration.",
+                    $"Stage 3 background animation requires a readable sheet of {frameWidth}x{frameHeight} frames and a positive frame duration.",
                     this);
                 return;
             }
 
-            int frameCount = texture.width / Stage3BackgroundFrameWidth;
+            int frameCount = texture.width / frameWidth;
             Vector2 pivot = new Vector2(
                 sourceSprite.pivot.x / sourceSprite.rect.width,
                 sourceSprite.pivot.y / sourceSprite.rect.height);
@@ -487,10 +494,10 @@ namespace TrashTD.Core.GameLoop
                 frames[i] = Sprite.Create(
                     texture,
                     new Rect(
-                        i * Stage3BackgroundFrameWidth,
+                        i * frameWidth,
                         0f,
-                        Stage3BackgroundFrameWidth,
-                        Stage3BackgroundFrameHeight),
+                        frameWidth,
+                        frameHeight),
                     pivot,
                     sourceSprite.pixelsPerUnit,
                     0,

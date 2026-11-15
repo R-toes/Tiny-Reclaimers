@@ -2052,6 +2052,26 @@ namespace TrashTD.Editor
             }
             stage.upperBackgroundVisualSprites = upperBackgroundLayers.ToArray();
 
+            // The scenery around the map: 640x416 ground art with the 448x224 map 3 tiles in from every side. It takes
+            // the map artwork's place above the animated background, which is 640x416 per frame at the same offset.
+            var boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 3/Level3 Bounds.png");
+            stage.boundsVisualSprite = null;
+            if (boundsSprites != null)
+            {
+                foreach (var obj in boundsSprites)
+                {
+                    if (obj is Sprite sprite)
+                    {
+                        stage.boundsVisualSprite = sprite;
+                        break;
+                    }
+                }
+            }
+            stage.boundsTileOffset = new Vector2(-3f, -3f);
+            stage.boundsReplacesMapArtwork = true;
+            stage.backgroundTileOffset = new Vector2(-3f, -3f);
+            stage.backgroundFrameSize = new Vector2Int(640, 416);
+
             stage.visualTilePixelSize = 32;
             stage.visualTileOffset = Vector2.zero;
             stage.foregroundVisualSprite = null;

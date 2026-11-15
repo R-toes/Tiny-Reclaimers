@@ -25,6 +25,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 095fce5d3eb9c9c44a696f565604df6f, type: 3}
   visualTilePixelSize: 32
   visualTileOffset: {x: 0, y: 0}
+  boundsVisualSprite: {fileID: -2898308612673148285, guid: 4a1a711f079748d8a48b3a06f4553719, type: 3}
+  boundsTileOffset: {x: -3, y: -3}
+  boundsReplacesMapArtwork: 1
+  backgroundTileOffset: {x: -3, y: -3}
+  backgroundFrameSize: {x: 640, y: 416}
   midgroundVisualSprites: []
   foregroundVisualSprite: {fileID: 0}
   trafficVehicleSprites: []

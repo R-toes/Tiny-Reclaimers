@@ -96,6 +96,17 @@ namespace TrashTD.Data
                  "(e.g. (-3, -3) for 3 tiles of scenery to the left of and below the map)")]
         public Vector2 boundsTileOffset = Vector2.zero;
 
+        [Tooltip("The bounds art is the extended ground layer with see-through windows (Stage 3), so it is drawn in the map " +
+                 "artwork's place, above the background, instead of behind everything. The map artwork is not drawn.")]
+        public bool boundsReplacesMapArtwork;
+
+        [Tooltip("Offset in tiles of the background artwork's bottom-left corner from the grid's bottom-left corner " +
+                 "(added to the visual offset). Use it when the background is the size of the bounds art.")]
+        public Vector2 backgroundTileOffset = Vector2.zero;
+
+        [Tooltip("Size in pixels of one frame of an animated background sheet (Stage 3: 640 x 416)")]
+        public Vector2Int backgroundFrameSize = new Vector2Int(448, 224);
+
         [Tooltip("Optional midground/obstacle overlays rendered above ground units (operators and walking enemies) but below flying units")]
         public Sprite[] midgroundVisualSprites;
 

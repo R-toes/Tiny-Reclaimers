@@ -245,6 +245,16 @@ namespace TrashTD.Core.GameLoop
                 artMin = Vector2.Min(artMin, spriteMin);
                 artMax = Vector2.Max(artMax, spriteMax);
             }
+
+            // ... and so does the bounds artwork around the map
+            if (stageData.boundsVisualSprite != null)
+            {
+                float pixelPerTile = stageData.visualTilePixelSize > 0 ? stageData.visualTilePixelSize : 32f;
+                Vector2 boundsMin = gridMin + stageData.boundsTileOffset * cellSize;
+                Vector2 boundsMax = boundsMin + stageData.boundsVisualSprite.rect.size / pixelPerTile * cellSize;
+                artMin = Vector2.Min(artMin, boundsMin);
+                artMax = Vector2.Max(artMax, boundsMax);
+            }
         }
 
         private void BuildDensityField()
