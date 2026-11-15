@@ -5123,22 +5123,28 @@ namespace TrashTD.UI
         public bool IsHudHidden => hudHidden;
 
         /// <summary>
-        /// H hides the whole HUD canvas (bars, deck, surveillance feed, notices) and shows it again. Only while a wave
-        /// or preparation is being played: it comes back by itself on pause, when the draft opens and when the stage
-        /// ends, and it does nothing in the tutorial or while typing in a text field. The map stays clickable, and
-        /// the deploy hotkeys keep working; a small hint stays up so the key isn't forgotten.
+        /// Hides the whole HUD canvas (bars, deck, surveillance feed, notices) while <see cref="GameplaySettings.HideHud"/>
+        /// is on (Settings → Gameplay), and H flips that setting. Only while a wave or preparation is being played: the
+        /// HUD comes back by itself on pause, when the draft opens and when the stage ends (and hides again afterwards),
+        /// and nothing hides it in the tutorial or while typing in a text field. The map stays clickable, and the
+        /// deploy hotkeys keep working; a small hint stays up so the key isn't forgotten.
         /// </summary>
         private void HandleHudToggleKey(Keyboard keyboard)
         {
             bool canHide = gameManager != null && gameManager.CurrentState == GamePlayState.Playing && !IsPaused &&
                            !(draftOverlayUI != null && draftOverlayUI.IsShowing) && TutorialDirector.Instance == null;
-            if (hudHidden && !canHide) SetHudHidden(false);
 
             bool hPressed = keyboard != null && keyboard.hKey.wasPressedThisFrame && !IsTypingInTextField();
 #if ENABLE_LEGACY_INPUT_MANAGER
             if (!hPressed && Input.GetKeyDown(KeyCode.H) && !IsTypingInTextField()) hPressed = true;
 #endif
-            if (hPressed && (canHide || hudHidden)) SetHudHidden(!hudHidden);
+            if (hPressed && canHide)
+            {
+                GameplaySettings.HideHud = !GameplaySettings.HideHud;
+                AudioManager.Instance?.PlaySfx(SfxId.UiClick, sfxVolume);
+            }
+
+            SetHudHidden(canHide && GameplaySettings.HideHud);
         }
 
         private void SetHudHidden(bool hidden)
@@ -5148,7 +5154,6 @@ namespace TrashTD.UI
             hudHidden = hidden;
             canvas.enabled = !hidden;
             if (hudHiddenHint != null) hudHiddenHint.SetActive(hidden);
-            AudioManager.Instance?.PlaySfx(SfxId.UiClick, sfxVolume);
         }
 
         /// <summary>A small, faint "UI HIDDEN [H]" reminder on a canvas of its own (the HUD canvas is switched off).</summary>

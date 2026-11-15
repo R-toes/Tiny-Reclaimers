@@ -656,7 +656,7 @@ The project uses the **New Input System only** (`activeInputHandler: 1`). Read k
 | | Right-click | Cancel placement, or undeploy the selected operator (not while the pointer is over an open sandbox dropdown) |
 | | Left-click elsewhere (Precise / Quick) | A free tile moves the operator there; anywhere else cancels |
 | | Hold and drag the operator (Precise / Quick) | Move it to another tile, keeping its facing |
-| Gameplay | H | Hide / show the whole HUD (`GameplayHUDUI.HandleHudToggleKey`, 2026-11-15): bars, deck, surveillance feed and notices go; a faint "UI HIDDEN [ H ]" hint stays. It shows again by itself on pause, when the draft opens, when the stage ends, and it is ignored in the tutorial and while typing in a text field |
+| Gameplay | H | Flip the **HIDE UI** setting (`GameplaySettings.HideHud`, also in Settings → Gameplay → INTERFACE, saved in PlayerPrefs, off by default; `GameplayHUDUI.HandleHudToggleKey`, 2026-11-15): while on, the whole HUD (bars, deck, surveillance feed, notices) is hidden during play and a faint "UI HIDDEN [ H ]" hint stays. The HUD shows again by itself on pause, in the draft, on the results screen and in the tutorial (and hides again afterwards while the setting is on); the key is ignored while typing in a text field |
 | | Esc | First match wins: close the developer picker → cancel placement → close the open sandbox dropdown → deselect operator → close audio settings → toggle pause |
 | Sandbox | Right-click (enemy tile) | Remove the selected amount of that enemy from the queue |
 | Main menu | Esc | Close settings or stage details, or return from stage select to the main menu |

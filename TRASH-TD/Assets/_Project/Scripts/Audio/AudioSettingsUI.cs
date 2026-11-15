@@ -76,6 +76,8 @@ namespace TrashTD.Audio
         private Vector2Int shownScreenSize;
         private Button noticeOnButton;
         private Button noticeOffButton;
+        private Button hideHudOnButton;
+        private Button hideHudOffButton;
         private readonly Button[] tabButtons = new Button[4];
         private readonly GameObject[] pages = new GameObject[4];
         private readonly PlacementSchemeOption[] schemeOptions = new PlacementSchemeOption[3];
@@ -215,6 +217,18 @@ namespace TrashTD.Audio
             noticeHint.verticalOverflow = VerticalWrapMode.Overflow;
             noticeHint.lineSpacing = 1.4f;
             PlaceTopLeft(noticeHint.rectTransform, ControlX, 242f, CardWidth - Padding - ControlX, 40f);
+
+            CreateSectionHeader("INTERFACE", 310f);
+            CreateRowLabel("HIDE UI", 360f);
+            hideHudOnButton = CreateSegmentButton("HideHudOnButton", "ON", 0, 360f, () => SetHideHud(true));
+            hideHudOffButton = CreateSegmentButton("HideHudOffButton", "OFF", 1, 360f, () => SetHideHud(false));
+            Text hideHudHint = CreateText(pageRoot,
+                "Hides the HUD while you play, for a clean view of the map. Press H in a stage to switch it too.",
+                11, TextAnchor.UpperLeft, HintColor);
+            hideHudHint.horizontalOverflow = HorizontalWrapMode.Wrap;
+            hideHudHint.verticalOverflow = VerticalWrapMode.Overflow;
+            hideHudHint.lineSpacing = 1.4f;
+            PlaceTopLeft(hideHudHint.rectTransform, ControlX, 392f, CardWidth - Padding - ControlX, 40f);
             pageRoot = card;
 
             // Footer
@@ -289,11 +303,21 @@ namespace TrashTD.Audio
             RefreshGameplay();
         }
 
+        private void SetHideHud(bool hide)
+        {
+            GameplaySettings.HideHud = hide;
+            RefreshGameplay();
+        }
+
         private void RefreshGameplay()
         {
             bool show = GameplaySettings.ShowOpeningRerollNotice;
             SetToggleVisual(noticeOnButton, show);
             SetToggleVisual(noticeOffButton, !show);
+
+            bool hideHud = GameplaySettings.HideHud;
+            SetToggleVisual(hideHudOnButton, hideHud);
+            SetToggleVisual(hideHudOffButton, !hideHud);
         }
 
         // ── Resolution ──
