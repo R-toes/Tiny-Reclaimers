@@ -520,6 +520,7 @@ namespace TrashTD.UI
             CreateSelectedOperatorLabel(root);
             CreateSelectedOperatorDetailsPanel(root);
             CreateCooldownToast(root);
+            CreateHudHiddenHint();
             OperatorDeathNoticeUI.Create(root, operatorManager); // "OPERATOR DOWN" kill feed on the left
             CreatePausePanel(root); // last, so it renders above everything else
         }
@@ -5111,9 +5112,79 @@ namespace TrashTD.UI
             }
         }
 
+        // ─────────────────────────────────────────────────────
+        //  Hide / show the HUD (H)
+        // ─────────────────────────────────────────────────────
+
+        private bool hudHidden;
+        private GameObject hudHiddenHint;
+
+        /// <summary>True while the player has hidden the HUD with H (a clean view of the map).</summary>
+        public bool IsHudHidden => hudHidden;
+
+        /// <summary>
+        /// H hides the whole HUD canvas (bars, deck, surveillance feed, notices) and shows it again. Only while a wave
+        /// or preparation is being played: it comes back by itself on pause, when the draft opens and when the stage
+        /// ends, and it does nothing in the tutorial or while typing in a text field. The map stays clickable, and
+        /// the deploy hotkeys keep working; a small hint stays up so the key isn't forgotten.
+        /// </summary>
+        private void HandleHudToggleKey(Keyboard keyboard)
+        {
+            bool canHide = gameManager != null && gameManager.CurrentState == GamePlayState.Playing && !IsPaused &&
+                           !(draftOverlayUI != null && draftOverlayUI.IsShowing) && TutorialDirector.Instance == null;
+            if (hudHidden && !canHide) SetHudHidden(false);
+
+            bool hPressed = keyboard != null && keyboard.hKey.wasPressedThisFrame && !IsTypingInTextField();
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (!hPressed && Input.GetKeyDown(KeyCode.H) && !IsTypingInTextField()) hPressed = true;
+#endif
+            if (hPressed && (canHide || hudHidden)) SetHudHidden(!hudHidden);
+        }
+
+        private void SetHudHidden(bool hidden)
+        {
+            if (hidden == hudHidden || canvas == null) return;
+
+            hudHidden = hidden;
+            canvas.enabled = !hidden;
+            if (hudHiddenHint != null) hudHiddenHint.SetActive(hidden);
+            AudioManager.Instance?.PlaySfx(SfxId.UiClick, sfxVolume);
+        }
+
+        /// <summary>A small, faint "UI HIDDEN [H]" reminder on a canvas of its own (the HUD canvas is switched off).</summary>
+        private void CreateHudHiddenHint()
+        {
+            hudHiddenHint = new GameObject("HudHiddenHint", typeof(Canvas), typeof(CanvasScaler));
+            var hintCanvas = hudHiddenHint.GetComponent<Canvas>();
+            hintCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            hintCanvas.sortingOrder = 101;
+            var hintScaler = hudHiddenHint.GetComponent<CanvasScaler>();
+            hintScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            hintScaler.referenceResolution = new Vector2(1920f, 1080f);
+            hintScaler.matchWidthOrHeight = 0.5f;
+            hudHiddenHint.transform.SetParent(transform, false);
+
+            var textObject = new GameObject("Text", typeof(RectTransform), typeof(Text));
+            textObject.transform.SetParent(hudHiddenHint.transform, false);
+            var text = textObject.GetComponent<Text>();
+            text.text = "UI HIDDEN   [ H ]";
+            text.font = UIFontHelper.GetPixelFont();
+            text.fontSize = 12;
+            text.alignment = TextAnchor.LowerLeft;
+            text.color = new Color(1f, 1f, 1f, 0.4f);
+            text.raycastTarget = false;
+            var rect = text.rectTransform;
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 0f);
+            rect.anchoredPosition = new Vector2(16f, 12f);
+            rect.sizeDelta = new Vector2(260f, 20f);
+
+            hudHiddenHint.SetActive(false);
+        }
+
         private void HandleKeyboardInput()
         {
             var keyboard = Keyboard.current;
+            HandleHudToggleKey(keyboard);
             bool escapePressed = keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
 #if ENABLE_LEGACY_INPUT_MANAGER
             if (!escapePressed && Input.GetKeyDown(KeyCode.Escape)) escapePressed = true;
