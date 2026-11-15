@@ -2188,6 +2188,24 @@ namespace TrashTD.Editor
             stage.visualTilePixelSize = 32;
             stage.visualTileOffset = new Vector2(0, -1);
 
+            // The scenery around the map: the 864x384 expanded art holds the 416x384 map 7 tiles in from the left
+            var boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 5/Level 5 expanded.png");
+            if (boundsSprites == null || boundsSprites.Length == 0)
+                boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 5/level 5 expanded.png");
+
+            if (boundsSprites != null)
+            {
+                foreach (var obj in boundsSprites)
+                {
+                    if (obj is Sprite s)
+                    {
+                        stage.boundsVisualSprite = s;
+                        break;
+                    }
+                }
+            }
+            stage.boundsTileOffset = new Vector2(-7f, -1f);
+
             var fgSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 5/Level 5 bottom.png");
             if (fgSprites == null || fgSprites.Length == 0)
                 fgSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 5/level 5 bottom.png");

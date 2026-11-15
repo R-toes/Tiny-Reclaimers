@@ -572,6 +572,19 @@ namespace TrashTD.Core.GameLoop
             float requiredWorldHeight = (visualHeight + 0.35f) / availableRatio;
             float orthoSize = Mathf.Max(4.10f, requiredWorldHeight * 0.5f);
 
+            // If bounds artwork is present, prevent black void on the sides by ensuring the view
+            // does not exceed the bounds art width, while keeping the playable grid fully visible
+            if (stageData.boundsVisualSprite != null && cam.aspect > 0f)
+            {
+                float boundsWidth = cameraMaxX - cameraMinX;
+                float maxOrthoForBounds = boundsWidth / (2f * cam.aspect);
+                float minOrthoForGrid = ((stageData.gridHeight * cellSize) + 0.35f) / (availableRatio * 2f);
+                if (maxOrthoForBounds >= minOrthoForGrid)
+                {
+                    orthoSize = Mathf.Min(orthoSize, maxOrthoForBounds);
+                }
+            }
+
             // Shift camera down by the difference between bottom DeckBar (170px) and TopBar (90px)
             // so visual content is vertically centered in the unobstructed play area
             float hudCenterOffset = ((170f - 90f) / 1080f) * orthoSize;
