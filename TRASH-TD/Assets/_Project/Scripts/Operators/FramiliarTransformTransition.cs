@@ -59,7 +59,6 @@ namespace TrashTD.Operators
 
         private Material defaultMaterial;
         private Material whiteSilhouetteMaterial;
-        private Material grayscaleMaterial;
 
         [Header("Audio")]
         [Tooltip("Custom sound played during transformation. If null, checks caller parameter, FramiliarOperator slot, conventional SFX/Operators/Specialist/Framiliar/Ability_Transform, or card upgrade fallback.")]
@@ -159,8 +158,8 @@ namespace TrashTD.Operators
                 }
             }
 
-            whiteSilhouetteMaterial = FramiliarOperator.GetWhiteSilhouetteMaterial();
-            grayscaleMaterial = FramiliarOperator.GetGrayscaleMaterial();
+            // Materials of this transition's own: units that share one material all draw the same sprite
+            whiteSilhouetteMaterial = FramiliarOperator.CreateWhiteSilhouetteMaterialInstance();
 
             // Store other child renderers and hide them during glitching silhouettes
             var allRenderers = GetComponentsInChildren<SpriteRenderer>(true);
@@ -311,8 +310,8 @@ namespace TrashTD.Operators
 
                 case FramiliarTransitionFrame.MonochromeCopied:
                     if (copiedSprite != null) primaryRenderer.sprite = copiedSprite;
-                    if (grayscaleMaterial != null) primaryRenderer.sharedMaterial = grayscaleMaterial;
                     primaryRenderer.color = Color.white;
+                    FramiliarOperator.ApplyGrayscaleToRenderer(primaryRenderer);
                     break;
             }
         }
@@ -409,10 +408,14 @@ namespace TrashTD.Operators
 
         private void OnDestroy()
         {
-            // Do not destroy shared materials (whiteSilhouetteMaterial, grayscaleMaterial)
-            // as they are cached and reused across transitions and assigned to active renderers.
-            whiteSilhouetteMaterial = null;
-            grayscaleMaterial = null;
+            // The white silhouette material belongs to this transition and is no longer on any renderer once the
+            // transition has ended (the grey copy has its own material, see GrayscaleMaterialOwner)
+            if (whiteSilhouetteMaterial != null)
+            {
+                if (Application.isPlaying) Destroy(whiteSilhouetteMaterial);
+                else DestroyImmediate(whiteSilhouetteMaterial);
+                whiteSilhouetteMaterial = null;
+            }
         }
     }
 }

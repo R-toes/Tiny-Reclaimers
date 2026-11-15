@@ -240,6 +240,43 @@ namespace TrashTD.Operators
             return s_WhiteSilhouetteMaterial;
         }
 
+        /// <summary>
+        /// A material of its own copied from the shared grayscale one. Every grayscaled copy gets one: renderers that
+        /// shared a single grayscale material all drew the same sprite, so when a new Framiliar copy turned grey, the
+        /// older grey copies switched to its sprite too.
+        /// </summary>
+        public static Material CreateGrayscaleMaterialInstance()
+        {
+            Material source = GetGrayscaleMaterial();
+            return source != null ? new Material(source) { name = "FramiliarGrayscale (instance)", hideFlags = HideFlags.DontSave } : null;
+        }
+
+        /// <summary>The white silhouette material, one per transition (see <see cref="CreateGrayscaleMaterialInstance"/>).</summary>
+        public static Material CreateWhiteSilhouetteMaterialInstance()
+        {
+            Material source = GetWhiteSilhouetteMaterial();
+            return source != null ? new Material(source) { name = "FramiliarWhite (instance)", hideFlags = HideFlags.DontSave } : null;
+        }
+
+        /// <summary>Turns one renderer grey with a grayscale material that only it uses (destroyed with it).</summary>
+        public static void ApplyGrayscaleToRenderer(SpriteRenderer renderer)
+        {
+            if (renderer == null) return;
+
+            var owner = renderer.GetComponent<GrayscaleMaterialOwner>();
+            if (owner == null) owner = renderer.gameObject.AddComponent<GrayscaleMaterialOwner>();
+            if (owner.Material == null) owner.Material = CreateGrayscaleMaterialInstance();
+
+            if (owner.Material != null)
+            {
+                renderer.sharedMaterial = owner.Material;
+            }
+            else
+            {
+                renderer.color = new Color(0.7f, 0.7f, 0.7f, 1f);
+            }
+        }
+
         public static Material GetDefaultSpriteMaterial()
         {
             if (s_DefaultSpriteMaterial == null)
@@ -307,7 +344,6 @@ namespace TrashTD.Operators
         public static void ApplyGrayscale(GameObject go)
         {
             if (go == null) return;
-            var mat = GetGrayscaleMaterial();
             var renderers = go.GetComponentsInChildren<SpriteRenderer>(true);
             for (int i = 0; i < renderers.Length; i++)
             {
@@ -322,14 +358,7 @@ namespace TrashTD.Operators
                         continue;
                     }
 
-                    if (mat != null)
-                    {
-                        r.sharedMaterial = mat;
-                    }
-                    else
-                    {
-                        r.color = new Color(0.7f, 0.7f, 0.7f, 1f);
-                    }
+                    ApplyGrayscaleToRenderer(r);
                 }
             }
         }
