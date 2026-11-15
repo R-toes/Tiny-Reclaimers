@@ -64,6 +64,9 @@ namespace TrashTD.Core.GameLoop
         private SpriteRenderer spriteRenderer;
 
         public float StartX { get; private set; }
+        public float DamageStartX { get; private set; }
+        public float PlayableLeftX { get; private set; } = float.MinValue;
+        public float PlayableRightX { get; private set; } = float.MaxValue;
         public float LastEnemyHitX { get; private set; }
         public float LastAllyHitX { get; private set; }
 
@@ -95,7 +98,8 @@ namespace TrashTD.Core.GameLoop
             EnemyManager enemies,
             OperatorManager operators,
             float speed = DefaultSpeed,
-            int sortingOrder = 9)
+            int sortingOrder = 9,
+            StageData stage = null)
         {
             LaneY = laneY;
             OriginalSpeed = speed;
@@ -139,24 +143,46 @@ namespace TrashTD.Core.GameLoop
             float bottomTileY = laneCenterY - cellSize * 0.5f;
             float carCenterY = bottomTileY + (spriteHeightUnits * 0.5f);
 
-            // Starting position: at red box (column 0)
+            // Starting position: column 0 (Spawn 3 and 4)
             float cell0CenterX = gridManager != null
                 ? gridManager.GridToWorldPosition(0, laneY).x
                 : cellSize * 0.5f;
 
-            StartX = cell0CenterX;
-            LastEnemyHitX = StartX;
-            LastAllyHitX = StartX;
-
-            float initialCarCenterX = cell0CenterX - FrontBumperOffsetX;
-            transform.position = new Vector3(initialCarCenterX, carCenterY, 0f);
-
-            // Exit X: one tile after the last violet tile on the right (gridWidth - 1)
-            int gridWidth = gridManager != null ? gridManager.Width : 13;
+            int gridWidth = gridManager != null ? gridManager.Width : (stage != null ? stage.gridWidth : 13);
             float lastCellX = gridManager != null
                 ? gridManager.GridToWorldPosition(gridWidth - 1, laneY).x
                 : (gridWidth - 1) * cellSize + cellSize * 0.5f;
-            exitX = lastCellX + cellSize;
+
+            DamageStartX = cell0CenterX;
+            PlayableLeftX = cell0CenterX - 0.5f * cellSize;
+            PlayableRightX = lastCellX + 0.5f * cellSize;
+
+            LastEnemyHitX = DamageStartX;
+            LastAllyHitX = DamageStartX;
+
+            if (stage != null && stage.boundsVisualSprite != null)
+            {
+                float boundsPixelPerTile = stage.visualTilePixelSize > 0 ? stage.visualTilePixelSize : 32f;
+                float boundsWidthTiles = stage.boundsVisualSprite.rect.width / boundsPixelPerTile;
+                float boundsLeftX = PlayableLeftX + stage.boundsTileOffset.x * cellSize;
+                float boundsRightX = boundsLeftX + boundsWidthTiles * cellSize;
+
+                StartX = boundsLeftX;
+                float initialCarCenterX = boundsLeftX - FrontBumperOffsetX;
+                transform.position = new Vector3(initialCarCenterX, carCenterY, 0f);
+
+                // Exit once the vehicle has completely cleared the rightmost boundary
+                exitX = boundsRightX + spriteWidthUnits;
+            }
+            else
+            {
+                StartX = cell0CenterX;
+                float initialCarCenterX = cell0CenterX - FrontBumperOffsetX;
+                transform.position = new Vector3(initialCarCenterX, carCenterY, 0f);
+
+                // Exit X: one tile after the last violet tile on the right (gridWidth - 1)
+                exitX = lastCellX + cellSize;
+            }
         }
 
         private void Update()
@@ -262,6 +288,8 @@ namespace TrashTD.Core.GameLoop
                     if (hitEnemies.Contains(enemy)) continue;
 
                     Vector3 pos = enemy.transform.position;
+                    // Only interact with enemies on playable tiles
+                    if (pos.x < PlayableLeftX || pos.x > PlayableRightX) continue;
                     if (Mathf.Abs(pos.y - laneCenterY) > 0.6f * cellSize) continue;
 
                     if (pos.x <= frontX && pos.x >= rearX - 0.3f)
@@ -281,7 +309,9 @@ namespace TrashTD.Core.GameLoop
                     hitEnemies.Add(enemy);
 
                     float targetX = enemy.transform.position.x;
-                    float tilesTravelled = Mathf.Max(0f, (targetX - LastEnemyHitX) / cellSize);
+                    // Damage calculation accumulates distance only from spawn 3 and 4 (DamageStartX)
+                    float originX = Mathf.Max(DamageStartX, LastEnemyHitX);
+                    float tilesTravelled = Mathf.Max(0f, (targetX - originX) / cellSize);
                     int damage = CalculateDamage(tilesTravelled);
 
                     if (damage > 0)
@@ -306,6 +336,8 @@ namespace TrashTD.Core.GameLoop
                     if (hitAllies.Contains(op)) continue;
 
                     Vector3 pos = op.transform.position;
+                    // Only interact with operators on playable tiles
+                    if (pos.x < PlayableLeftX || pos.x > PlayableRightX) continue;
                     if (Mathf.Abs(pos.y - laneCenterY) > 0.6f * cellSize) continue;
 
                     if (pos.x <= frontX && pos.x >= rearX - 0.3f)
@@ -325,7 +357,9 @@ namespace TrashTD.Core.GameLoop
                     hitAllies.Add(op);
 
                     float targetX = op.transform.position.x;
-                    float tilesTravelled = Mathf.Max(0f, (targetX - LastAllyHitX) / cellSize);
+                    // Damage calculation accumulates distance only from spawn 3 and 4 (DamageStartX)
+                    float originX = Mathf.Max(DamageStartX, LastAllyHitX);
+                    float tilesTravelled = Mathf.Max(0f, (targetX - originX) / cellSize);
                     int damage = CalculateDamage(tilesTravelled);
 
                     bool damageDealt = false;

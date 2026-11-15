@@ -70,7 +70,7 @@ namespace TrashTD.Core.GameLoop
             waveManager = wave != null ? wave : Object.FindAnyObjectByType<WaveManager>();
             enemyManager = enemies != null ? enemies : Object.FindAnyObjectByType<EnemyManager>();
             operatorManager = operators != null ? operators : Object.FindAnyObjectByType<OperatorManager>();
-            stageData = stage;
+            stageData = stage != null ? stage : (GameManager.Instance != null ? GameManager.Instance.CurrentStage : null);
 
             if (customSprites != null && customSprites.Length > 0)
             {
@@ -251,7 +251,7 @@ namespace TrashTD.Core.GameLoop
             carObj.transform.SetParent(transform);
 
             var car = carObj.AddComponent<Stage5TrafficCar>();
-            car.Initialize(laneY, carSprite, gridManager, enemyManager, operatorManager);
+            car.Initialize(laneY, carSprite, gridManager, enemyManager, operatorManager, stage: stageData);
             activeCars.Add(car);
             AudioManager.Instance?.PlaySfx(SfxId.Stage5CarPass);
             return car;
