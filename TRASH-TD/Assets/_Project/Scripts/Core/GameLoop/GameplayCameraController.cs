@@ -142,10 +142,17 @@ namespace TrashTD.Core.GameLoop
             }
             else
             {
-                // Nothing to drag: the home framing
-                offset = Vector2.Lerp(offset, Vector2.zero, 1f - Mathf.Exp(-DragSharpness * dt));
+                // Nothing to drag: the home framing (moved inside the limits when it would show past the bounds)
+                Vector2 home = new Vector2(Mathf.Clamp(0f, minOffset.x, maxOffset.x), Mathf.Clamp(0f, minOffset.y, maxOffset.y));
+                offset = Vector2.Lerp(offset, home, 1f - Mathf.Exp(-DragSharpness * dt));
                 dragTarget = offset;
                 dragVelocity = Vector2.zero;
+            }
+
+            // Zooming out or the first frame can leave the view outside the limits: bring it back in
+            if (strictBounds)
+            {
+                offset = new Vector2(Mathf.Clamp(offset.x, minOffset.x, maxOffset.x), Mathf.Clamp(offset.y, minOffset.y, maxOffset.y));
             }
 
             // Shake decays quickly; scaled with the view so it reads the same at any zoom
@@ -196,12 +203,11 @@ namespace TrashTD.Core.GameLoop
             min = new Vector2(mapBounds.xMin + halfWidth - centre.x, mapBounds.yMin + halfHeight - centre.y);
             max = new Vector2(mapBounds.xMax - halfWidth - centre.x, mapBounds.yMax - halfHeight - centre.y);
 
-            // A view bigger than the bounds on an axis can't be kept inside: centre it there. Otherwise the home
-            // framing (offset 0) is always allowed, so dragging starts from where the view already is.
+            // A view bigger than the bounds on an axis can't be kept inside: centre it there. The limits are exact, they
+            // don't have to include the home framing (offset 0): when the home view itself would show past the bounds
+            // (Stage 5's art is no taller than the view) it is moved inside them.
             if (min.x > max.x) min.x = max.x = (min.x + max.x) * 0.5f;
-            else { min.x = Mathf.Min(min.x, 0f); max.x = Mathf.Max(max.x, 0f); }
             if (min.y > max.y) min.y = max.y = (min.y + max.y) * 0.5f;
-            else { min.y = Mathf.Min(min.y, 0f); max.y = Mathf.Max(max.y, 0f); }
         }
 
         /// <summary>

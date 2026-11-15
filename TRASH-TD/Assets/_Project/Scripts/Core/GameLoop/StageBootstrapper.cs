@@ -579,12 +579,14 @@ namespace TrashTD.Core.GameLoop
             float requiredWorldHeight = (visualHeight + 0.35f) / availableRatio;
             float orthoSize = Mathf.Max(4.10f, requiredWorldHeight * 0.5f);
 
-            // If bounds artwork is present, prevent black void on the sides by ensuring the view
-            // does not exceed the bounds art width, while keeping the playable grid fully visible
+            // If bounds artwork is present, prevent black void by ensuring the view does not exceed the bounds art in
+            // width or in height (the part under the HUD bars counts: it isn't fully opaque), while keeping the
+            // playable grid visible between the bars
             if (stageData.boundsVisualSprite != null && cam.aspect > 0f)
             {
                 float boundsWidth = cameraMaxX - cameraMinX;
-                float maxOrthoForBounds = boundsWidth / (2f * cam.aspect);
+                float boundsHeight = cameraMaxY - cameraMinY;
+                float maxOrthoForBounds = Mathf.Min(boundsWidth / (2f * cam.aspect), boundsHeight * 0.5f);
                 float minOrthoForGrid = ((stageData.gridHeight * cellSize) + 0.35f) / (availableRatio * 2f);
                 if (maxOrthoForBounds >= minOrthoForGrid)
                 {
