@@ -1636,6 +1636,21 @@ namespace TrashTD.Editor
             stage.visualTilePixelSize = 32;
             stage.visualTileOffset = Vector2.zero;
 
+            // The scenery around the map: the 576x416 bounds art holds the 384x224 map 3 tiles in from the left, bottom and top
+            var boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 1/Level1 Bounds.png");
+            if (boundsSprites != null)
+            {
+                foreach (var obj in boundsSprites)
+                {
+                    if (obj is Sprite s)
+                    {
+                        stage.boundsVisualSprite = s;
+                        break;
+                    }
+                }
+            }
+            stage.boundsTileOffset = new Vector2(-3f, -3f);
+
             var fgSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 1/level 1 bottom.png");
             if (fgSprites != null)
             {

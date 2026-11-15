@@ -183,6 +183,8 @@ namespace TrashTD.Core.GameLoop
                     stageData.foregroundVisualSprite = mapSource.foregroundVisualSprite;
                     stageData.visualTilePixelSize = mapSource.visualTilePixelSize;
                     stageData.visualTileOffset = mapSource.visualTileOffset;
+                    stageData.boundsVisualSprite = mapSource.boundsVisualSprite;
+                    stageData.boundsTileOffset = mapSource.boundsTileOffset;
                     stageData.spawnPoints = mapSource.spawnPoints;
                     stageData.exitPoints = mapSource.exitPoints;
                     stageData.enemyPaths = mapSource.enemyPaths;
@@ -319,6 +321,13 @@ namespace TrashTD.Core.GameLoop
             float cellSize = gridManager.CellSize;
             Vector3 gridBottomLeft = gridManager.GridToWorldPosition(0, 0) - new Vector3(cellSize * 0.5f, cellSize * 0.5f, 0f);
             Vector3 targetBottomLeft = gridBottomLeft + new Vector3(stageData.visualTileOffset.x * cellSize, stageData.visualTileOffset.y * cellSize, 0f);
+
+            // The scenery around the playable map, behind everything (the map art covers its middle)
+            if (stageData.boundsVisualSprite != null)
+            {
+                Vector3 boundsBottomLeft = gridBottomLeft + new Vector3(stageData.boundsTileOffset.x * cellSize, stageData.boundsTileOffset.y * cellSize, 0f);
+                DrawMapArtworkLayer(gridContainer.transform, stageData.boundsVisualSprite, "BoundsArtwork", -1, boundsBottomLeft, false);
+            }
 
             DrawMapArtworkLayer(
                 gridContainer.transform,
@@ -543,6 +552,20 @@ namespace TrashTD.Core.GameLoop
             float visualHeight = visualMaxY - visualMinY;
             float visualCenterY = (visualMinY + visualMaxY) * 0.5f;
 
+            // The home framing follows the playable map; the camera may roam anywhere over the bounds artwork too
+            float cameraMinX = visualMinX, cameraMaxX = visualMaxX, cameraMinY = visualMinY, cameraMaxY = visualMaxY;
+            if (stageData.boundsVisualSprite != null)
+            {
+                float boundsPixelPerTile = stageData.visualTilePixelSize > 0 ? stageData.visualTilePixelSize : 32f;
+                Rect boundsRect = stageData.boundsVisualSprite.rect;
+                float boundsLeft = stageData.boundsTileOffset.x * cellSize;
+                float boundsBottom = stageData.boundsTileOffset.y * cellSize;
+                cameraMinX = Mathf.Min(cameraMinX, boundsLeft);
+                cameraMinY = Mathf.Min(cameraMinY, boundsBottom);
+                cameraMaxX = Mathf.Max(cameraMaxX, boundsLeft + boundsRect.width / boundsPixelPerTile * cellSize);
+                cameraMaxY = Mathf.Max(cameraMaxY, boundsBottom + boundsRect.height / boundsPixelPerTile * cellSize);
+            }
+
             // Available vertical ratio between DeckBar (170px) and TopBar (90px) on 1080p reference (~76%)
             const float availableRatio = 0.759f;
             float requiredWorldHeight = (visualHeight + 0.35f) / availableRatio;
@@ -561,7 +584,7 @@ namespace TrashTD.Core.GameLoop
             var cameraController = cam.GetComponent<GameplayCameraController>();
             if (cameraController == null) cameraController = cam.gameObject.AddComponent<GameplayCameraController>();
             cameraController.Initialize(cam, new Vector2(centerX, camY), orthoSize,
-                Rect.MinMaxRect(visualMinX, visualMinY, visualMaxX, visualMaxY));
+                Rect.MinMaxRect(cameraMinX, cameraMinY, cameraMaxX, cameraMaxY), stageData.boundsVisualSprite != null);
         }
 
         private void OnDestroy()

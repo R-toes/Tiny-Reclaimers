@@ -87,6 +87,15 @@ namespace TrashTD.Data
         [Tooltip("Offset in tiles for the visual sprite relative to grid bottom-left origin (x, y). Default (0,0) aligns sprite bottom-left to cell (0,0)")]
         public Vector2 visualTileOffset = Vector2.zero;
 
+        [Tooltip("Optional extended artwork: the map plus the scenery around it, outside the playable field (it normally " +
+                 "contains the map art in its middle). It is drawn behind the map artwork, the gameplay camera can't leave it, " +
+                 "and the stage's weather covers it. Keep it centred on the map so the camera range stays even.")]
+        public Sprite boundsVisualSprite;
+
+        [Tooltip("Offset in tiles of the bounds sprite's bottom-left corner from the grid's bottom-left corner " +
+                 "(e.g. (-3, -3) for 3 tiles of scenery to the left of and below the map)")]
+        public Vector2 boundsTileOffset = Vector2.zero;
+
         [Tooltip("Optional midground/obstacle overlays rendered above ground units (operators and walking enemies) but below flying units")]
         public Sprite[] midgroundVisualSprites;
 

@@ -249,7 +249,7 @@ namespace TrashTD.Core.GameLoop
             artMin = gridMin;
             artMax = gridMax;
 
-            // The artwork can be larger than the grid (Stage 1 has a backdrop row above it).
+            // The artwork can be larger than the grid (Stage 1 has a backdrop row above it, and bounds art around it).
             if (stageData.mapVisualSprite != null)
             {
                 float pixelPerTile = stageData.visualTilePixelSize > 0 ? stageData.visualTilePixelSize : 32f;
@@ -257,6 +257,16 @@ namespace TrashTD.Core.GameLoop
                 Vector2 spriteMax = spriteMin + stageData.mapVisualSprite.rect.size / pixelPerTile * cellSize;
                 artMin = Vector2.Min(artMin, spriteMin);
                 artMax = Vector2.Max(artMax, spriteMax);
+            }
+
+            // So can the bounds artwork around the map: the mask, rain tint, mist, fog bank and rain all cover it
+            if (stageData.boundsVisualSprite != null)
+            {
+                float pixelPerTile = stageData.visualTilePixelSize > 0 ? stageData.visualTilePixelSize : 32f;
+                Vector2 boundsMin = gridMin + stageData.boundsTileOffset * cellSize;
+                Vector2 boundsMax = boundsMin + stageData.boundsVisualSprite.rect.size / pixelPerTile * cellSize;
+                artMin = Vector2.Min(artMin, boundsMin);
+                artMax = Vector2.Max(artMax, boundsMax);
             }
         }
 

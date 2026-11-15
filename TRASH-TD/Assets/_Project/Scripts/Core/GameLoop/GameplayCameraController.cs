@@ -45,6 +45,7 @@ namespace TrashTD.Core.GameLoop
         private Vector2 homePosition;
         private float homeSize;
         private Rect mapBounds;
+        private bool strictBounds;
         private bool initialized;
 
         private float zoom = 1f;
@@ -85,13 +86,18 @@ namespace TrashTD.Core.GameLoop
             if (Instance == this) Instance = null;
         }
 
-        /// <summary>Sets the home view (position and orthographic size) and the map art bounds to look around in.</summary>
-        public void Initialize(Camera camera, Vector2 position, float orthographicSize, Rect bounds)
+        /// <summary>
+        /// Sets the home view (position and orthographic size) and the art bounds to look around in. With
+        /// <paramref name="strict"/> (a stage with bounds artwork) the view never goes past the edge of the bounds: no
+        /// extra margin and no look-around nudge beyond them, so no void shows.
+        /// </summary>
+        public void Initialize(Camera camera, Vector2 position, float orthographicSize, Rect bounds, bool strict = false)
         {
             cam = camera;
             homePosition = position;
             homeSize = Mathf.Max(0.1f, orthographicSize);
             mapBounds = bounds;
+            strictBounds = strict;
             zoom = targetZoom = 1f;
             offset = dragTarget = dragVelocity = Vector2.zero;
             lookInput = Vector2.zero;
@@ -130,7 +136,7 @@ namespace TrashTD.Core.GameLoop
             zoom = Mathf.Lerp(zoom, targetZoom, 1f - Mathf.Exp(-ZoomSharpness * dt));
             float size = homeSize / zoom;
             float aspect = cam.aspect > 0f ? cam.aspect : 16f / 9f;
-            Vector2 range = GetViewRange(size, aspect);
+            GetViewLimits(size, aspect, out Vector2 minOffset, out Vector2 maxOffset);
 
             if (DragMode)
             {
@@ -140,13 +146,15 @@ namespace TrashTD.Core.GameLoop
                     dragTarget += dragVelocity * dt;
                     dragVelocity *= Mathf.Exp(-InertiaDamping * dt);
                 }
-                dragTarget = new Vector2(Mathf.Clamp(dragTarget.x, -range.x, range.x), Mathf.Clamp(dragTarget.y, -range.y, range.y));
+                dragTarget = new Vector2(Mathf.Clamp(dragTarget.x, minOffset.x, maxOffset.x), Mathf.Clamp(dragTarget.y, minOffset.y, maxOffset.y));
                 offset = Vector2.Lerp(offset, dragTarget, 1f - Mathf.Exp(-DragSharpness * dt));
             }
             else
             {
                 // Look-around toward the cursor
-                Vector2 target = Vector2.Scale(lookInput, range);
+                Vector2 target = new Vector2(
+                    lookInput.x >= 0f ? lookInput.x * maxOffset.x : -lookInput.x * minOffset.x,
+                    lookInput.y >= 0f ? lookInput.y * maxOffset.y : -lookInput.y * minOffset.y);
                 float sharpness = returningHome ? ReturnSharpness : FollowSharpness;
                 offset = Vector2.Lerp(offset, target, 1f - Mathf.Exp(-sharpness * dt));
                 dragTarget = offset;
@@ -180,20 +188,59 @@ namespace TrashTD.Core.GameLoop
         }
 
         /// <summary>
-        /// How far the view may move from the home framing per axis: a small nudge, plus whatever the zoom opens up
-        /// between the visible playable area (between the HUD bars) and the map art.
+        /// How far the view may move from the current framing in each direction (min is negative or zero, max positive or
+        /// zero). Without bounds artwork it is symmetric: a small nudge, plus whatever the zoom opens up between the
+        /// visible playable area (between the HUD bars) and the map art. With bounds artwork (strict) the WHOLE view,
+        /// the parts under the HUD bars included, stays inside the bounds, so no void shows under or around the bars.
+        /// </summary>
+        private void GetViewLimits(float size, float aspect, out Vector2 min, out Vector2 max)
+        {
+            if (!strictBounds)
+            {
+                Vector2 range = GetViewRange(size, aspect);
+                min = -range;
+                max = range;
+                return;
+            }
+
+            Vector2 centre = homePosition + GetZoomCentreShift(size);
+            float halfWidth = size * aspect;
+            float halfHeight = size;
+            min = new Vector2(mapBounds.xMin + halfWidth - centre.x, mapBounds.yMin + halfHeight - centre.y);
+            max = new Vector2(mapBounds.xMax - halfWidth - centre.x, mapBounds.yMax - halfHeight - centre.y);
+
+            // A view bigger than the bounds on an axis can't be kept inside: centre it there. Otherwise the home
+            // framing (offset 0) is always allowed, so look-around starts from where the view already is.
+            if (min.x > max.x) min.x = max.x = (min.x + max.x) * 0.5f;
+            else { min.x = Mathf.Min(min.x, 0f); max.x = Mathf.Max(max.x, 0f); }
+            if (min.y > max.y) min.y = max.y = (min.y + max.y) * 0.5f;
+            else { min.y = Mathf.Min(min.y, 0f); max.y = Mathf.Max(max.y, 0f); }
+        }
+
+        /// <summary>
+        /// Non-strict range: how far the view may move from the home framing per axis, symmetric.
         /// </summary>
         private Vector2 GetViewRange(float size, float aspect)
         {
             float nudge = LookNudge * size * 2f;
             float playHalfWidth = size * aspect;
             float playHalfHeight = size * (1f - TopHudFraction - BottomHudFraction);
-            float mapHalfWidth = mapBounds.width * 0.5f + EdgeMargin;
-            float mapHalfHeight = mapBounds.height * 0.5f + EdgeMargin;
+            float margin = strictBounds ? 0f : EdgeMargin;
+            float mapHalfWidth = mapBounds.width * 0.5f + margin;
+            float mapHalfHeight = mapBounds.height * 0.5f + margin;
+            float spareX = mapHalfWidth - playHalfWidth;
+            float spareY = mapHalfHeight - playHalfHeight;
+
+            if (strictBounds)
+            {
+                // The room left inside the bounds, exactly. Only when the view is already bigger than the bounds
+                // (nothing to hide) does the small look-around nudge apply.
+                return new Vector2(spareX > 0f ? spareX : nudge, spareY > 0f ? spareY : nudge);
+            }
 
             return new Vector2(
-                nudge + Mathf.Max(0f, mapHalfWidth - playHalfWidth),
-                nudge + Mathf.Max(0f, mapHalfHeight - playHalfHeight));
+                nudge + Mathf.Max(0f, spareX),
+                nudge + Mathf.Max(0f, spareY));
         }
 
         // ─────────────────────────────────────────────────────
