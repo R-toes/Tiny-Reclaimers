@@ -9,6 +9,22 @@ namespace TrashTD.UI
     {
         private const string OpeningRerollNoticeKey = "gameplay.openingRerollNotice";
         private const string HideHudKey = "gameplay.hideHud";
+        private const string PauseOnFocusLossKey = "gameplay.pauseOnFocusLoss";
+
+        /// <summary>
+        /// Pause a running stage when the game window loses focus (alt-tab, another window clicked), so enemies don't
+        /// walk through while the player is away. On in builds. Off by default in the editor, where the Game view loses
+        /// focus every time another editor window is clicked: TRASH TD > Pause On Focus Loss turns it on there.
+        /// </summary>
+        public static bool PauseOnFocusLoss
+        {
+            get => PlayerPrefs.GetInt(PauseOnFocusLossKey, Application.isEditor ? 0 : 1) == 1;
+            set
+            {
+                PlayerPrefs.SetInt(PauseOnFocusLossKey, value ? 1 : 0);
+                PlayerPrefs.Save();
+            }
+        }
 
         /// <summary>
         /// Hide the gameplay HUD for a clean view of the map (Settings → Gameplay, or H in game). Off by default.

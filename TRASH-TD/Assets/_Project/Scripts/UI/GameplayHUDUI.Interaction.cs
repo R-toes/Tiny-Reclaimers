@@ -788,6 +788,21 @@ namespace TrashTD.UI
             }
         }
 
+        /// <summary>
+        /// The rule for pausing when the window loses focus: only a stage that is running (the same state the Escape key
+        /// pauses from), only when the setting is on, and only when focus is lost (not gained).
+        /// </summary>
+        public static bool ShouldPauseOnFocusLoss(bool hasFocus, bool settingEnabled, GamePlayState state)
+        {
+            return !hasFocus && settingEnabled && state == GamePlayState.Playing;
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (gameManager == null) return;
+            if (ShouldPauseOnFocusLoss(hasFocus, GameplaySettings.PauseOnFocusLoss, gameManager.CurrentState)) PauseGame();
+        }
+
         private void PauseGame()
         {
             if (gameManager == null) return;

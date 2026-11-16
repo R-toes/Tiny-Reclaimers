@@ -3,6 +3,7 @@ using UnityEngine;
 using TrashTD.Core.GameLoop;
 using TrashTD.Development;
 using TrashTD.Systems;
+using TrashTD.UI;
 
 namespace TrashTD.Editor
 {
@@ -42,6 +43,25 @@ namespace TrashTD.Editor
 
             PlayerProgress.ResetAll();
             Debug.Log("[DevMode] Player progress reset: the save file was deleted; tutorial, stage unlocks and Intel enemy files start over (turn Dev Mode off to see the locks).");
+        }
+
+        private const string PauseOnFocusLossMenuPath = "TRASH TD/Pause On Focus Loss";
+
+        [MenuItem(PauseOnFocusLossMenuPath, false, 3)]
+        private static void TogglePauseOnFocusLoss()
+        {
+            bool enabled = !GameplaySettings.PauseOnFocusLoss;
+            GameplaySettings.PauseOnFocusLoss = enabled;
+            Debug.Log(enabled
+                ? "[Gameplay] Pause on focus loss: ON. A running stage pauses when the Game view loses focus (builds always do this)."
+                : "[Gameplay] Pause on focus loss: OFF in the editor (builds pause by default).");
+        }
+
+        [MenuItem(PauseOnFocusLossMenuPath, true)]
+        private static bool TogglePauseOnFocusLossValidate()
+        {
+            Menu.SetChecked(PauseOnFocusLossMenuPath, GameplaySettings.PauseOnFocusLoss);
+            return true;
         }
 
         [MenuItem("TRASH TD/Open Save Folder", false, 2)]
