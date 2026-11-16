@@ -18,14 +18,13 @@ namespace TrashTD.Core.GameLoop
     /// step asks for it, freezes the game (time scale 0) while Coalesce talks, and points at what to click.
     /// Recalling stays hidden until the Retreat step teaches it, so nobody empties the field by accident.
     /// Finishing shows the usual results screen. Losing shows the defeat screen with Coalesce over it, offering
-    /// TRY AGAIN or SKIP TUTORIAL. Finishing or skipping marks the tutorial done (PlayerPrefs), which ends
+    /// TRY AGAIN or SKIP TUTORIAL. Finishing or skipping marks the tutorial done (saved in the JSON save, see SaveSystem), which ends
     /// Coalesce's stage-map intro (MapTutorialGuide). It stays replayable from STAGE 00 on the map.
     /// </summary>
     public sealed class TutorialDirector : MonoBehaviour
     {
         public const string TutorialStageId = "TUTORIAL";
         public const string TutorialStageResourcePath = "Stages/STAGE_TUTORIAL";
-        private const string TutorialDoneKey = "TrashTD.TutorialDone";
         private const string ScriptResourcePath = "Tutorial/TutorialScript";
         private const string MainMenuScene = "MainMenu";
         // Let a new hostile walk on screen for a moment before Coalesce freezes the wave to introduce it
@@ -36,22 +35,22 @@ namespace TrashTD.Core.GameLoop
         public static TutorialDirector Instance { get; private set; }
 
         /// <summary>The tutorial was finished or skipped on this install.</summary>
-        public static bool IsTutorialDone => PlayerPrefs.GetInt(TutorialDoneKey, 0) == 1;
+        public static bool IsTutorialDone => SaveSystem.Data.tutorialDone;
 
         /// <summary>PREVIEW PATH works everywhere but the tutorial stage, where Coalesce reveals the route.</summary>
         public static bool IsPathPreviewAllowed => Instance == null;
 
         public static void MarkTutorialDone()
         {
-            PlayerPrefs.SetInt(TutorialDoneKey, 1);
-            PlayerPrefs.Save();
+            SaveSystem.Data.tutorialDone = true;
+            SaveSystem.Save();
         }
 
         /// <summary>Forget the tutorial was done, so the next stage-map visit plays Coalesce's full intro (TRASH TD → Reset Player Progress).</summary>
         public static void ResetTutorialProgress()
         {
-            PlayerPrefs.DeleteKey(TutorialDoneKey);
-            PlayerPrefs.Save();
+            SaveSystem.Data.tutorialDone = false;
+            SaveSystem.Save();
             MapTutorialGuide.ResetSession();
         }
 

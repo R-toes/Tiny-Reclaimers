@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TrashTD.UI;
+using TrashTD.Core.GameLoop;
 
 namespace TrashTD.Audio
 {
@@ -78,6 +79,13 @@ namespace TrashTD.Audio
         private Button noticeOffButton;
         private Button hideHudOnButton;
         private Button hideHudOffButton;
+        private Button resetProgressButton;
+        private Text resetProgressHint;
+        private float resetConfirmUntil;   // unscaled time until which the RESET button asks "SURE?"
+        private int shownResetState = -1;
+        private const string MainMenuSceneName = "MainMenu";
+        private const float ResetConfirmSeconds = 4f;
+        private static readonly Color DangerColor = new Color(0.55f, 0.12f, 0.12f, 1f);
         private readonly Button[] tabButtons = new Button[4];
         private readonly GameObject[] pages = new GameObject[4];
         private readonly PlacementSchemeOption[] schemeOptions = new PlacementSchemeOption[3];
@@ -229,6 +237,15 @@ namespace TrashTD.Audio
             hideHudHint.verticalOverflow = VerticalWrapMode.Overflow;
             hideHudHint.lineSpacing = 1.4f;
             PlaceTopLeft(hideHudHint.rectTransform, ControlX, 392f, CardWidth - Padding - ControlX, 40f);
+
+            CreateSectionHeader("SAVE DATA", 450f);
+            CreateRowLabel("PROGRESS", 492f);
+            resetProgressButton = CreateSegmentButton("ResetProgressButton", "RESET", 0, 492f, OnResetProgressClicked);
+            resetProgressHint = CreateText(pageRoot, string.Empty, 11, TextAnchor.UpperLeft, HintColor);
+            resetProgressHint.horizontalOverflow = HorizontalWrapMode.Wrap;
+            resetProgressHint.verticalOverflow = VerticalWrapMode.Overflow;
+            resetProgressHint.lineSpacing = 1.4f;
+            PlaceTopLeft(resetProgressHint.rectTransform, ControlX + SegmentWidth + 12f, 474f, 2f * SegmentWidth + 12f, 40f);
             pageRoot = card;
 
             // Footer
@@ -318,6 +335,64 @@ namespace TrashTD.Audio
             bool hideHud = GameplaySettings.HideHud;
             SetToggleVisual(hideHudOnButton, hideHud);
             SetToggleVisual(hideHudOffButton, !hideHud);
+            RefreshResetProgress(true);
+        }
+
+        private static bool IsMainMenu => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == MainMenuSceneName;
+
+        /// <summary>RESET asks twice: the first click arms it (red, "SURE?") for a few seconds, the second erases the save.</summary>
+        private void OnResetProgressClicked()
+        {
+            if (!IsMainMenu) return;
+
+            if (Time.unscaledTime >= resetConfirmUntil)
+            {
+                resetConfirmUntil = Time.unscaledTime + ResetConfirmSeconds;
+                RefreshResetProgress(true);
+                return;
+            }
+
+            resetConfirmUntil = 0f;
+            PlayerProgress.ResetAll();
+            // Reload the menu so the stage map, its locks and the tutorial guide start over
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        }
+
+        private void RefreshResetProgress(bool force)
+        {
+            if (resetProgressButton == null) return;
+
+            // 0 = unavailable (in a stage), 1 = ready, 2 = armed
+            int state = !IsMainMenu ? 0 : Time.unscaledTime < resetConfirmUntil ? 2 : 1;
+            if (!force && state == shownResetState) return;
+            shownResetState = state;
+
+            resetProgressButton.interactable = state != 0;
+            Text label = resetProgressButton.GetComponentInChildren<Text>();
+            if (state == 2)
+            {
+                if (label != null) label.text = "SURE?";
+                MenuButtonFeedback feedback = resetProgressButton.GetComponent<MenuButtonFeedback>();
+                if (feedback != null) feedback.SetBaseColor(DangerColor);
+                else resetProgressButton.GetComponent<Image>().color = DangerColor;
+                if (label != null) label.color = Color.white;
+            }
+            else
+            {
+                if (label != null) label.text = "RESET";
+                SetToggleVisual(resetProgressButton, false);
+                if (state == 0 && label != null) label.color = new Color(LabelColor.r, LabelColor.g, LabelColor.b, 0.3f);
+            }
+
+            if (resetProgressHint != null)
+            {
+                resetProgressHint.text = state switch
+                {
+                    0 => "Available from the main menu.",
+                    2 => "Click again to erase stage clears, stars, unlocks and Intel files.",
+                    _ => "Erases stage clears, stars, unlocks and Intel files. Settings stay."
+                };
+            }
         }
 
         // ── Resolution ──
@@ -439,6 +514,8 @@ namespace TrashTD.Audio
 
         private void Update()
         {
+            if (panel != null && panel.activeSelf) RefreshResetProgress(false);
+
             // The screen size changes a frame or so after APPLY (or when the window is resized)
             if (panel != null && panel.activeSelf && shownScreenSize != new Vector2Int(Screen.width, Screen.height))
                 SyncResolutions();

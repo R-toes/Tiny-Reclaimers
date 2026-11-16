@@ -1,12 +1,13 @@
 using UnityEngine;
 using TrashTD.Data;
 using TrashTD.Development;
+using TrashTD.Systems;
 
 namespace TrashTD.Core.GameLoop
 {
     /// <summary>
-    /// Saved stage progress: the best star rating per numbered stage and difficulty (PlayerPrefs,
-    /// "TrashTD.Progress.STAGE_03.Hard" = 0-3, 0 = not cleared), and the unlock rules built on it:
+    /// Saved stage progress: the best star rating per numbered stage and difficulty (0-3, 0 = not cleared; kept in
+    /// the JSON save, see SaveSystem), and the unlock rules built on it:
     /// - STAGE_01 is open on every difficulty.
     /// - Clearing a stage on Easy or Normal opens Easy and Normal of the next stage.
     /// - Only clearing it on Hard opens Hard of the next stage (and Easy / Normal too).
@@ -14,10 +15,6 @@ namespace TrashTD.Core.GameLoop
     /// </summary>
     public static class StageProgress
     {
-        private const string KeyPrefix = "TrashTD.Progress.";
-        // Highest stage number ResetAll clears; well above the six stages there are
-        private const int MaxTrackedStageNumber = 99;
-
         private static readonly StageDifficulty[] Difficulties = { StageDifficulty.Easy, StageDifficulty.Normal, StageDifficulty.Hard };
 
         /// <summary>STAGE_03 → 3; 0 for ids without a number (SANDBOX, TUTORIAL).</summary>
@@ -34,7 +31,7 @@ namespace TrashTD.Core.GameLoop
         public static int GetBestStars(string stageId, StageDifficulty difficulty)
         {
             if (GetStageNumber(stageId) <= 0) return 0;
-            return Mathf.Clamp(PlayerPrefs.GetInt(Key(stageId, difficulty), 0), 0, 3);
+            return Mathf.Clamp(SaveSystem.Data.GetStars(stageId, (int)difficulty), 0, 3);
         }
 
         public static bool IsCleared(string stageId, StageDifficulty difficulty) => GetBestStars(stageId, difficulty) > 0;
@@ -46,8 +43,8 @@ namespace TrashTD.Core.GameLoop
             stars = Mathf.Clamp(stars, 1, 3);
             if (stars <= GetBestStars(stageId, difficulty)) return;
 
-            PlayerPrefs.SetInt(Key(stageId, difficulty), stars);
-            PlayerPrefs.Save();
+            SaveSystem.Data.SetStars(stageId, (int)difficulty, stars);
+            SaveSystem.Save();
         }
 
         public static bool IsUnlocked(string stageId, StageDifficulty difficulty)
@@ -87,14 +84,8 @@ namespace TrashTD.Core.GameLoop
         /// <summary>Forget every clear and star (TRASH TD → Reset Player Progress).</summary>
         public static void ResetAll()
         {
-            for (int number = 1; number <= MaxTrackedStageNumber; number++)
-            {
-                string stageId = GetStageId(number);
-                foreach (StageDifficulty difficulty in Difficulties) PlayerPrefs.DeleteKey(Key(stageId, difficulty));
-            }
-            PlayerPrefs.Save();
+            SaveSystem.Data.stageProgress.Clear();
+            SaveSystem.Save();
         }
-
-        private static string Key(string stageId, StageDifficulty difficulty) => KeyPrefix + stageId + "." + difficulty;
     }
 }
