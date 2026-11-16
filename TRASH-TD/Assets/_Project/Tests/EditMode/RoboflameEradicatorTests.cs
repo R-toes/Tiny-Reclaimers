@@ -53,13 +53,13 @@ namespace TrashTD.Tests
 
             opManagerObject = new GameObject("TestOperatorManager");
             operatorManager = TestUtility.AddAwakened<OperatorManager>(opManagerObject);
-            StageCombatModifiers.ConfigureForEnvironment(null);
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.None);
         }
 
         [TearDown]
         public void TearDown()
         {
-            StageCombatModifiers.ConfigureForEnvironment(null);
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.None);
             TestUtility.ClearSingletons();
             foreach (Object obj in created)
             {
@@ -298,7 +298,7 @@ namespace TrashTD.Tests
         [Test]
         public void Roboflame_OnStage4_AddsOneHeatStackWhenItsBurstEnds()
         {
-            StageCombatModifiers.ConfigureForEnvironment("STAGE_04");
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.FactoryHeat);
             RoboflameEnemy roboflame = CreateRoboflame(new Vector2Int(1, 2));
             GuardOperator op = CreateOperatorAt(new Vector2Int(3, 2));
 
@@ -315,7 +315,7 @@ namespace TrashTD.Tests
         [Test]
         public void Roboflame_HeatsAGivenOperatorOnlyOnce()
         {
-            StageCombatModifiers.ConfigureForEnvironment("STAGE_04");
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.FactoryHeat);
             RoboflameEnemy roboflame = CreateRoboflame(new Vector2Int(1, 2));
             GuardOperator op = CreateOperatorAt(new Vector2Int(3, 2));
 
@@ -332,7 +332,7 @@ namespace TrashTD.Tests
         [Test]
         public void Roboflame_AddsNoHeat_WhenItsBurstIsCutShort()
         {
-            StageCombatModifiers.ConfigureForEnvironment("STAGE_04");
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.FactoryHeat);
             RoboflameEnemy roboflame = CreateRoboflame(new Vector2Int(1, 2));
             GuardOperator op = CreateOperatorAt(new Vector2Int(3, 2));
 
@@ -403,7 +403,7 @@ namespace TrashTD.Tests
         [Test]
         public void Eradicator_RocketBlastsCircle_HeavyHitsHarderAndHeatsOnStage4()
         {
-            StageCombatModifiers.ConfigureForEnvironment("STAGE_04");
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.FactoryHeat);
             EradicatorEnemy eradicator = CreateEradicator(new Vector2Int(0, 0), atk: 60);
             GuardOperator center = CreateOperatorAt(new Vector2Int(3, 2), def: 10);
             GuardOperator corner = CreateOperatorAt(new Vector2Int(4, 3), def: 10); // Diagonal: 1.41 tiles away

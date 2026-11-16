@@ -1663,25 +1663,23 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void Stage5_Preview_IdentifiesStage5Correctly()
+        public void TrafficEnvironment_IsIdentifiedByTheStageData_NotByItsName()
         {
             var stage = ScriptableObject.CreateInstance<StageData>();
             stage.stageId = "STAGE_05";
+            stage.name = "STAGE_05";
             stage.gridWidth = 13;
             stage.gridHeight = 8;
 
-            Assert.IsTrue(StageMapPreview.IsStage5(stage));
-            Assert.IsTrue(GameplayPathPreviewOverlay.IsStage5(stage));
+            // Name and id alone no longer make a stage a traffic stage: the environment field does
+            Assert.IsFalse(stage.HasTraffic);
+
+            stage.environment = StageEnvironment.Traffic;
+            Assert.IsTrue(stage.HasTraffic);
 
             stage.stageId = "STAGE_01";
-            stage.name = "STAGE_05";
-            Assert.IsTrue(StageMapPreview.IsStage5(stage));
-            Assert.IsTrue(GameplayPathPreviewOverlay.IsStage5(stage));
-
-            stage.name = "STAGE_01";
-            stage.trafficVehicleSprites = new Sprite[1];
-            Assert.IsTrue(StageMapPreview.IsStage5(stage));
-            Assert.IsTrue(GameplayPathPreviewOverlay.IsStage5(stage));
+            stage.environment = StageEnvironment.Weather;
+            Assert.IsFalse(stage.HasTraffic);
 
             Object.DestroyImmediate(stage);
         }

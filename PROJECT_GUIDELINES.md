@@ -996,3 +996,7 @@ Reworked 2026-11-07. Text is kept for numbers and short callouts; lasting status
   - **Protected enemies:** every enemy with `JunkernautEnemy.GetProtectingJunkernautCount > 0` gets a 9×10 px amber shield left of its health bar, with one 2 px pip per protecting Junkernaut (up to 5). Enemies are rescanned 10 times a second; markers are pooled. Sorting: Default 48/49, under the combat numbers.
   - **Hits:** `EnemyBase.TryTakeAttackDamage` calls `JunkernautAuraVisual.NotifyProtectedHit` whenever the aura reduces a hit. The shield flashes white (a white silhouette overlay) and punches.
   - The generated shield textures and sprites belong to the instance and are destroyed with it.
+
+## Stage environments (2026-11-17)
+
+What a map's environment does is **data**, not a stage-id comparison: `StageData.environment` (`StageEnvironment`: None, Weather, FallingItems, Sandstorm, FactoryHeat, Traffic, AcidRain), set on each `STAGE_0x` asset. `StageBootstrapper.Environment` reads it (the sandbox's runtime copy takes it from the map it runs on) and drives which hazard/visuals are created, `StageCombatModifiers.ConfigureForEnvironment(StageEnvironment)`, the HUD environment briefing (`StageData.HasGameplayHazard`), the sandbox hazard panel and the traffic lanes in the previews (`StageData.HasTraffic`). `EnvironmentStageId` still exists, but only to *name* things (music and ambience folders, the briefing's map name). A new hazard stage = a new enum value plus the data on its asset; do not add `== "STAGE_0x"` checks.

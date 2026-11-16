@@ -66,24 +66,6 @@ namespace TrashTD.UI
 
         public int DamageBadgeCount => damageBadges.Count;
 
-        public static bool IsStage5(StageData stage)
-        {
-            if (stage == null) return false;
-            if (!string.IsNullOrEmpty(stage.stageId))
-            {
-                string id = stage.stageId.ToUpperInvariant();
-                if (id.Contains("STAGE_05") || id.Contains("STAGE 05") || id.Contains("STAGE-05") || id.Contains("STAGE5") || id.Contains("STAGE 5"))
-                    return true;
-            }
-            if (!string.IsNullOrEmpty(stage.name))
-            {
-                string name = stage.name.ToUpperInvariant();
-                if (name.Contains("STAGE_05") || name.Contains("STAGE 05") || name.Contains("STAGE-05") || name.Contains("STAGE5") || name.Contains("STAGE 5"))
-                    return true;
-            }
-            return stage.trafficVehicleSprites != null && stage.trafficVehicleSprites.Length > 0;
-        }
-
         /// <summary>Number of distinct enemy routes in the stage shown last.</summary>
         public int RouteCount => routes.Count;
 
@@ -320,7 +302,7 @@ namespace TrashTD.UI
                 }
             }
 
-            if (IsStage5(stage))
+            if (stage != null && stage.HasTraffic)
             {
                 BuildStage5DamageNumbers(ToUi, routesStart);
             }

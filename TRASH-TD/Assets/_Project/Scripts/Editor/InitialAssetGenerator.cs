@@ -1614,6 +1614,7 @@ namespace TrashTD.Editor
             }
 
             stage.stageId = "STAGE_01";
+            stage.environment = StageEnvironment.Weather;
             stage.mapName = "Landfill Outskirts";
             stage.gridWidth = 12;
             stage.gridHeight = 6;
@@ -1818,6 +1819,7 @@ namespace TrashTD.Editor
             }
 
             stage.stageId = "STAGE_02";
+            stage.environment = StageEnvironment.FallingItems;
             stage.mapName = "Scrapyard Junction";
             stage.shortDescription = "Secure the scrapyard junction against converging waves.";
             stage.gridWidth = 11;
@@ -2002,6 +2004,7 @@ namespace TrashTD.Editor
             }
 
             stage.stageId = "STAGE_03";
+            stage.environment = StageEnvironment.Sandstorm;
             stage.mapName = "Railyard Crossing";
             stage.shortDescription = "Defend the crossing while avoiding the toxic traps.";
             stage.gridWidth = 14;
@@ -2185,6 +2188,7 @@ namespace TrashTD.Editor
             }
 
             stage.stageId = "STAGE_05";
+            stage.environment = StageEnvironment.Traffic;
             stage.mapName = "Boulevard";
             stage.shortDescription = "Navigate the pipes and hold the boulevard against toxic pollutants.";
             stage.gridWidth = 13;
@@ -2562,6 +2566,7 @@ namespace TrashTD.Editor
             }
 
             stage.stageId = "STAGE_06";
+            stage.environment = StageEnvironment.AcidRain;
             stage.mapName = "Meltdown";
             stage.shortDescription = "Hold the line across the meltdown while avoiding the toxic hazard.";
             stage.gridWidth = 12;

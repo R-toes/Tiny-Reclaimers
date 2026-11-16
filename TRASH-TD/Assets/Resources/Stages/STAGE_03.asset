@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: STAGE_03
   m_EditorClassIdentifier: TrashTD.Runtime::TrashTD.Data.StageData
   stageId: STAGE_03
+  environment: 3
   mapName: Railyard Drain
   shortDescription: A decaying freight yard choked with debris, stagnant water, and industrial waste.
   gridWidth: 14

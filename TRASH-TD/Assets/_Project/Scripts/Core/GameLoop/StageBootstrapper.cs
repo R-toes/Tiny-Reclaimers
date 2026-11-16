@@ -140,6 +140,13 @@ namespace TrashTD.Core.GameLoop
         /// </summary>
         public string EnvironmentStageId => IsSandbox ? SandboxMapStageId : stageData != null ? stageData.stageId : null;
 
+        /// <summary>
+        /// What the active environment does (hazard, weather, ambient effects). Read from the stage data; the sandbox's
+        /// runtime copy takes it from the map it runs on. Use this, not EnvironmentStageId, to decide behaviour:
+        /// the id is only for naming things (music and ambience folders, the briefing's map name).
+        /// </summary>
+        public StageEnvironment Environment => stageData != null ? stageData.environment : StageEnvironment.None;
+
         private void Awake()
         {
             if (gridManager == null) gridManager = FindAnyObjectByType<GridManager>() ?? gameObject.AddComponent<GridManager>();
@@ -173,6 +180,7 @@ namespace TrashTD.Core.GameLoop
                 {
                     // Work on a runtime copy so play mode doesn't overwrite the sandbox asset.
                     stageData = Instantiate(stageData);
+                    stageData.environment = mapSource.environment;
                     stageData.gridWidth = mapSource.gridWidth;
                     stageData.gridHeight = mapSource.gridHeight;
                     stageData.tileLayout = mapSource.tileLayout;
@@ -195,7 +203,7 @@ namespace TrashTD.Core.GameLoop
                     stageData.fallingItemSprites = mapSource.fallingItemSprites;
                 }
             }
-            TrashTD.Combat.StageCombatModifiers.ConfigureForEnvironment(EnvironmentStageId);
+            TrashTD.Combat.StageCombatModifiers.ConfigureForEnvironment(Environment);
 
             if (stageData == null)
             {
@@ -215,29 +223,26 @@ namespace TrashTD.Core.GameLoop
             // 3. Center Camera
             CenterCameraOnGrid();
 
-            if (EnvironmentStageId == "STAGE_01")
+            switch (Environment)
             {
-                CreateStage1WeatherVisuals();
-            }
-            else if (EnvironmentStageId == "STAGE_02")
-            {
-                CreateStage2FallingItemsHazard();
-            }
-            else if (EnvironmentStageId == "STAGE_03")
-            {
-                CreateStage3SandstormVisuals();
-            }
-            else if (EnvironmentStageId == "STAGE_04")
-            {
-                CreateStage4HeatHazard();
-            }
-            else if (EnvironmentStageId == "STAGE_05")
-            {
-                CreateStage5TrafficEncounter();
-            }
-            else if (EnvironmentStageId == "STAGE_06")
-            {
-                CreateStage6AcidRain();
+                case StageEnvironment.Weather:
+                    CreateStage1WeatherVisuals();
+                    break;
+                case StageEnvironment.FallingItems:
+                    CreateStage2FallingItemsHazard();
+                    break;
+                case StageEnvironment.Sandstorm:
+                    CreateStage3SandstormVisuals();
+                    break;
+                case StageEnvironment.FactoryHeat:
+                    CreateStage4HeatHazard();
+                    break;
+                case StageEnvironment.Traffic:
+                    CreateStage5TrafficEncounter();
+                    break;
+                case StageEnvironment.AcidRain:
+                    CreateStage6AcidRain();
+                    break;
             }
 
             PlayEnvironmentAudio();
@@ -342,7 +347,7 @@ namespace TrashTD.Core.GameLoop
                 0,
                 targetBottomLeft + new Vector3(stageData.backgroundTileOffset.x * cellSize, stageData.backgroundTileOffset.y * cellSize, 0f),
                 true,
-                EnvironmentStageId == "STAGE_03");
+                Environment == StageEnvironment.Sandstorm);
 
             Sprite mapSprite = stageData.mapVisualSprite;
             if (!boundsReplaceMap) DrawMapArtworkLayer(gridContainer.transform, mapSprite, "MapArtwork", 1, targetBottomLeft, false);
@@ -1159,7 +1164,7 @@ namespace TrashTD.Core.GameLoop
         /// <summary>The acid can hurt right now: Stage 6 hazards on, during a wave (always in the sandbox).</summary>
         private bool IsStage6AcidActive()
         {
-            return EnvironmentStageId == "STAGE_06" && TrashTD.Combat.StageCombatModifiers.HazardsEnabled &&
+            return Environment == StageEnvironment.AcidRain && TrashTD.Combat.StageCombatModifiers.HazardsEnabled &&
                    gameManager != null && (IsSandbox || gameManager.CurrentPhase == StagePhase.WaveActive);
         }
 
@@ -1172,7 +1177,7 @@ namespace TrashTD.Core.GameLoop
 
         private void UpdateStage6AcidRainDamage()
         {
-            if (EnvironmentStageId != "STAGE_06" || !TrashTD.Combat.StageCombatModifiers.HazardsEnabled ||
+            if (Environment != StageEnvironment.AcidRain || !TrashTD.Combat.StageCombatModifiers.HazardsEnabled ||
                 gameManager == null || gameManager.CurrentState != GamePlayState.Playing)
             {
                 return;

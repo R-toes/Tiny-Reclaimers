@@ -26,7 +26,7 @@ namespace TrashTD.Tests
         [Test]
         public void Stage3Sandstorm_ReducesAttackIntervalByFivePercent()
         {
-            stageData.stageId = "STAGE_03";
+            stageData.environment = StageEnvironment.Sandstorm;
 
             StageCombatModifiers.ConfigureForStage(stageData);
 
@@ -37,7 +37,7 @@ namespace TrashTD.Tests
         [Test]
         public void OtherStages_DoNotReceiveSandstormModifiers()
         {
-            stageData.stageId = "STAGE_06";
+            stageData.environment = StageEnvironment.AcidRain;
 
             StageCombatModifiers.ConfigureForStage(stageData);
 
@@ -49,7 +49,7 @@ namespace TrashTD.Tests
         [Test]
         public void Stage3Sandstorm_MissesApproximatelyTenPercentOfAttacks()
         {
-            stageData.stageId = "STAGE_03";
+            stageData.environment = StageEnvironment.Sandstorm;
             StageCombatModifiers.ConfigureForStage(stageData);
 
             UnityEngine.Random.State previousRandomState = UnityEngine.Random.state;

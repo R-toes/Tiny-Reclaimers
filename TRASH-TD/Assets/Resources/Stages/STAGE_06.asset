@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: STAGE_06
   m_EditorClassIdentifier: TrashTD.Runtime::TrashTD.Data.StageData
   stageId: STAGE_06
+  environment: 6
   mapName: The Pale
   shortDescription: The ruined remains of old Calder Basin, devastated by nuclear catastrophe and industrial contamination.
   gridWidth: 12

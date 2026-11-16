@@ -27,7 +27,7 @@ namespace TrashTD.Tests
         [SetUp]
         public void SetUp()
         {
-            StageCombatModifiers.ConfigureForEnvironment(null);
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.None);
 
             gridObject = new GameObject("TestGridManager");
             gridManager = gridObject.AddComponent<GridManager>();
@@ -57,7 +57,7 @@ namespace TrashTD.Tests
         [TearDown]
         public void TearDown()
         {
-            StageCombatModifiers.ConfigureForEnvironment(null);
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.None);
             TestUtility.ClearSingletons();
             if (shadesliceObject != null) Object.DestroyImmediate(shadesliceObject);
             if (shadesliceData != null) Object.DestroyImmediate(shadesliceData);

@@ -89,23 +89,6 @@ namespace TrashTD.UI
 
         public int DamageBadgeCount => damageBadges.Count;
 
-        public static bool IsStage5(StageData stage)
-        {
-            if (stage == null) return false;
-            if (!string.IsNullOrEmpty(stage.stageId))
-            {
-                string id = stage.stageId.ToUpperInvariant();
-                if (id.Contains("STAGE_05") || id.Contains("STAGE 05") || id.Contains("STAGE-05") || id.Contains("STAGE5") || id.Contains("STAGE 5"))
-                    return true;
-            }
-            if (!string.IsNullOrEmpty(stage.name))
-            {
-                string name = stage.name.ToUpperInvariant();
-                if (name.Contains("STAGE_05") || name.Contains("STAGE 05") || name.Contains("STAGE-05") || name.Contains("STAGE5") || name.Contains("STAGE 5"))
-                    return true;
-            }
-            return stage.trafficVehicleSprites != null && stage.trafficVehicleSprites.Length > 0;
-        }
         private readonly List<SpriteRenderer> gridLines = new List<SpriteRenderer>();
         private readonly List<Material> createdMaterials = new List<Material>();
         private SpriteRenderer dim;
@@ -270,7 +253,7 @@ namespace TrashTD.UI
             if (!drawUnderUnits)
             {
                 BuildDimAndGrid();
-                if (IsStage5(stageData))
+                if (stageData != null && stageData.HasTraffic)
                 {
                     BuildStage5DamageNumbers();
                 }

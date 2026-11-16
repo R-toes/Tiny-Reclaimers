@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: STAGE_02
   m_EditorClassIdentifier: TrashTD.Runtime::TrashTD.Data.StageData
   stageId: STAGE_02
+  environment: 2
   mapName: Milestone 9
   shortDescription: A deserted roadside fuel and repair station, long abandoned after supply routes collapsed.
   gridWidth: 11

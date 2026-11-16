@@ -273,20 +273,20 @@ namespace TrashTD.Development
         }
 
         /// <summary>What the map's environment does, and whether it has a gameplay hazard at all.</summary>
-        private static string GetHazardDescription(string stageId, out bool hasHazard)
+        private static string GetHazardDescription(StageEnvironment environment, out bool hasHazard)
         {
             hasHazard = true;
-            switch (stageId)
+            switch (environment)
             {
-                case "STAGE_02":
+                case StageEnvironment.FallingItems:
                     return "FALLING ITEMS\nScrap drops on operators and tiles during waves: true damage, some stun.";
-                case "STAGE_03":
+                case StageEnvironment.Sandstorm:
                     return "SANDSTORM\nOperator attacks miss 10% of the time; enemies attack 5% faster.";
-                case "STAGE_04":
+                case StageEnvironment.FactoryHeat:
                     return $"FACTORY HEAT\n+1 heat per wave start and per mid-wave deploy. 5 stacks ignite: {Stage4HeatHazard.BurnDamagePerTick} damage/s until retreated.";
-                case "STAGE_05":
+                case StageEnvironment.Traffic:
                     return $"TRAFFIC\nFrom wave {Stage5CarEncounter.FirstCarWave}, up to {Stage5CarEncounter.TotalRollsPerWave} cars cross the boulevard each wave. Hand-built waves count as late waves.";
-                case "STAGE_06":
+                case StageEnvironment.AcidRain:
                     return $"ACID RAIN\n{StageBootstrapper.AcidRainDamagePerTick} true damage every 2s to every operator and enemy (acid-immune enemies excepted).";
                 default:
                     hasHazard = false;
@@ -474,7 +474,7 @@ namespace TrashTD.Development
             if (!enabled)
             {
                 // Drop what the hazard already left behind: heat and fire on deployed operators, cars still to come
-                bool heatMap = bootstrapper != null && bootstrapper.EnvironmentStageId == "STAGE_04";
+                bool heatMap = bootstrapper != null && bootstrapper.Environment == StageEnvironment.FactoryHeat;
                 OperatorManager operators = bootstrapper != null ? bootstrapper.operatorManager : null;
                 if (heatMap && operators != null)
                 {

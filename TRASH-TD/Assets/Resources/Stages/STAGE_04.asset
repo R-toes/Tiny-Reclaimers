@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: STAGE_04
   m_EditorClassIdentifier: TrashTD.Runtime::TrashTD.Data.StageData
   stageId: STAGE_04
+  environment: 4
   mapName: NERC Works Plant
   shortDescription: A massive power plant left unstable after the disaster that crippled the region.
   gridWidth: 14

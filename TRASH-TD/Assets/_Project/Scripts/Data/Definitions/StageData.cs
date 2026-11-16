@@ -42,6 +42,28 @@ namespace TrashTD.Data
     }
 
     /// <summary>
+    /// What a map's environment does. Set on each StageData; the bootstrapper, the combat modifiers, the HUD briefing and the
+    /// sandbox all read this instead of comparing stage ids. The sandbox takes the environment of the map it runs on.
+    /// </summary>
+    public enum StageEnvironment
+    {
+        /// <summary>No environment (the tutorial, the sandbox before it picks a map).</summary>
+        None = 0,
+        /// <summary>Visual only: mist and rain with no gameplay effect (Stage 1).</summary>
+        Weather = 1,
+        /// <summary>Scrap thrown across the battlefield (Stage 2).</summary>
+        FallingItems = 2,
+        /// <summary>Sandstorm: faster enemy attacks, operator attacks can miss (Stage 3).</summary>
+        Sandstorm = 3,
+        /// <summary>Factory heat builds up on operators until they ignite (Stage 4).</summary>
+        FactoryHeat = 4,
+        /// <summary>Cars cross the highway lanes (Stage 5).</summary>
+        Traffic = 5,
+        /// <summary>Acid rain damages operators and enemies (Stage 6).</summary>
+        AcidRain = 6
+    }
+
+    /// <summary>
     /// ScriptableObject defining a complete stage (GDD 1.11 template).
     /// Each stage has 3 difficulty variants (Easy/Normal/Hard) with separate life points.
     /// </summary>
@@ -51,6 +73,18 @@ namespace TrashTD.Data
         [Header("Identity")]
         [Tooltip("Unique stage identifier")]
         public string stageId;
+
+        [Tooltip("What this map's environment does: its hazard and ambient effects. The sandbox copies it from the map it runs on.")]
+        public StageEnvironment environment;
+
+        /// <summary>The map has cars crossing it (its previews show the traffic lanes).</summary>
+        public bool HasTraffic => environment == StageEnvironment.Traffic;
+
+        /// <summary>The environment is more than scenery: it asks the player to play differently (shown in the briefing).</summary>
+        public static bool HasGameplayHazard(StageEnvironment environment)
+        {
+            return environment != StageEnvironment.None && environment != StageEnvironment.Weather;
+        }
 
         [Tooltip("Display name for the map")]
         public string mapName;

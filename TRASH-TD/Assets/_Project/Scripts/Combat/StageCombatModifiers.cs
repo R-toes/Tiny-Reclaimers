@@ -22,14 +22,14 @@ namespace TrashTD.Combat
 
         public static void ConfigureForStage(StageData stageData)
         {
-            ConfigureForEnvironment(stageData != null ? stageData.stageId : null);
+            ConfigureForEnvironment(stageData != null ? stageData.environment : StageEnvironment.None);
         }
 
-        /// <summary>Activates the combat modifiers of the given stage's environment (the sandbox passes its map's stage).</summary>
-        public static void ConfigureForEnvironment(string environmentStageId)
+        /// <summary>Activates the combat modifiers of the given environment (the sandbox passes its map's environment).</summary>
+        public static void ConfigureForEnvironment(StageEnvironment environment)
         {
-            sandstormEnvironment = environmentStageId == "STAGE_03";
-            heatEnvironment = environmentStageId == "STAGE_04";
+            sandstormEnvironment = environment == StageEnvironment.Sandstorm;
+            heatEnvironment = environment == StageEnvironment.FactoryHeat;
             HazardsEnabled = true;
         }
 

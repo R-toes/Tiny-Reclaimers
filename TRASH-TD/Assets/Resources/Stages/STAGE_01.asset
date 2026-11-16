@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Stage_01_BlackwaterFacilities
   m_EditorClassIdentifier: TrashTD.Runtime::TrashTD.Data.StageData
   stageId: STAGE_01
+  environment: 1
   mapName: Blackwater Facilities
   shortDescription: An abandoned NERC research complex hiding the remnants of its secret experiments.
   gridWidth: 12

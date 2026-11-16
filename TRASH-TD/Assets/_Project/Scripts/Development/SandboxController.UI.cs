@@ -783,7 +783,7 @@ namespace TrashTD.Development
             killAllButton = MakeToolbarIcon(toolbar.transform, "icon_skull", DangerColor, "Kill all enemies (the wave stays live)");
             killAllButton.onClick.AddListener(KillAllEnemies);
 
-            GetHazardDescription(bootstrapper != null ? bootstrapper.EnvironmentStageId : null, out bool hasHazard);
+            GetHazardDescription(bootstrapper != null ? bootstrapper.Environment : StageEnvironment.None, out bool hasHazard);
             hazardButton = MakeToolbarIcon(toolbar.transform, "icon_warning", WarnFill, "Map hazard on/off");
             hazardIcon = hazardButton.transform.Find("Icon").GetComponent<Image>();
             hazardButton.onClick.AddListener(ToggleHazard);
@@ -1243,7 +1243,7 @@ namespace TrashTD.Development
         {
             Transform panel = MakeDropdownPanel(Dropdown.Map, out GameObject root);
 
-            string description = GetHazardDescription(bootstrapper != null ? bootstrapper.EnvironmentStageId : null, out bool hasHazard);
+            string description = GetHazardDescription(bootstrapper != null ? bootstrapper.Environment : StageEnvironment.None, out bool hasHazard);
             int split = description.IndexOf('\n');
             GameObject hazard = MakeObject("Hazard", panel);
             hazard.AddComponent<Image>().color = SurfaceColor;

@@ -243,8 +243,8 @@ namespace TrashTD.UI
                 // The tutorial deals each hand when Coalesce is ready (CardDraftOverlayUI.ReleaseHeldDraft)
                 if (TutorialDirector.Instance != null) return TutorialDirector.Instance.HoldsDraft;
                 if (environmentBriefingDismissed || gameManager == null || gameManager.CurrentStage == null) return false;
-                string stageId = stageBootstrapper != null ? stageBootstrapper.EnvironmentStageId : gameManager.CurrentStage.stageId;
-                return stageId == "STAGE_02" || stageId == "STAGE_03" || stageId == "STAGE_04" || stageId == "STAGE_05" || stageId == "STAGE_06";
+                StageEnvironment environment = stageBootstrapper != null ? stageBootstrapper.Environment : gameManager.CurrentStage.environment;
+                return StageData.HasGameplayHazard(environment);
             }
         }
 
@@ -4014,6 +4014,7 @@ namespace TrashTD.UI
 
             // The sandbox shows the briefing for the environment of the map it runs on.
             string environmentStageId = stageBootstrapper != null ? stageBootstrapper.EnvironmentStageId : stage.stageId;
+            StageEnvironment environment = stageBootstrapper != null ? stageBootstrapper.Environment : stage.environment;
             string environmentName = stage.mapName;
             if (environmentStageId != stage.stageId)
             {
@@ -4021,7 +4022,7 @@ namespace TrashTD.UI
                 if (environmentStage != null) environmentName = environmentStage.mapName;
             }
 
-            if (environmentStageId == "STAGE_02")
+            if (environment == StageEnvironment.FallingItems)
             {
                 if (environmentBriefingCardRect != null)
                 {
@@ -4100,7 +4101,7 @@ namespace TrashTD.UI
                     }
                 }
             }
-            else if (environmentStageId == "STAGE_05")
+            else if (environment == StageEnvironment.Traffic)
             {
                 if (environmentBriefingCardRect != null)
                 {
@@ -4217,19 +4218,19 @@ namespace TrashTD.UI
                 environmentBriefingDescription.lineSpacing = 1f;
 
                 string effectDescription;
-                switch (environmentStageId)
+                switch (environment)
                 {
-                    case "STAGE_03":
+                    case StageEnvironment.Sandstorm:
                         effectDescription =
                             "A sandstorm sweeps the battlefield. Attack intervals are 5% shorter, " +
                             "and each attack has a 10% chance to miss.";
                         break;
-                    case "STAGE_04":
+                    case StageEnvironment.FactoryHeat:
                         effectDescription =
                             "Extreme heat builds up on deployed operators each round. " +
                             "Overheated operators ignite and suffer continuous burn damage until retreated to the bench to cool down.";
                         break;
-                    case "STAGE_06":
+                    case StageEnvironment.AcidRain:
                         effectDescription =
                             "Acid rain periodically deals 3 true damage to deployed operators " +
                             "and active enemies every 2 seconds while a wave is running. Operators are protected between waves. " +

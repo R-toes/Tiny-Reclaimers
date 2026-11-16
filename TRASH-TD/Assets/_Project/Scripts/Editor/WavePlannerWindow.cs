@@ -197,7 +197,7 @@ namespace TrashTD.Editor
                 $"Squad limit: {stage.squadSizeLimit}",
                 EditorStyles.miniLabel);
 
-            string effect = GetStageEffectNote(stage.stageId);
+            string effect = GetStageEffectNote(stage.environment);
             if (effect != null) EditorGUILayout.LabelField(effect, EditorStyles.miniLabel);
 
             DrawRebalanceControls();
@@ -245,13 +245,13 @@ namespace TrashTD.Editor
             GUIUtility.ExitGUI();
         }
 
-        /// <summary>Stage effects are still keyed by stage id in code; surfaced here so they are not forgotten while balancing.</summary>
-        private static string GetStageEffectNote(string stageId)
+        /// <summary>The stage's environment effects, surfaced here so they are not forgotten while balancing.</summary>
+        private static string GetStageEffectNote(StageEnvironment environment)
         {
-            return stageId switch
+            return environment switch
             {
-                "STAGE_03" => "Stage effect: Sandstorm (attack interval / miss chance, see StageCombatModifiers).",
-                "STAGE_06" => "Stage effect: Acid rain damage over time (see StageBootstrapper).",
+                StageEnvironment.Sandstorm => "Stage effect: Sandstorm (attack interval / miss chance, see StageCombatModifiers).",
+                StageEnvironment.AcidRain => "Stage effect: Acid rain damage over time (see StageBootstrapper).",
                 _ => null
             };
         }

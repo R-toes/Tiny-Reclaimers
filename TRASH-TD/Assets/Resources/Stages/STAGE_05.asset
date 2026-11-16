@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: STAGE_05
   m_EditorClassIdentifier: TrashTD.Runtime::TrashTD.Data.StageData
   stageId: STAGE_05
+  environment: 5
   mapName: New Calder Basin
   shortDescription: A fortified district serving as the last refuge for survivors within the development zone.
   gridWidth: 13

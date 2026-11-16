@@ -52,10 +52,10 @@ namespace TrashTD.Tests
         [Test]
         public void Stage4Configuration_ActivatesHeatHazard()
         {
-            StageCombatModifiers.ConfigureForEnvironment("STAGE_04");
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.FactoryHeat);
             Assert.IsTrue(StageCombatModifiers.IsHeatHazardActive);
 
-            StageCombatModifiers.ConfigureForEnvironment("STAGE_03");
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.Sandstorm);
             Assert.IsFalse(StageCombatModifiers.IsHeatHazardActive);
         }
 
@@ -117,7 +117,7 @@ namespace TrashTD.Tests
         [Test]
         public void BurningOperator_TakesTwoTrueDamageEveryTick()
         {
-            StageCombatModifiers.ConfigureForEnvironment("STAGE_04");
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.FactoryHeat);
 
             operatorData = ScriptableObject.CreateInstance<OperatorData>();
             operatorData.operatorName = "HighDefenseGuard";
@@ -147,7 +147,7 @@ namespace TrashTD.Tests
         [Test]
         public void WaveStartHeatStackGain_StartsMapFlare()
         {
-            StageCombatModifiers.ConfigureForEnvironment("STAGE_04");
+            StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.FactoryHeat);
 
             operatorData = ScriptableObject.CreateInstance<OperatorData>();
             operatorData.operatorName = "HeatFlareGuard";
