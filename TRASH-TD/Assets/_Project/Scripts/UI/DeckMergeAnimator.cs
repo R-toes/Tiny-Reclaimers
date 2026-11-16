@@ -9,11 +9,11 @@ namespace TrashTD.UI
 {
     /// <summary>
     /// Plays the deck-bar animation when three copies of a card merge (PlayerDeck.OnCardsMerged), on unscaled time:
-    /// 1. Gather (0.2 s): ghosts of the three copies lift out of their slots and glow. A copy that merged without a
-    ///    slot (full deck) drops in from above the result slot.
-    /// 2. Fuse (0.38 s): they swoop into the result slot on little arcs, spinning and shrinking, trailing sparks.
-    /// 3. Burst: a flash and a ring of pixel sparks in the new rarity's colour; the upgraded card pops in (the real slot
-    ///    stays hidden until now) and a "RANK UP" label with the new stars rises above it.
+    /// 1. Gather (0.1 s): ghosts of the three copies lift slightly out of their slots and glow. A copy that merged
+    ///    without a slot (full deck) drops in from above the result slot.
+    /// 2. Fuse (0.24 s): they slide into the result slot on low arcs, turning a little and shrinking, with a few sparks.
+    /// 3. Burst: a soft flash, a faint ring and a few pixel sparks in the new rarity's colour; the upgraded card pops in
+    ///    (the real slot stays hidden until now) and a small "RANK UP" label with the new stars rises above it (0.7 s).
     /// Merges queue and play one after another (a chain 1★→2★→3★ plays twice), and wait while the full draft screen
     /// covers the deck bar. The deck has already reached its final state when they play, so each source card is a
     /// snapshot of its deck slot taken when it merged (GameplayHUDUI.SnapshotDeckSlot). Snapshots stay on screen as
@@ -22,11 +22,15 @@ namespace TrashTD.UI
     /// </summary>
     public sealed class DeckMergeAnimator : MonoBehaviour
     {
-        private const float GatherSeconds = 0.2f;
-        private const float FuseSeconds = 0.38f;
-        private const float PopSeconds = 0.4f;
-        private const float LabelSeconds = 1.3f;
-        private const float TrailInterval = 0.025f;
+        // Kept short and calm (2026-11-16): a merge used to take ~1.9 s with big arcs, fast spins and a 22-spark burst,
+        // which pulled the eye off the map; it is now ~1 s with small moves and a light burst.
+        private const float GatherSeconds = 0.1f;
+        private const float FuseSeconds = 0.24f;
+        private const float PopSeconds = 0.22f;
+        private const float LabelSeconds = 0.7f;
+        private const float TrailInterval = 0.06f;
+        private const int BurstSparkCount = 8;
+        private const float GatherLift = 8f;
 
         /// <summary>Everything one queued merge needs, captured when it happened.</summary>
         public sealed class Request
@@ -258,8 +262,8 @@ namespace TrashTD.UI
                 }
 
                 Vector2 from = ghost.Start;
-                ghost.ArcHeight = Mathf.Lerp(40f, 90f, Mathf.Clamp01(Mathf.Abs(from.x - target.x) / 600f));
-                ghost.Spin = (from.x < target.x ? -1f : 1f) * Random.Range(160f, 260f);
+                ghost.ArcHeight = Mathf.Lerp(14f, 32f, Mathf.Clamp01(Mathf.Abs(from.x - target.x) / 600f));
+                ghost.Spin = (from.x < target.x ? -1f : 1f) * Random.Range(25f, 45f);
                 ghosts.Add(ghost);
             }
         }
@@ -297,29 +301,28 @@ namespace TrashTD.UI
 
                 if (elapsed < GatherSeconds)
                 {
-                    // Lift out of the slot, glowing brighter, with a little shiver
+                    // Lift slightly out of the slot, glowing a little brighter
                     float k = elapsed / GatherSeconds;
-                    float lift = EaseOutBack(k) * 16f;
-                    Vector2 shiver = new Vector2(Mathf.Sin(elapsed * 90f + i * 2f), 0f) * 2f * k;
-                    ghost.Rect.anchoredPosition = ghost.Start + new Vector2(0f, lift) + shiver;
-                    ghost.Rect.localScale = Vector3.one * Mathf.Lerp(1f, 1.08f, k);
-                    Color glowing = Color.Lerp(current.OldColor, Color.white, 0.5f * k);
-                    if (ghost.GlowOnly) glowing.a = 0.7f * k;
+                    float lift = EaseOutCubic(k) * GatherLift;
+                    ghost.Rect.anchoredPosition = ghost.Start + new Vector2(0f, lift);
+                    ghost.Rect.localScale = Vector3.one * Mathf.Lerp(1f, 1.04f, k);
+                    Color glowing = Color.Lerp(current.OldColor, Color.white, 0.3f * k);
+                    if (ghost.GlowOnly) glowing.a = 0.45f * k;
                     ghost.Frame.color = glowing;
                     group.alpha = Mathf.Max(group.alpha, k);
                     continue;
                 }
 
-                // Swoop in: accelerate along an arc, spin and shrink into the result slot
+                // Slide in: ease along a low arc, turn a little and shrink into the result slot
                 float t = Mathf.Clamp01((elapsed - GatherSeconds) / FuseSeconds);
-                float e = t * t * t;
-                Vector2 from = ghost.Start + new Vector2(0f, 16f);
+                float e = t * t;
+                Vector2 from = ghost.Start + new Vector2(0f, GatherLift);
                 Vector2 position = Vector2.Lerp(from, target, e) + new Vector2(0f, Mathf.Sin(t * Mathf.PI) * ghost.ArcHeight);
                 ghost.Rect.anchoredPosition = position;
                 ghost.Rect.localEulerAngles = new Vector3(0f, 0f, ghost.Spin * e);
-                ghost.Rect.localScale = Vector3.one * Mathf.Lerp(1.08f, 0.35f, e);
-                Color fusing = Color.Lerp(Color.Lerp(current.OldColor, Color.white, 0.5f), current.NewColor, t);
-                if (ghost.GlowOnly) fusing.a = 0.7f + 0.3f * t;
+                ghost.Rect.localScale = Vector3.one * Mathf.Lerp(1.04f, 0.45f, e);
+                Color fusing = Color.Lerp(Color.Lerp(current.OldColor, Color.white, 0.3f), current.NewColor, t);
+                if (ghost.GlowOnly) fusing.a = 0.45f + 0.2f * t;
                 ghost.Frame.color = fusing;
                 group.alpha = 1f;
 
@@ -328,7 +331,7 @@ namespace TrashTD.UI
                 {
                     ghost.TrailTimer = TrailInterval;
                     Color trail = Color.Lerp(current.OldColor, current.NewColor, t);
-                    SpawnSpark(position, Random.insideUnitCircle * 40f, Random.Range(0.25f, 0.4f), trail, Random.Range(5f, 8f), 0f);
+                    SpawnSpark(position, Random.insideUnitCircle * 20f, Random.Range(0.15f, 0.25f), trail, Random.Range(3f, 5f), 0f);
                 }
             }
         }
@@ -358,12 +361,12 @@ namespace TrashTD.UI
             ring.gameObject.AddComponent<Outline>().effectColor = Color.white;
             ring.transform.SetAsFirstSibling();
 
-            for (int i = 0; i < 22; i++)
+            for (int i = 0; i < BurstSparkCount; i++)
             {
-                float angle = i / 22f * Mathf.PI * 2f + Random.Range(-0.1f, 0.1f);
+                float angle = i / (float)BurstSparkCount * Mathf.PI * 2f + Random.Range(-0.15f, 0.15f);
                 Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-                Color color = i % 3 == 0 ? Color.white : current.NewColor;
-                SpawnSpark(target, direction * Random.Range(220f, 420f), Random.Range(0.45f, 0.75f), color, Random.Range(6f, 11f), 700f);
+                Color color = i % 4 == 0 ? Color.white : current.NewColor;
+                SpawnSpark(target, direction * Random.Range(110f, 180f), Random.Range(0.22f, 0.35f), color, Random.Range(4f, 6f), 400f);
             }
 
             Ghost card = CreateGhost(current.ResultPortrait, current.NewColor, target);
@@ -372,7 +375,7 @@ namespace TrashTD.UI
             label = new GameObject("MergeLabel", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
             label.SetParent(layer, false);
             label.sizeDelta = new Vector2(260f, 60f);
-            label.anchoredPosition = target + new Vector2(0f, slotSize.y * 0.75f);
+            label.anchoredPosition = target + new Vector2(0f, slotSize.y * 0.7f);
             transients.Add(label.gameObject);
             labelText = CreateLabelText(label, $"RANK UP\n<color=#{ColorUtility.ToHtmlStringRGB(current.NewColor)}>{new string('★', current.NewStars)}</color>");
         }
@@ -382,32 +385,32 @@ namespace TrashTD.UI
             float popK = Mathf.Clamp01(elapsed / PopSeconds);
             if (pop != null)
             {
-                pop.localScale = Vector3.one * Mathf.LerpUnclamped(1.45f, 1f, EaseOutBack(popK));
-                pop.GetComponent<CanvasGroup>().alpha = popK < 0.6f ? 1f : 1f - (popK - 0.6f) / 0.4f;
+                pop.localScale = Vector3.one * Mathf.Lerp(1.15f, 1f, EaseOutCubic(popK));
+                pop.GetComponent<CanvasGroup>().alpha = popK < 0.5f ? 1f : 1f - (popK - 0.5f) / 0.5f;
             }
 
             if (flash != null)
             {
-                float k = Mathf.Clamp01(elapsed / 0.25f);
-                flash.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.6f, 1.6f, k);
-                flash.color = new Color(1f, 1f, 1f, 1f - k);
+                float k = Mathf.Clamp01(elapsed / 0.16f);
+                flash.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.8f, 1.2f, k);
+                flash.color = new Color(1f, 1f, 1f, 0.45f * (1f - k));
             }
 
             if (ring != null)
             {
-                float k = Mathf.Clamp01(elapsed / 0.45f);
-                ring.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.8f, 2.3f, 1f - (1f - k) * (1f - k));
+                float k = Mathf.Clamp01(elapsed / 0.3f);
+                ring.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.9f, 1.6f, 1f - (1f - k) * (1f - k));
                 Color c = current.NewColor;
-                c.a = 0.55f * (1f - k);
+                c.a = 0.3f * (1f - k);
                 ring.color = c;
             }
 
             if (label != null)
             {
                 float k = Mathf.Clamp01(elapsed / LabelSeconds);
-                label.anchoredPosition = target + new Vector2(0f, slotSize.y * 0.75f + 36f * EaseOutCubic(k));
-                label.localScale = Vector3.one * (k < 0.15f ? Mathf.LerpUnclamped(0.4f, 1f, EaseOutBack(k / 0.15f)) : 1f);
-                label.GetComponent<CanvasGroup>().alpha = k < 0.7f ? 1f : 1f - (k - 0.7f) / 0.3f;
+                label.anchoredPosition = target + new Vector2(0f, slotSize.y * 0.7f + 16f * EaseOutCubic(k));
+                label.localScale = Vector3.one * (k < 0.15f ? Mathf.Lerp(0.8f, 1f, EaseOutCubic(k / 0.15f)) : 1f);
+                label.GetComponent<CanvasGroup>().alpha = k < 0.6f ? 1f : 1f - (k - 0.6f) / 0.4f;
             }
 
             if (elapsed >= LabelSeconds) ClearCurrent();
@@ -546,7 +549,7 @@ namespace TrashTD.UI
             rect.offsetMax = Vector2.zero;
             var text = go.GetComponent<Text>();
             text.font = UIFontHelper.GetPixelFont();
-            text.fontSize = 16;
+            text.fontSize = 12;
             text.fontStyle = FontStyle.Bold;
             text.alignment = TextAnchor.MiddleCenter;
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -568,14 +571,6 @@ namespace TrashTD.UI
             Vector3 world = rect.TransformPoint(rect.rect.center);
             Vector3 local = layer.InverseTransformPoint(world);
             return new Vector2(local.x, local.y);
-        }
-
-        private static float EaseOutBack(float t)
-        {
-            const float c1 = 1.70158f;
-            const float c3 = c1 + 1f;
-            float u = t - 1f;
-            return 1f + c3 * u * u * u + c1 * u * u;
         }
 
         private static float EaseOutCubic(float t)

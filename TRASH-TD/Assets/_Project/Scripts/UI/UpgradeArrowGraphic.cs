@@ -5,7 +5,9 @@ namespace TrashTD.UI
 {
     public sealed class UpgradeArrowGraphic : Graphic
     {
-        private int arrowCount;
+        // Serialized so Instantiate copies it: the merge animation's slot snapshots (GameplayHUDUI.SnapshotDeckSlot)
+        // are copies of deck slots, and an unserialized count came out as 0, leaving upgraded cards' badges empty.
+        [SerializeField, HideInInspector] private int arrowCount;
 
         public void SetArrowCount(int count)
         {
