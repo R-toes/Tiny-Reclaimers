@@ -319,7 +319,7 @@ namespace TrashTD.Core.GameLoop
             // Subtle breathing shimmer only on the bottom furnace glow
             if (furnaceUnderglowRenderer != null)
             {
-                float glow = 0.18f + 0.03f * Mathf.Sin(Time.time * 1.1f) + 0.50f * flare;
+                float glow = 0.18f + 0.03f * Mathf.Sin(Time.time * 1.1f) + 0.30f * flare;
                 furnaceUnderglowRenderer.color = new Color(1f, 0.44f, 0.10f, glow);
             }
 
@@ -360,27 +360,54 @@ namespace TrashTD.Core.GameLoop
         }
 
         /// <summary>
+        /// The area the ambient heat effects fill: the grid, plus the bounds artwork around it when the stage has it
+        /// (so the underglow, embers and floor mist reach the scenery outside the playable field too).
+        /// </summary>
+        private void GetAtmosphereArea(out float width, out float height, out Vector3 center)
+        {
+            float cellSize = gridManager.CellSize;
+            Vector2 gridMin = gridManager.GridToWorldPosition(0, 0) - new Vector3(cellSize * 0.5f, cellSize * 0.5f, 0f);
+            Vector2 min = gridMin;
+            Vector2 max = gridMin + new Vector2(stageData.gridWidth, stageData.gridHeight) * cellSize;
+
+            if (stageData.boundsVisualSprite != null)
+            {
+                float pixelsPerTile = stageData.visualTilePixelSize > 0 ? stageData.visualTilePixelSize : 32f;
+                Vector2 boundsMin = gridMin + stageData.boundsTileOffset * cellSize;
+                Vector2 boundsMax = boundsMin + stageData.boundsVisualSprite.rect.size / pixelsPerTile * cellSize;
+                min = Vector2.Min(min, boundsMin);
+                max = Vector2.Max(max, boundsMax);
+            }
+
+            width = max.x - min.x;
+            height = max.y - min.y;
+            center = new Vector3((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f, 0f);
+        }
+
+        /// <summary>
         /// Warms up the map palette with ambient furnace lighting and heat overlays.
         /// </summary>
         private void ApplyWarmMapAtmosphere()
         {
             if (gridManager == null || stageData == null) return;
 
-            float cellSize = gridManager.CellSize;
-            float mapWidth = stageData.gridWidth * cellSize;
-            float mapHeight = stageData.gridHeight * cellSize;
-            Vector3 gridBottomLeft = gridManager.GridToWorldPosition(0, 0)
-                - new Vector3(cellSize * 0.5f, cellSize * 0.5f, 0f);
-            Vector3 mapCenter = gridBottomLeft + new Vector3(mapWidth * 0.5f, mapHeight * 0.5f, 0f);
+            GetAtmosphereArea(out float areaWidth, out float areaHeight, out Vector3 areaCenter);
 
             var atmosphereRoot = new GameObject("Stage4WarmAtmosphere");
             atmosphereRoot.transform.SetParent(transform, false);
 
-            // Vertical thermal gradient: warm at the bottom floor, fading to completely cool/natural at the top
+            // Vertical thermal gradient over the whole area (the bounds art when the stage has it): the strongest warm glow
+            // at the bottom, where the lava is, fading smoothly to completely cool/natural over its lower 60%. One quad, so
+            // there is no seam. The sprite is sized by its own bounds: it used to be scaled as if it were 1 x 1 unit, which
+            // stretched its 64 gradient pixels over 64 times the map and left only a flat, near-invisible tint.
             var underglowObj = new GameObject("VerticalThermalGradient");
             underglowObj.transform.SetParent(atmosphereRoot.transform, false);
-            underglowObj.transform.position = mapCenter + new Vector3(0f, 0f, -0.02f);
-            underglowObj.transform.localScale = new Vector3(mapWidth + 2f, mapHeight, 1f);
+            underglowObj.transform.position = areaCenter + new Vector3(0f, 0f, -0.02f);
+            Vector2 gradientSize = GetVerticalThermalGradientSprite().bounds.size;
+            underglowObj.transform.localScale = new Vector3(
+                (areaWidth + 2f) / Mathf.Max(0.001f, gradientSize.x),
+                areaHeight / Mathf.Max(0.001f, gradientSize.y),
+                1f);
 
             furnaceUnderglowRenderer = underglowObj.AddComponent<SpriteRenderer>();
             furnaceUnderglowRenderer.sprite = GetVerticalThermalGradientSprite();
@@ -408,11 +435,7 @@ namespace TrashTD.Core.GameLoop
             if (gridManager == null || stageData == null) return;
 
             float cellSize = gridManager.CellSize;
-            float mapWidth = stageData.gridWidth * cellSize;
-            float mapHeight = stageData.gridHeight * cellSize;
-            Vector3 gridBottomLeft = gridManager.GridToWorldPosition(0, 0)
-                - new Vector3(cellSize * 0.5f, cellSize * 0.5f, 0f);
-            Vector3 mapCenter = gridBottomLeft + new Vector3(mapWidth * 0.5f, mapHeight * 0.5f, 0f);
+            GetAtmosphereArea(out float mapWidth, out float mapHeight, out Vector3 mapCenter);
             emberFlareMinX = mapCenter.x - mapWidth * 0.5f;
             emberFlareMaxX = mapCenter.x + mapWidth * 0.5f;
             emberFlareY = mapCenter.y - mapHeight * 0.42f;
@@ -439,11 +462,13 @@ namespace TrashTD.Core.GameLoop
             main.startSize = new ParticleSystem.MinMaxCurve(0.035f, 0.13f);
             main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.86f, 0.42f, 0.95f), new Color(1f, 0.55f, 0.16f, 0.9f));
             main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = 600;
+            main.maxParticles = Mathf.RoundToInt(600 * Mathf.Max(1f, mapWidth / (stageData.gridWidth * cellSize)));
 
             // Emission
             var emission = ps.emission;
-            emission.rateOverTime = NormalEmberEmissionRate;
+            // The emitter bar is as wide as the bounds art, so the rate grows with it: the same embers per tile as before
+            float emberDensity = Mathf.Max(1f, mapWidth / (stageData.gridWidth * cellSize));
+            emission.rateOverTime = NormalEmberEmissionRate * emberDensity;
 
             // Shape: horizontal emitter bar along the bottom of the map
             var shape = ps.shape;
@@ -838,7 +863,7 @@ namespace TrashTD.Core.GameLoop
         {
             if (verticalThermalGradientSprite == null)
             {
-                const int h = 64;
+                const int h = 128;
                 var tex = new Texture2D(2, h, TextureFormat.RGBA32, false);
                 tex.filterMode = FilterMode.Bilinear;
                 tex.wrapMode = TextureWrapMode.Clamp;
@@ -846,8 +871,9 @@ namespace TrashTD.Core.GameLoop
                 for (int y = 0; y < h; y++)
                 {
                     float t = (float)y / (h - 1); // 0 at bottom, 1 at top
-                    // Strong warm glow at bottom, gradually fading — top ~40% is completely cool
-                    float alpha = t < 0.60f ? Mathf.Pow(1f - (t / 0.60f), 1.6f) : 0f;
+                    // Strong warm glow at bottom, easing out smoothly — top ~40% is completely cool
+                    float u = Mathf.Clamp01(t / 0.60f);
+                    float alpha = 1f - u * u * (3f - 2f * u);
                     Color c = new Color(1f, 1f, 1f, alpha);
                     colors[y * 2] = c;
                     colors[y * 2 + 1] = c;
@@ -1048,11 +1074,7 @@ namespace TrashTD.Core.GameLoop
             if (gridManager == null || stageData == null) return;
 
             float cellSize = gridManager.CellSize;
-            float mapWidth = stageData.gridWidth * cellSize;
-            float mapHeight = stageData.gridHeight * cellSize;
-            Vector3 gridBottomLeft = gridManager.GridToWorldPosition(0, 0)
-                - new Vector3(cellSize * 0.5f, cellSize * 0.5f, 0f);
-            Vector3 mapCenter = gridBottomLeft + new Vector3(mapWidth * 0.5f, mapHeight * 0.5f, 0f);
+            GetAtmosphereArea(out float mapWidth, out float mapHeight, out Vector3 mapCenter);
 
             var mistObj = new GameObject("Stage4FloorMist");
             mistObj.transform.SetParent(transform, false);
@@ -1068,10 +1090,11 @@ namespace TrashTD.Core.GameLoop
             main.startSize = new ParticleSystem.MinMaxCurve(1.6f, 2.8f);
             main.startRotation = new ParticleSystem.MinMaxCurve(0f, 360f * Mathf.Deg2Rad);
             main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = 40;
+            float mistDensity = Mathf.Max(1f, mapWidth / (stageData.gridWidth * cellSize));
+            main.maxParticles = Mathf.RoundToInt(40 * mistDensity);
 
             var emission = ps.emission;
-            emission.rateOverTime = 3.5f;
+            emission.rateOverTime = 3.5f * mistDensity;
 
             var shape = ps.shape;
             shape.shapeType = ParticleSystemShapeType.Box;

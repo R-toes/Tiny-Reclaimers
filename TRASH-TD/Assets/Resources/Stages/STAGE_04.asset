@@ -24,8 +24,8 @@ MonoBehaviour:
   upperBackgroundVisualSprites: []
   visualTilePixelSize: 32
   visualTileOffset: {x: 0, y: 0}
-  boundsVisualSprite: {fileID: 0}
-  boundsTileOffset: {x: 0, y: 0}
+  boundsVisualSprite: {fileID: -3172816656757855347, guid: 1d4b9d209a2ce8943b8880169e097fa3, type: 3}
+  boundsTileOffset: {x: -3, y: -4}
   midgroundVisualSprites: []
   foregroundVisualSprite: {fileID: 0}
   trafficVehicleSprites: []
