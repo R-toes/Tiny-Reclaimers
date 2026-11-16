@@ -2617,8 +2617,12 @@ namespace TrashTD.Editor
                 }
             }
 
-            // The scenery around the map: the 576x256 extended art holds the 384x256 map 3 tiles in from the left
-            var boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 6/Level 6 extended.png");
+            // The scenery around the map: the 576x288 expanded art holds the 384x256 map 3 tiles in from the left and 1 tile below
+            var boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 6/Level 6 expanded.png");
+            if (boundsSprites == null || boundsSprites.Length == 0)
+                boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 6/level 6 expanded.png");
+            if (boundsSprites == null || boundsSprites.Length == 0)
+                boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 6/Level 6 extended.png");
             if (boundsSprites == null || boundsSprites.Length == 0)
                 boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 6/level 6 extended.png");
 
@@ -2633,7 +2637,7 @@ namespace TrashTD.Editor
                     }
                 }
             }
-            stage.boundsTileOffset = new Vector2(-3f, -1f);
+            stage.boundsTileOffset = new Vector2(-3f, -2f);
 
             stage.backgroundVisualSprite = null;
             stage.upperBackgroundVisualSprites = null;
