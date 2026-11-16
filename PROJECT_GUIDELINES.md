@@ -883,7 +883,7 @@ Added 2026-10-30. `TrashTD.Development.DevMode.IsEnabled` decides whether develo
 - **New dev-only tools must check `DevMode.IsEnabled`.** Never leave a dev tool reachable in player mode.
 - **Stage unlocks:** dev mode opens every stage and difficulty (`StageProgress.IsUnlocked`). Turn it off to see the real locks (§7.10).
 
-**QA Sandbox UI** (`SandboxController`; state and actions in `SandboxController.cs`, UI in `SandboxController.UI.cs`; reworked 2026-11-01). **The map stays clear:** nothing permanent covers the playfield. A toolbar (46 px tall, 14 px labels and 22 px icons, enlarged 2026-11-01 for readability) sits under the HUD top bar's right end, with a one-line readout under it (mode PRE-WAVE / WAVE LIVE, TIME, ALIVE, QUEUED/TO SPAWN, KILLS, LEAKS). The toolbar has five dropdown buttons (ENEMIES, OPERATORS, WAVES, QUEUE with a count, MAP) and four icons: kill all (greyed out when nothing is alive), hazard on/off (only on maps with a hazard), stats card, and hide (leaves a small SANDBOX button).
+**QA Sandbox UI** (`SandboxController`; state and actions in `SandboxController.cs`, UI in `SandboxController.UI.cs` (refresh and tooltip), `SandboxController.UIBuild.cs` (building it) and `SandboxController.UIHelpers.cs`; reworked 2026-11-01). **The map stays clear:** nothing permanent covers the playfield. A toolbar (46 px tall, 14 px labels and 22 px icons, enlarged 2026-11-01 for readability) sits under the HUD top bar's right end, with a one-line readout under it (mode PRE-WAVE / WAVE LIVE, TIME, ALIVE, QUEUED/TO SPAWN, KILLS, LEAKS). The toolbar has five dropdown buttons (ENEMIES, OPERATORS, WAVES, QUEUE with a count, MAP) and four icons: kill all (greyed out when nothing is alive), hazard on/off (only on maps with a hazard), stats card, and hide (leaves a small SANDBOX button).
 - **START/END WAVE is the HUD's button only** (`GameplayHUDUI.StartWave` → `SandboxController.ToggleWave`). Don't add a second one to the sandbox UI.
 - **Dropdowns:** only one is open at a time, right-aligned under the readout. Each closes from its own button, from opening another one, or with Esc. They **don't** close when you click the map, so you can spawn mid-wave or deploy with one open. A list's height follows its content, capped so the panel stays above the deck bar (`FitDropdown`); longer lists scroll. `FitDropdown` must rebuild the list content as well as the panel before measuring: the panel rebuild stops at the Viewport, so without it a panel opened for the first time came out cut off (fixed 2026-11-02).
 - **ENEMIES:** a search box, ×1/×5/×10 amount, archetype filter chips (icons) and a grid of tiles (sprite, class icon, name, base HP, gold badge with the number queued). Pre-wave, a click queues the amount (repeat clicks grow the last hand-queued line) and a right-click removes it, newest lines first. Mid-wave, a click spawns the amount at once.
@@ -1008,3 +1008,26 @@ Player **progress** lives in one JSON file, written by `SaveSystem` (`Systems/Sa
 - **Settings stay in PlayerPrefs** (audio, graphics, controls, gameplay options): they belong to the machine, not the save.
 - **Migration:** the first time the file is read, the old PlayerPrefs progress keys (`TrashTD.Progress.*`, `TrashTD.TutorialDone`, `TrashTD.Intel.*`) are copied into it and deleted from PlayerPrefs (the registry on Windows). `SaveData.legacyPrefsImported` marks it done.
 - **Resetting:** `PlayerProgress.ResetAll()` deletes the save file and its backup and clears the session caches. In the game: **Settings → Gameplay → SAVE DATA → RESET** (main menu only; click twice to confirm, then the menu reloads). In the editor: **TRASH TD → Reset Player Progress**. No more registry editing.
+
+## Code layout: big classes are split into partial files (2026-11-17)
+
+The largest classes were split into `partial class` files by topic. Nothing was rewritten: members only moved, so behaviour is identical. Find a member by its topic; the file named after the class holds the fields, nested types, lifecycle and public entry points. **Keep new code in the part that matches its topic, and keep every file under about 1000 lines** (the biggest part today is about 870; the biggest whole class file, `CombatFxArt`, is about 970); when a part grows past that, split it by topic the same way (and add a new `.cs.meta`).
+
+| Class | Parts (`Class.Part.cs` next to `Class.cs`) |
+|---|---|
+| `GameplayHUDUI` | `OperatorPanel` (HUD assembly, details panel, effect badges), `Placement` (placement controls), `SelectedOperator` (selected-operator label and its details), `TopBar` (wave and hostile readouts, next-wave preview, lives tube), `DeckBar` (deck bar, bottom-right panel, trash zone, path preview, discard, speed), `DeckSlots` (slots, class icons, cooldown and heat badges), `FramiliarMenu`, `Overlays` (phase banner, environment briefing, pause panel), `Interaction` (phase handling, deck selection and dragging, keys, pause), `Animation` (event handlers, per-frame animation, banner routines), `Styling` (button and panel styles, helpers) |
+| `CardDraftOverlayUI` | `Lifecycle`, `CardDealing` (shuffle, deal, flip), `Interaction` (details panel, actions, state), `DraftOdds` (slot-machine reels), `Minimize` (minimize, intro/hide, feedback), `BuildOverlay`, `BuildCards`, `BuildDetails`, `Helpers` |
+| `MainMenuController` | `TitleScreen`, `StageMap`, `StageDetails` (selection, difficulty), `Transitions` (play/exit, fades, entrance), `Helpers` |
+| `ReclaimersIntelUI` | `Data`, `Build`, `Gallery`, `Detail`, `Helpers` |
+| `EnemyBase` | `Behavior`, `Movement`, `Damage`, `Blocking`, `StatusEffects` |
+| `StageBootstrapper` | `MapArt`, `Placement`, `Update` (frame update and environment hazards), `Selection`, `PlacementPreview` |
+| `ResicochetOperator` | `Frames`, `Crystals`, `Combat` |
+| `OperatorBase` | `Stats` (range, interval, modifiers, blocking), `StatusEffects` (stun, bind), `Combat` (update, damage, healing), `Death` (dying, skills, stat effects) |
+| `Stage4HeatHazard` | `Atmosphere` (warm map, embers, heat flare particles), `Steam` (vents, floor mist) |
+| `Stage6AcidRainVisuals` | `Build`, `Simulation`, `Sprites` |
+| `TutorialDialogueUI` | `Animation`, `Build`, `Layout` |
+| `SandboxController` | `UI`, `UIBuild`, `UIHelpers` (plus `SandboxController.cs`) |
+| `InitialAssetGenerator` (editor) | `Operators`, `OperatorPrefabs`, `Enemies`, `Stage1`, `Stage2`, `Stage3`, `Stage5`, `Stage6`, `Waves` |
+| `Stage5AndHoleTileTests` | `Stage5`, `Operators`, `Deployment` |
+
+Static fields: the order in which the parts of a partial class initialise their static fields is not defined. The split parts only hold constants and self-contained static initialisers (a colour, an empty dictionary, a literal array), which is safe. **A static field whose initialiser reads another static field must be declared in the same file as it.**
