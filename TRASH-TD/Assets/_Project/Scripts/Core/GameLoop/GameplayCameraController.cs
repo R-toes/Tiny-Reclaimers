@@ -203,11 +203,12 @@ namespace TrashTD.Core.GameLoop
             min = new Vector2(mapBounds.xMin + halfWidth - centre.x, mapBounds.yMin + halfHeight - centre.y);
             max = new Vector2(mapBounds.xMax - halfWidth - centre.x, mapBounds.yMax - halfHeight - centre.y);
 
-            // A view bigger than the bounds on an axis can't be kept inside: centre it horizontally.
-            // On Y, align the top of the bounds artwork to the bottom of the top HUD bar (Stage 5 and 6)
-            // so the sprite snaps on top without black void.
+            // A view bigger than the bounds on an axis can't be kept inside: centre it there. The same rule on every stage
+            // (there used to be a Stage 5 / 6 special case that pinned the bounds' top edge under the top bar, which made
+            // the view jump as soon as zooming out passed the bounds' height). CenterCameraOnGrid sizes the home view to
+            // fit the bounds, so this only applies when the playable grid itself doesn't fit.
             if (min.x > max.x) min.x = max.x = (min.x + max.x) * 0.5f;
-            if (min.y > max.y) min.y = max.y = (mapBounds.yMax - size * (1f - 2f * TopHudFraction)) - centre.y;
+            if (min.y > max.y) min.y = max.y = (min.y + max.y) * 0.5f;
         }
 
         /// <summary>
