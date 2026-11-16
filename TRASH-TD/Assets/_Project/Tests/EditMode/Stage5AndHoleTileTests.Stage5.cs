@@ -1,0 +1,608 @@
+using System.Collections.Generic;
+using NUnit.Framework;
+using UnityEngine;
+using TrashTD.Core.GameLoop;
+using TrashTD.Core.Grid;
+using TrashTD.Core.Pathfinding;
+using TrashTD.Data;
+using TrashTD.Enemies;
+using TrashTD.Operators;
+using TrashTD.Systems;
+using TrashTD.UI;
+
+namespace TrashTD.Tests
+{
+    // Stage 5 asset checks, paths and the traffic cars.
+    public partial class Stage5AndHoleTileTests
+    {
+        [Test]
+        public void Stage5_AssetValidation_MatchesSpecifications()
+        {
+            var stage5 = Resources.Load<StageData>("Stages/STAGE_05");
+            Assert.IsNotNull(stage5, "STAGE_05 asset should be loaded from Resources/Stages.");
+
+            Assert.AreEqual("STAGE_05", stage5.stageId);
+            Assert.AreEqual("Boulevard", stage5.mapName);
+            Assert.AreEqual(13, stage5.gridWidth);
+            Assert.AreEqual(8, stage5.gridHeight);
+            Assert.AreEqual(32, stage5.visualTilePixelSize);
+            Assert.AreEqual(new Vector2(0, -1), stage5.visualTileOffset);
+
+            Assert.IsNotNull(stage5.mapVisualSprite, "mapVisualSprite should be set (Level 5 complete).");
+            Assert.IsNotNull(stage5.foregroundVisualSprite, "foregroundVisualSprite should be set (Level 5 bottom).");
+
+            Assert.AreEqual(6, stage5.spawnPoints.Length, "Stage 5 must have 6 spawn points.");
+            Assert.AreEqual(1, stage5.exitPoints.Length, "Stage 5 must have 1 exit point.");
+            Assert.AreEqual(new Vector2Int(12, 6), stage5.exitPoints[0]);
+
+            // Validate Hole tiles at (5, 0) and (8, 6)
+            Assert.AreEqual(TileType.Hole, stage5.GetTile(5, 0), "Tile (5, 0) should be TileType.Hole.");
+            Assert.AreEqual(TileType.Hole, stage5.GetTile(8, 6), "Tile (8, 6) should be TileType.Hole.");
+
+            // Validate Exit at (12, 6)
+            Assert.AreEqual(TileType.ExitPoint, stage5.GetTile(12, 6), "Tile (12, 6) should be TileType.ExitPoint.");
+
+            // Validate Spawns at (3,7), (4,7), (0,5), (0,4), (0,1), (12,1)
+            Assert.AreEqual(TileType.SpawnPoint, stage5.GetTile(3, 7));
+            Assert.AreEqual(TileType.SpawnPoint, stage5.GetTile(4, 7));
+            Assert.AreEqual(TileType.SpawnPoint, stage5.GetTile(0, 5));
+            Assert.AreEqual(TileType.SpawnPoint, stage5.GetTile(0, 4));
+            Assert.AreEqual(TileType.SpawnPoint, stage5.GetTile(0, 1));
+            Assert.AreEqual(TileType.SpawnPoint, stage5.GetTile(12, 1));
+
+            // Validate waves
+            Assert.IsNotNull(stage5.wavesEasy);
+            Assert.GreaterOrEqual(stage5.wavesEasy.Length, 10);
+            Assert.IsNotNull(stage5.wavesNormal);
+            Assert.GreaterOrEqual(stage5.wavesNormal.Length, 20);
+            Assert.IsNotNull(stage5.wavesHard);
+            Assert.GreaterOrEqual(stage5.wavesHard.Length, 30);
+        }
+
+        [Test]
+        public void Stage5_EnemyPaths_MatchReroutedDesign()
+        {
+            var stage5 = Resources.Load<StageData>("Stages/STAGE_05");
+            Assert.IsNotNull(stage5, "STAGE_05 asset should be loaded.");
+            Assert.IsNotNull(stage5.enemyPaths);
+            Assert.AreEqual(6, stage5.enemyPaths.Length, "Stage 5 should have 6 configured enemy paths.");
+
+            var exitPos = new Vector2Int(12, 6);
+
+            for (int i = 0; i < stage5.enemyPaths.Length; i++)
+            {
+                var path = stage5.enemyPaths[i];
+                Assert.AreEqual(i, path.spawnPointIndex);
+                Assert.AreEqual(0, path.exitPointIndex);
+                Assert.AreEqual(stage5.spawnPoints[i], path.waypoints[0], $"Path {i} should start at spawn point {stage5.spawnPoints[i]}.");
+                Assert.AreEqual(exitPos, path.waypoints[path.waypoints.Length - 1], $"Path {i} should end at exit point {exitPos}.");
+
+                // Validate each waypoint is on a walkable/hole/exit tile
+                foreach (var wp in path.waypoints)
+                {
+                    TileType tile = stage5.GetTile(wp.x, wp.y);
+                    Assert.IsTrue(tile == TileType.LowGround || tile == TileType.SpawnPoint || tile == TileType.Hole || tile == TileType.ExitPoint,
+                        $"Waypoint {wp} in path {i} must be on walkable, spawn, hole, or exit tile (found {tile}).");
+                }
+            }
+
+            // Path 0: (3,7) -> down col 3 to (3,1) -> hole (5,0) -> teleport to (8,6) -> row 5 -> exit (12,6)
+            var p0 = stage5.enemyPaths[0].waypoints;
+            CollectionAssert.Contains(p0, new Vector2Int(3, 1));
+            CollectionAssert.Contains(p0, new Vector2Int(5, 0));
+            CollectionAssert.Contains(p0, new Vector2Int(8, 6));
+            CollectionAssert.Contains(p0, new Vector2Int(8, 5));
+            CollectionAssert.Contains(p0, new Vector2Int(12, 5));
+
+            // Path 1: (4,7) -> down col 4 to (4,1) -> hole (5,0) -> teleport to (8,6) -> row 4 -> exit (12,6)
+            var p1 = stage5.enemyPaths[1].waypoints;
+            CollectionAssert.Contains(p1, new Vector2Int(4, 1));
+            CollectionAssert.Contains(p1, new Vector2Int(5, 0));
+            CollectionAssert.Contains(p1, new Vector2Int(8, 6));
+            CollectionAssert.Contains(p1, new Vector2Int(8, 4));
+            CollectionAssert.Contains(p1, new Vector2Int(12, 4));
+
+            // Path 2: (0,5) -> straight row 5 -> exit (12,6)
+            var p2 = stage5.enemyPaths[2].waypoints;
+            CollectionAssert.Contains(p2, new Vector2Int(0, 5));
+            CollectionAssert.Contains(p2, new Vector2Int(6, 5));
+            CollectionAssert.Contains(p2, new Vector2Int(12, 5));
+
+            // Path 3: (0,4) -> straight row 4 -> (12,4) -> (12,5) -> exit (12,6)
+            var p3 = stage5.enemyPaths[3].waypoints;
+            CollectionAssert.Contains(p3, new Vector2Int(0, 4));
+            CollectionAssert.Contains(p3, new Vector2Int(6, 4));
+            CollectionAssert.Contains(p3, new Vector2Int(12, 4));
+
+            // Path 4: (0,1) -> row 1 to (3,1) -> up col 3 to (3,5) -> row 5 -> exit (12,6)
+            var p4 = stage5.enemyPaths[4].waypoints;
+            CollectionAssert.Contains(p4, new Vector2Int(0, 1));
+            CollectionAssert.Contains(p4, new Vector2Int(3, 1));
+            CollectionAssert.Contains(p4, new Vector2Int(3, 3));
+            CollectionAssert.Contains(p4, new Vector2Int(3, 5));
+            CollectionAssert.Contains(p4, new Vector2Int(6, 5));
+
+            // Path 5: (12,1) -> row 1 to (4,1) -> up col 4 to (4,4) -> row 4 -> exit (12,6)
+            var p5 = stage5.enemyPaths[5].waypoints;
+            CollectionAssert.Contains(p5, new Vector2Int(12, 1));
+            CollectionAssert.Contains(p5, new Vector2Int(8, 1));
+            CollectionAssert.Contains(p5, new Vector2Int(4, 1));
+            CollectionAssert.Contains(p5, new Vector2Int(4, 3));
+            CollectionAssert.Contains(p5, new Vector2Int(4, 4));
+            CollectionAssert.Contains(p5, new Vector2Int(8, 4));
+            CollectionAssert.Contains(p5, new Vector2Int(12, 4));
+        }
+
+        [Test]
+        public void Stage5_TrafficVehicleSprites_LoadedAndThreeVariants()
+        {
+            var stage5 = Resources.Load<StageData>("Stages/STAGE_05");
+            Assert.IsNotNull(stage5, "STAGE_05 asset should exist.");
+            Assert.IsNotNull(stage5.trafficVehicleSprites, "trafficVehicleSprites should be assigned.");
+            Assert.AreEqual(3, stage5.trafficVehicleSprites.Length, "Should have 3 vehicle sprite variants.");
+
+            for (int i = 0; i < stage5.trafficVehicleSprites.Length; i++)
+            {
+                var sprite = stage5.trafficVehicleSprites[i];
+                Assert.IsNotNull(sprite, $"Vehicle sprite {i} should not be null.");
+                Assert.AreEqual(96, sprite.rect.width, $"Sprite {i} width should be 96.");
+                Assert.AreEqual(48, sprite.rect.height, $"Sprite {i} height should be 48.");
+            }
+        }
+
+        [Test]
+        public void Stage5CarEncounter_MultiRoll_GeneratesZeroToFiveCarsWithIntervals()
+        {
+            var encounterObj = new GameObject("TestCarEncounter");
+            var encounter = encounterObj.AddComponent<Stage5CarEncounter>();
+            encounter.Initialize(gridManager, null, null, null, null);
+
+            // Test 100% chance roll -> exactly 5 cars
+            var fullRoll = encounter.RollAndScheduleCarsForWave(1.0f, 5);
+            Assert.AreEqual(5, fullRoll.Count, "100% chance should result in 5 scheduled cars.");
+            Assert.AreEqual(5, encounter.QueuedCarCount, "Spawn queue should contain 5 cars.");
+
+            float prevTimestamp = 0f;
+            for (int i = 0; i < fullRoll.Count; i++)
+            {
+                var car = fullRoll[i];
+                Assert.IsTrue(car.laneY == Stage5CarEncounter.TopLaneY || car.laneY == Stage5CarEncounter.BottomLaneY,
+                    $"Lane should be {Stage5CarEncounter.TopLaneY} or {Stage5CarEncounter.BottomLaneY}.");
+                float interval = car.intervalSeconds;
+                Assert.GreaterOrEqual(interval, Stage5CarEncounter.MinIntervalSeconds - 0.01f);
+                Assert.LessOrEqual(interval, Stage5CarEncounter.MaxIntervalSeconds + 0.01f);
+                prevTimestamp = car.spawnTimestamp;
+            }
+
+            // Test 0% chance roll -> 0 cars
+            var zeroRoll = encounter.RollAndScheduleCarsForWave(0.0f, 5);
+            Assert.AreEqual(0, zeroRoll.Count, "0% chance should result in 0 scheduled cars.");
+
+            Object.DestroyImmediate(encounterObj);
+        }
+
+        [Test]
+        public void Stage5TrafficCar_DamageCalculation_SeparateCountersAndTrueDamage()
+        {
+            var stage5 = Resources.Load<StageData>("Stages/STAGE_05");
+            gridManager.InitializeFromStageData(stage5);
+
+            var enemyMgrObj = new GameObject("TestEnemyMgr");
+            var enemyMgr = enemyMgrObj.AddComponent<EnemyManager>();
+            enemyMgr.Initialize(gridManager);
+
+            var opMgrObj = new GameObject("TestOpMgr");
+            var opMgr = opMgrObj.AddComponent<OperatorManager>();
+            opMgr.Initialize(gridManager);
+
+            // Spawn Enemy A at tile x=8, y=5
+            var enemyAObj = new GameObject("EnemyA");
+            enemyAObj.transform.position = gridManager.GridToWorldPosition(8, 5);
+            var enemyA = enemyAObj.AddComponent<GruntEnemy>();
+            var enemyAData = ScriptableObject.CreateInstance<EnemyData>();
+            enemyAData.baseHP = 1000;
+            enemyAData.baseDEF = 50;
+            enemyAData.movementType = EnemyMovementType.Ground;
+            enemyA.Initialize(enemyAData, 0);
+            enemyMgr.RegisterEnemy(enemyA);
+
+            // Spawn Enemy B at tile x=10, y=5 (2 tiles after Enemy A)
+            var enemyBObj = new GameObject("EnemyB");
+            enemyBObj.transform.position = gridManager.GridToWorldPosition(10, 5);
+            var enemyB = enemyBObj.AddComponent<GruntEnemy>();
+            var enemyBData = ScriptableObject.CreateInstance<EnemyData>();
+            enemyBData.baseHP = 1000;
+            enemyBData.baseDEF = 50;
+            enemyBData.movementType = EnemyMovementType.Ground;
+            enemyB.Initialize(enemyBData, 0);
+            enemyMgr.RegisterEnemy(enemyB);
+
+            // Spawn Ally at tile x=8, y=5 (same tile as Enemy A)
+            var opObj = new GameObject("TestAlly");
+            opObj.transform.position = gridManager.GridToWorldPosition(8, 5);
+            var op = opObj.AddComponent<BulkheadOperator>();
+            var opData = ScriptableObject.CreateInstance<OperatorData>();
+            opData.baseHP = 500;
+            opData.baseDEF = 50;
+            opData.operatorClass = OperatorClass.Defender;
+            op.Initialize(opData, OperatorRarity.Star1);
+            op.Deploy(gridManager.GetCell(8, 5));
+            opMgr.RegisterOperator(op);
+
+            // Spawn Car on Lane 5
+            var carObj = new GameObject("Car");
+            var car = carObj.AddComponent<Stage5TrafficCar>();
+            car.Initialize(5, null, gridManager, enemyMgr, opMgr, speed: 10f, sortingOrder: 9);
+
+            // Verify visual sorting order is 9 (below overlay 10)
+            var sr = car.GetComponent<SpriteRenderer>();
+            Assert.AreEqual(9, sr.sortingOrder, "Car sprite should be sortingOrder 9.");
+
+            // Move car forward so front reaches x=8.5 (hitting Enemy A and Ally)
+            // Car starts at x=0 (cell0CenterX=0.5, startX=0.5). At x=8.5, distance to tile 8 is 8.0 tiles!
+            car.transform.position = new Vector3(gridManager.GridToWorldPosition(8, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
+            car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
+
+            // Enemy A at tile 8 (8 tiles from start) takes 40 + (8/2)*20 = 120 true damage -> 880 HP remaining
+            Assert.AreEqual(880, enemyA.CurrentHP, "Enemy A should take 120 true damage (40 + 4*20) leaving 880 HP.");
+
+            // Ally at tile 8 (8 tiles from start) takes 120 true damage (ignoring DEF 50) -> 380 HP remaining
+            Assert.AreEqual(380, op.CurrentHP, "Ally should take 120 true damage (40 + 4*20) ignoring DEF, leaving 380 HP.");
+
+            // First operator hit was not killed, so it should be stunned!
+            Assert.IsTrue(op.IsStunned, "First operator hit should be stunned when surviving.");
+            Assert.AreEqual(0, op.GetBlockCount(), "Stunned operator should have 0 block capacity.");
+            Assert.IsFalse(op.TryBlock(enemyB), "Stunned operator cannot block.");
+
+            // Now move car to tile 10 (2 tiles after Enemy A)
+            // Enemy counter reset at tile 8, so Enemy B at tile 10 takes 40 + (2/2)*20 = 60 damage -> 940 HP remaining
+            car.transform.position = new Vector3(gridManager.GridToWorldPosition(10, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
+            car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
+
+            Assert.AreEqual(940, enemyB.CurrentHP, "Enemy B at tile 10 should take 60 true damage (40 + 1*20) since counter reset at Enemy A.");
+
+            // Clean up
+            Object.DestroyImmediate(carObj);
+            Object.DestroyImmediate(enemyAObj);
+            Object.DestroyImmediate(enemyBObj);
+            Object.DestroyImmediate(enemyAData);
+            Object.DestroyImmediate(enemyBData);
+            Object.DestroyImmediate(opObj);
+            Object.DestroyImmediate(opData);
+            Object.DestroyImmediate(enemyMgrObj);
+            Object.DestroyImmediate(opMgrObj);
+        }
+
+
+        [Test]
+        public void Stage5TrafficCar_HitsOperator_SlowsDownThenRecoversToOriginalSpeed()
+        {
+            var stage5 = Resources.Load<StageData>("Stages/STAGE_05");
+            gridManager.InitializeFromStageData(stage5);
+
+            var enemyMgrObj = new GameObject("TestEnemyMgr");
+            var enemyMgr = enemyMgrObj.AddComponent<EnemyManager>();
+            enemyMgr.Initialize(gridManager);
+
+            var opMgrObj = new GameObject("TestOpMgr");
+            var opMgr = opMgrObj.AddComponent<OperatorManager>();
+            opMgr.Initialize(gridManager);
+
+            var opObj = new GameObject("TestGuard");
+            opObj.transform.position = gridManager.GridToWorldPosition(4, 5);
+            var op = opObj.AddComponent<GuardOperator>();
+            var opData = ScriptableObject.CreateInstance<OperatorData>();
+            opData.baseHP = 1000;
+            opData.baseDEF = 50;
+            opData.operatorClass = OperatorClass.Guard;
+            op.Initialize(opData, OperatorRarity.Star1);
+            op.Deploy(gridManager.GetCell(4, 5));
+            opMgr.RegisterOperator(op);
+
+            var carObj = new GameObject("Car");
+            var car = carObj.AddComponent<Stage5TrafficCar>();
+            car.Initialize(5, null, gridManager, enemyMgr, opMgr, speed: 10f, sortingOrder: 9);
+
+            Assert.AreEqual(10f, car.OriginalSpeed);
+            Assert.AreEqual(10f, car.Speed);
+            Assert.IsFalse(car.IsSlowedDown);
+
+            // Move car to hit the operator at (4, 5)
+            car.transform.position = new Vector3(gridManager.GridToWorldPosition(4, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
+            car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
+
+            // Car should have hit the operator and slowed down immediately
+            Assert.IsTrue(car.IsSlowedDown, "Car should be in slowed down state after hitting operator.");
+            Assert.AreEqual(10f * Stage5TrafficCar.ImpactSlowdownRatio, car.Speed, 0.01f, "Car speed should drop to 30% on impact.");
+            Assert.Less(car.transform.localScale.x, 1.0f, "Car should squish horizontally on impact.");
+
+            // Halfway through recovery (0.35s)
+            car.UpdateSpeedAndVisuals(0.35f);
+            Assert.IsTrue(car.IsSlowedDown);
+            Assert.Greater(car.Speed, 10f * Stage5TrafficCar.ImpactSlowdownRatio);
+            Assert.Less(car.Speed, 10f);
+
+            // Full recovery (additional 0.4s -> 0.75s total)
+            car.UpdateSpeedAndVisuals(0.4f);
+            Assert.IsFalse(car.IsSlowedDown, "Car should no longer be slowed down after duration expires.");
+            Assert.AreEqual(10f, car.Speed, 0.01f, "Car speed should have fully recovered to original speed.");
+            Assert.AreEqual(Vector3.one, car.transform.localScale, "Car scale should return to base scale.");
+
+            Object.DestroyImmediate(carObj);
+            Object.DestroyImmediate(opObj);
+            Object.DestroyImmediate(opData);
+            Object.DestroyImmediate(enemyMgrObj);
+            Object.DestroyImmediate(opMgrObj);
+        }
+
+        [Test]
+        public void Stage5TrafficCar_StunsAgain_WhenDamageRampsBackUpTo80()
+        {
+            var stage5 = Resources.Load<StageData>("Stages/STAGE_05");
+            gridManager.InitializeFromStageData(stage5);
+
+            var enemyMgrObj = new GameObject("TestEnemyMgr");
+            var enemyMgr = enemyMgrObj.AddComponent<EnemyManager>();
+            enemyMgr.Initialize(gridManager);
+
+            var opMgrObj = new GameObject("TestOpMgr");
+            var opMgr = opMgrObj.AddComponent<OperatorManager>();
+            opMgr.Initialize(gridManager);
+
+            // Op 1 at tile 4 (4 tiles from startX=0.5 -> damage = 40 + (4/2)*20 = 80)
+            var op1Obj = new GameObject("Op1");
+            op1Obj.transform.position = gridManager.GridToWorldPosition(4, 5);
+            var op1 = op1Obj.AddComponent<GuardOperator>();
+            var op1Data = ScriptableObject.CreateInstance<OperatorData>();
+            op1Data.baseHP = 1000;
+            op1.Initialize(op1Data, OperatorRarity.Star1);
+            op1.Deploy(gridManager.GetCell(4, 5));
+            opMgr.RegisterOperator(op1);
+
+            // Op 2 at tile 5 (1 tile after Op 1 -> damage = 40)
+            var op2Obj = new GameObject("Op2");
+            op2Obj.transform.position = gridManager.GridToWorldPosition(5, 5);
+            var op2 = op2Obj.AddComponent<GuardOperator>();
+            var op2Data = ScriptableObject.CreateInstance<OperatorData>();
+            op2Data.baseHP = 1000;
+            op2.Initialize(op2Data, OperatorRarity.Star1);
+            op2.Deploy(gridManager.GetCell(5, 5));
+            opMgr.RegisterOperator(op2);
+
+            // Op 3 at tile 9 (4 tiles after Op 2 -> damage = 40 + (4/2)*20 = 80)
+            var op3Obj = new GameObject("Op3");
+            op3Obj.transform.position = gridManager.GridToWorldPosition(9, 5);
+            var op3 = op3Obj.AddComponent<GuardOperator>();
+            var op3Data = ScriptableObject.CreateInstance<OperatorData>();
+            op3Data.baseHP = 1000;
+            op3.Initialize(op3Data, OperatorRarity.Star1);
+            op3.Deploy(gridManager.GetCell(9, 5));
+            opMgr.RegisterOperator(op3);
+
+            var carObj = new GameObject("Car");
+            var car = carObj.AddComponent<Stage5TrafficCar>();
+            car.Initialize(5, null, gridManager, enemyMgr, opMgr, speed: 10f);
+
+            // 1. Hit Op 1 at tile 4 (damage 80) -> Stunned!
+            car.transform.position = new Vector3(gridManager.GridToWorldPosition(4, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
+            car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
+
+            Assert.AreEqual(920, op1.CurrentHP, "Op 1 should take 80 damage.");
+            Assert.IsTrue(op1.IsStunned, "First operator hit with 80 damage should be stunned.");
+
+            // 2. Hit Op 2 at tile 5 (1 tile from Op 1 -> damage 40) -> NOT Stunned!
+            car.transform.position = new Vector3(gridManager.GridToWorldPosition(5, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
+            car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
+
+            Assert.AreEqual(960, op2.CurrentHP, "Op 2 should take 40 damage.");
+            Assert.IsFalse(op2.IsStunned, "Op 2 should NOT be stunned because damage has not ramped back up to 80.");
+
+            // 3. Hit Op 3 at tile 9 (4 tiles from Op 2 -> damage 80) -> STUNNED AGAIN!
+            car.transform.position = new Vector3(gridManager.GridToWorldPosition(9, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
+            car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
+
+            Assert.AreEqual(920, op3.CurrentHP, "Op 3 should take 80 damage.");
+            Assert.IsTrue(op3.IsStunned, "Op 3 SHOULD BE STUNNED AGAIN because damage ramped back up to 80+.");
+
+            Object.DestroyImmediate(carObj);
+            Object.DestroyImmediate(op1Obj);
+            Object.DestroyImmediate(op1Data);
+            Object.DestroyImmediate(op2Obj);
+            Object.DestroyImmediate(op2Data);
+            Object.DestroyImmediate(op3Obj);
+            Object.DestroyImmediate(op3Data);
+            Object.DestroyImmediate(enemyMgrObj);
+            Object.DestroyImmediate(opMgrObj);
+        }
+
+        [Test]
+        public void OperatorStun_CannotAttackOrBlock_ReleasesBlockedEnemies()
+        {
+            var stage5 = Resources.Load<StageData>("Stages/STAGE_05");
+            gridManager.InitializeFromStageData(stage5);
+
+            var enemyMgrObj = new GameObject("TestEnemyMgr");
+            var enemyMgr = enemyMgrObj.AddComponent<EnemyManager>();
+            enemyMgr.Initialize(gridManager);
+
+            var opMgrObj = new GameObject("TestOpMgr");
+            var opMgr = opMgrObj.AddComponent<OperatorManager>();
+            opMgr.Initialize(gridManager);
+
+            // Deploy a defender at (3, 3)
+            var opObj = new GameObject("Defender");
+            opObj.transform.position = gridManager.GridToWorldPosition(3, 3);
+            var op = opObj.AddComponent<BulkheadOperator>();
+            var opData = ScriptableObject.CreateInstance<OperatorData>();
+            opData.baseHP = 1000;
+            opData.baseATK = 100;
+            opData.baseDEF = 50;
+            opData.blockCount = 2;
+            opData.operatorClass = OperatorClass.Defender;
+            op.Initialize(opData, OperatorRarity.Star1);
+            op.Deploy(gridManager.GetCell(3, 3));
+            opMgr.RegisterOperator(op);
+
+            // Spawn ground enemy and block it
+            var enemyObj = new GameObject("TestEnemy");
+            enemyObj.transform.position = gridManager.GridToWorldPosition(3, 3);
+            var enemy = enemyObj.AddComponent<GruntEnemy>();
+            var enemyData = ScriptableObject.CreateInstance<EnemyData>();
+            enemyData.baseHP = 500;
+            enemyData.movementType = EnemyMovementType.Ground;
+            enemy.Initialize(enemyData, 0);
+            enemyMgr.RegisterEnemy(enemy);
+
+            // Block enemy initially
+            Assert.IsTrue(op.TryBlock(enemy), "Operator should successfully block enemy before stun.");
+            Assert.AreEqual(1, op.GetCurrentBlockCount());
+            Assert.IsTrue(enemy.IsBlocked);
+
+            // Apply stun to operator
+            op.ApplyStun(3.0f);
+
+            // Operator is stunned -> blocked enemy is released immediately!
+            Assert.IsTrue(op.IsStunned, "Operator should be stunned.");
+            Assert.AreEqual(0, op.GetCurrentBlockCount(), "Stunned operator should have released all blocks.");
+            Assert.IsFalse(enemy.IsBlocked, "Enemy should no longer be blocked.");
+
+            // Cannot block any enemy while stunned
+            Assert.IsFalse(op.TryBlock(enemy), "Stunned operator cannot block.");
+            Assert.IsFalse(TrashTD.Combat.BlockingSystem.CanBlock(op, enemy), "BlockingSystem should reject stunned blocker.");
+
+            // Simulate time passing: 2.0s -> still stunned
+            op.UpdateStunStatus(2.0f);
+            Assert.IsTrue(op.IsStunned);
+
+            // Another 1.1s (total 3.1s) -> stun expires
+            op.UpdateStunStatus(1.1f);
+            Assert.IsFalse(op.IsStunned, "Stun should expire after duration.");
+            Assert.AreEqual(2, op.GetBlockCount(), "Block capacity should restore to 2.");
+
+            // Can block again now that stun expired
+            Assert.IsTrue(op.TryBlock(enemy), "Operator can block again once stun expires.");
+            Assert.IsTrue(enemy.IsBlocked);
+
+            // Clean up
+            Object.DestroyImmediate(enemyObj);
+            Object.DestroyImmediate(enemyData);
+            Object.DestroyImmediate(opObj);
+            Object.DestroyImmediate(opData);
+            Object.DestroyImmediate(enemyMgrObj);
+            Object.DestroyImmediate(opMgrObj);
+        }
+
+        [Test]
+        public void Stage5TrafficCar_IgnoresBubbleShieldNegation_StillPopsBubble()
+        {
+            var stage5 = Resources.Load<StageData>("Stages/STAGE_05");
+            gridManager.InitializeFromStageData(stage5);
+
+            var enemyMgrObj = new GameObject("TestEnemyMgr");
+            var enemyMgr = enemyMgrObj.AddComponent<EnemyManager>();
+            enemyMgr.Initialize(gridManager);
+
+            var opMgrObj = new GameObject("TestOpMgr");
+            var opMgr = opMgrObj.AddComponent<OperatorManager>();
+            opMgr.Initialize(gridManager);
+
+            // Deploy an operator with 500 HP at (4, 4)
+            var opObj = new GameObject("Defender");
+            opObj.transform.position = gridManager.GridToWorldPosition(4, 4);
+            var op = opObj.AddComponent<BulkheadOperator>();
+            var opData = ScriptableObject.CreateInstance<OperatorData>();
+            opData.baseHP = 500;
+            opData.baseDEF = 50;
+            opData.operatorClass = OperatorClass.Defender;
+            op.Initialize(opData, OperatorRarity.Star1);
+            op.Deploy(gridManager.GetCell(4, 4));
+            opMgr.RegisterOperator(op);
+
+            // Apply Bubblets' shield to operator
+            var shield = BubbleShield.Apply(op, 30, null);
+            Assert.IsTrue(BubbleShield.HasActiveShield(op), "Operator should have an active bubble shield.");
+
+            // Spawn car on Lane 4
+            var carObj = new GameObject("Car");
+            var car = carObj.AddComponent<Stage5TrafficCar>();
+            car.Initialize(4, null, gridManager, enemyMgr, opMgr, speed: 10f, sortingOrder: 9);
+
+            // Move car to tile 4 (4 tiles from column 0)
+            // Damage formula at 4 tiles: 40 + (4/2)*20 = 80 damage!
+            car.transform.position = new Vector3(gridManager.GridToWorldPosition(4, 4).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
+            car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
+
+            // 1. Bubble shield was popped!
+            Assert.IsFalse(BubbleShield.HasActiveShield(op), "Bubble shield should be popped by car hit.");
+
+            // 2. Shield negation was ignored -> operator took the 80 true damage!
+            // (Bubble pop heal of 30 was applied during pop if recipient was missing HP, but op was full HP 500, so 500 - 80 = 420)
+            Assert.AreEqual(420, op.CurrentHP, "Operator should take 80 true damage despite having a bubble shield.");
+
+            // 3. Operator survived, so first hit stun applies!
+            Assert.IsTrue(op.IsStunned, "Surviving operator should be stunned.");
+
+            // Clean up
+            Object.DestroyImmediate(carObj);
+            Object.DestroyImmediate(opObj);
+            Object.DestroyImmediate(opData);
+            Object.DestroyImmediate(enemyMgrObj);
+            Object.DestroyImmediate(opMgrObj);
+        }
+
+        [Test]
+        public void Stage5TrafficCar_DespawnsWhenReachingLastVioletTile_DealsDamageAndDestroys()
+        {
+            var stage5 = Resources.Load<StageData>("Stages/STAGE_05");
+            gridManager.InitializeFromStageData(stage5);
+
+            var enemyMgrObj = new GameObject("TestEnemyMgr");
+            var enemyMgr = enemyMgrObj.AddComponent<EnemyManager>();
+            enemyMgr.Initialize(gridManager);
+
+            var opMgrObj = new GameObject("TestOpMgr");
+            var opMgr = opMgrObj.AddComponent<OperatorManager>();
+            opMgr.Initialize(gridManager);
+
+            // Last violet tile on the right is at x=12, y=5
+            Vector3 lastVioletTileWorldPos = gridManager.GridToWorldPosition(12, 5);
+            var enemyObj = new GameObject("TestEnemyAtLastTile");
+            enemyObj.transform.position = lastVioletTileWorldPos;
+            var enemy = enemyObj.AddComponent<GruntEnemy>();
+            var enemyData = ScriptableObject.CreateInstance<EnemyData>();
+            enemyData.baseHP = 1000;
+            enemyData.baseDEF = 50;
+            enemyData.movementType = EnemyMovementType.Ground;
+            enemy.Initialize(enemyData, 0);
+            enemyMgr.RegisterEnemy(enemy);
+
+            // Spawn car on Lane 5
+            var carObj = new GameObject("Car");
+            var car = carObj.AddComponent<Stage5TrafficCar>();
+            car.Initialize(5, null, gridManager, enemyMgr, opMgr, speed: 10f, sortingOrder: 9);
+
+            // 1. ExitX should be one tile after the last violet tile on the right (x=12, center 12.5 + 1.0 = 13.5)
+            Assert.AreEqual(lastVioletTileWorldPos.x + gridManager.CellSize, car.ExitX, 0.001f, "ExitX must be one tile after the last violet tile on the right.");
+
+            // 2. Position car right before ExitX (0.1 units before ExitX)
+            car.transform.position = new Vector3(car.ExitX - car.FrontBumperOffsetX - 0.1f, car.transform.position.y, 0f);
+            car.Move(0.005f); // Move 0.05 units -> frontX is still < ExitX
+            Assert.IsNotNull(car, "Car should still exist before reaching ExitX.");
+
+            // 3. Move car past ExitX (0.01s at speed 10 = 0.1 units -> frontX reaches/exceeds ExitX)
+            car.Move(0.01f);
+
+            // Enemy at tile 12 took 160 true damage (12 tiles travelled: 40 + (12/2)*20 = 160)
+            Assert.AreEqual(840, enemy.CurrentHP, "Enemy at last violet tile should have taken 160 true damage upon car arrival.");
+
+            // Car should now be destroyed immediately when reaching ExitX (one tile after last violet tile)
+            Assert.IsTrue(car == null || car.gameObject == null, "Car should be destroyed immediately when reaching one tile after the last violet tile on the right.");
+
+            // Clean up
+            Object.DestroyImmediate(enemyObj);
+            Object.DestroyImmediate(enemyData);
+            Object.DestroyImmediate(enemyMgrObj);
+            Object.DestroyImmediate(opMgrObj);
+        }
+    }
+}
