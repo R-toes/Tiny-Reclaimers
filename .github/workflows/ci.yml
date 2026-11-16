@@ -1,0 +1,87 @@
+# Continuous integration for Tiny Reclaimers TD.
+#
+# repository-checks   Always runs, needs nothing set up: Tools/check_project.py (missing or orphan .meta files, duplicate
+#                     GUIDs, unbalanced braces in C# files, merge-conflict markers, oversized files).
+# unity-tests         Compiles the project and runs the EditMode tests in Unity, so a script that does not compile
+#                     fails the build before it reaches anyone else. It needs a Unity licence, so it is skipped (with a
+#                     notice, not a failure) until one of these secrets exists
+#                     (Settings > Secrets and variables > Actions > New repository secret):
+#                       Personal licence:  UNITY_LICENSE (the contents of the activated .ulf file), UNITY_EMAIL, UNITY_PASSWORD
+#                       Pro/Plus licence:  UNITY_SERIAL, UNITY_EMAIL, UNITY_PASSWORD
+#                     How to get the .ulf file: https://game.ci/docs/github/activation
+#                     The Unity version is read from TRASH-TD/ProjectSettings/ProjectVersion.txt (6000.6.1f1). If the
+#                     game-ci Docker image for that version is not published yet the job fails at "Run EditMode tests"
+#                     with an image-not-found error; set `unityVersion` below to the nearest published Unity 6 version.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  repository-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Run repository checks
+        run: python Tools/check_project.py
+
+  unity-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+    steps:
+      - name: Check for a Unity licence
+        id: license
+        run: |
+          if [ -n "$UNITY_LICENSE" ] || [ -n "$UNITY_SERIAL" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Unity tests skipped::Add the UNITY_LICENSE (or UNITY_SERIAL), UNITY_EMAIL and UNITY_PASSWORD repository secrets to compile the project and run the EditMode tests in CI. See the comments at the top of .github/workflows/ci.yml."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.license.outputs.available == 'true'
+
+      - name: Cache the Unity Library folder
+        if: steps.license.outputs.available == 'true'
+        uses: actions/cache@v4
+        with:
+          path: TRASH-TD/Library
+          key: Library-${{ hashFiles('TRASH-TD/Assets/**', 'TRASH-TD/Packages/**', 'TRASH-TD/ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      - name: Run EditMode tests
+        if: steps.license.outputs.available == 'true'
+        uses: game-ci/unity-test-runner@v4
+        with:
+          projectPath: TRASH-TD
+          unityVersion: auto
+          testMode: editmode
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload test results
+        if: always() && steps.license.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: editmode-test-results
+          path: artifacts
