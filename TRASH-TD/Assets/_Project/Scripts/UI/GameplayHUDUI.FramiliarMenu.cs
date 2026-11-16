@@ -314,12 +314,79 @@ namespace TrashTD.UI
             fram.CopyOperator(card);
         }
 
+        /// <summary>The baked cooldown toast (Resources, so a build can load it). Missing = built in code.</summary>
+        public const string CooldownToastPrefabAssetPath = "Assets/Resources/UI/Prefabs/CooldownToast.prefab";
+        private const string CooldownToastPrefabResourcePath = "UI/Prefabs/CooldownToast";
+
         private void CreateCooldownToast(Transform root)
+        {
+            // Layout from the baked prefab when there is one (TRASH TD > UI > Bake Cooldown Toast Prefab), otherwise built in
+            // code. The slide animation starts from wherever the toast is placed, so move it in the prefab to move it in game.
+            GameObject toast = null;
+            GameObject prefab = Resources.Load<GameObject>(CooldownToastPrefabResourcePath);
+            if (prefab != null)
+            {
+                GameObject instance = Instantiate(prefab, root, false);
+                instance.name = "CooldownToast";
+                if (TryResolveCooldownToast(instance, out _, out string missing))
+                {
+                    toast = instance;
+                }
+                else
+                {
+                    Debug.LogError("GameplayHUDUI: the baked cooldown toast (" + CooldownToastPrefabAssetPath + ") is missing " + missing +
+                                   ". Building it in code instead; rebake it with TRASH TD > UI > Bake Cooldown Toast Prefab.");
+                    instance.SetActive(false);
+                    Destroy(instance);
+                }
+            }
+            if (toast == null) toast = BuildCooldownToastLayout(root);
+
+            TryResolveCooldownToast(toast, out CooldownToastRefs refs, out _);
+            cooldownToastRect = refs.rect;
+            cooldownToastGroup = refs.group;
+            cooldownToastTitle = refs.title;
+            cooldownToastMessage = refs.message;
+            cooldownToastShownPosition = refs.rect.anchoredPosition;
+
+            cooldownToastGroup.alpha = 0f;
+            cooldownToastGroup.interactable = false;
+            cooldownToastGroup.blocksRaycasts = false;
+        }
+
+        private sealed class CooldownToastRefs
+        {
+            public RectTransform rect;
+            public CanvasGroup group;
+            public Text title;
+            public Text message;
+        }
+
+        /// <summary>Builds the cooldown toast's layout in code under <paramref name="root"/>, for the bake command and the tests.</summary>
+        public static GameObject BuildCooldownToastForPrefab(Transform root) => BuildCooldownToastLayout(root);
+
+        /// <summary>True when <paramref name="candidate"/> has every named part the HUD binds to; otherwise lists what is missing.</summary>
+        public static bool ValidateCooldownToast(GameObject candidate, out string missing) => TryResolveCooldownToast(candidate, out _, out missing);
+
+        private static bool TryResolveCooldownToast(GameObject root, out CooldownToastRefs refs, out string missing)
+        {
+            var names = new UiPrefabLookup(root);
+            refs = new CooldownToastRefs
+            {
+                rect = root.GetComponent<RectTransform>(),
+                group = names.FindOnRoot<CanvasGroup>(),
+                title = names.Find<Text>("Title"),
+                message = names.Find<Text>("Message")
+            };
+            missing = names.Missing;
+            return names.IsComplete && refs.rect != null;
+        }
+
+        private static GameObject BuildCooldownToastLayout(Transform root)
         {
             var toast = new GameObject("CooldownToast", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
             toast.transform.SetParent(root, false);
-            cooldownToastRect = toast.GetComponent<RectTransform>();
-            SetPosition(cooldownToastRect, new Vector2(0f, 188f), new Vector2(0.5f, 0f), new Vector2(560f, 76f), new Vector2(0.5f, 0f));
+            SetPosition(toast.GetComponent<RectTransform>(), new Vector2(0f, 188f), new Vector2(0.5f, 0f), new Vector2(560f, 76f), new Vector2(0.5f, 0f));
 
             Image background = toast.GetComponent<Image>();
             ApplyPanelContainer(toast, PanelContainerType.Tooltip);
@@ -330,19 +397,16 @@ namespace TrashTD.UI
             outline.effectDistance = new Vector2(2f, -2f);
             outline.useGraphicAlpha = false;
 
-            cooldownToastGroup = toast.GetComponent<CanvasGroup>();
-            cooldownToastGroup.alpha = 0f;
-            cooldownToastGroup.interactable = false;
-            cooldownToastGroup.blocksRaycasts = false;
+            Text title = CreateText(toast.transform, "Title", "OPERATOR ON COOLDOWN", 13, TextAnchor.MiddleCenter);
+            title.color = new Color(1f, 0.65f, 0.25f, 1f);
+            title.raycastTarget = false;
+            SetPosition(title.GetComponent<RectTransform>(), new Vector2(0f, -18f), new Vector2(0.5f, 1f), new Vector2(520f, 26f), new Vector2(0.5f, 0.5f));
 
-            cooldownToastTitle = CreateText(toast.transform, "Title", "OPERATOR ON COOLDOWN", 13, TextAnchor.MiddleCenter);
-            cooldownToastTitle.color = new Color(1f, 0.65f, 0.25f, 1f);
-            cooldownToastTitle.raycastTarget = false;
-            SetPosition(cooldownToastTitle.GetComponent<RectTransform>(), new Vector2(0f, -18f), new Vector2(0.5f, 1f), new Vector2(520f, 26f), new Vector2(0.5f, 0.5f));
+            Text message = CreateText(toast.transform, "Message", string.Empty, 14, TextAnchor.MiddleCenter);
+            message.raycastTarget = false;
+            SetPosition(message.GetComponent<RectTransform>(), new Vector2(0f, -49f), new Vector2(0.5f, 1f), new Vector2(520f, 28f), new Vector2(0.5f, 0.5f));
 
-            cooldownToastMessage = CreateText(toast.transform, "Message", string.Empty, 14, TextAnchor.MiddleCenter);
-            cooldownToastMessage.raycastTarget = false;
-            SetPosition(cooldownToastMessage.GetComponent<RectTransform>(), new Vector2(0f, -49f), new Vector2(0.5f, 1f), new Vector2(520f, 28f), new Vector2(0.5f, 0.5f));
+            return toast;
         }
 
         public void ShowCooldownWarning(string operatorName, int remainingRounds)
@@ -363,7 +427,7 @@ namespace TrashTD.UI
         {
             const float fadeDuration = 0.18f;
             const float visibleDuration = 1.8f;
-            Vector2 shownPosition = new Vector2(0f, 188f);
+            Vector2 shownPosition = cooldownToastShownPosition;
             Vector2 hiddenPosition = shownPosition + new Vector2(0f, -18f);
             cooldownToastRect.anchoredPosition = hiddenPosition;
             cooldownToastRect.localScale = Vector3.one * 0.94f;

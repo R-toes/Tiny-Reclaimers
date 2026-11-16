@@ -517,15 +517,72 @@ namespace TrashTD.UI
             }
         }
 
+        /// <summary>The baked discard confirmation (Resources, so a build can load it). Missing = built in code.</summary>
+        public const string DiscardPanelPrefabAssetPath = "Assets/Resources/UI/Prefabs/DiscardConfirmationPanel.prefab";
+        private const string DiscardPanelPrefabResourcePath = "UI/Prefabs/DiscardConfirmationPanel";
+
         private void CreateDiscardConfirmationPanel(Transform root)
         {
-            discardConfirmationPanel = new GameObject("DiscardConfirmationPanel", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
-            discardConfirmationPanel.transform.SetParent(root, false);
-            Stretch(discardConfirmationPanel.GetComponent<RectTransform>());
-            discardConfirmationPanel.GetComponent<Image>().color = new Color(0.01f, 0.012f, 0.02f, 0.78f);
+            // Layout from the baked prefab when there is one (TRASH TD > UI > Bake Discard Confirmation Prefab), otherwise
+            // built in code; the two buttons are found by name and wired below.
+            Button confirm = null;
+            Button cancel = null;
+            GameObject panelObject = null;
+            GameObject prefab = Resources.Load<GameObject>(DiscardPanelPrefabResourcePath);
+            if (prefab != null)
+            {
+                GameObject instance = Instantiate(prefab, root, false);
+                instance.name = "DiscardConfirmationPanel";
+                if (TryResolveDiscardPanel(instance, out confirm, out cancel, out string missing))
+                {
+                    panelObject = instance;
+                }
+                else
+                {
+                    Debug.LogError("GameplayHUDUI: the baked discard confirmation (" + DiscardPanelPrefabAssetPath + ") is missing " + missing +
+                                   ". Building it in code instead; rebake it with TRASH TD > UI > Bake Discard Confirmation Prefab.");
+                    instance.SetActive(false);
+                    Destroy(instance);
+                }
+            }
+            if (panelObject == null)
+            {
+                panelObject = BuildDiscardPanelLayout(root);
+                TryResolveDiscardPanel(panelObject, out confirm, out cancel, out _);
+            }
+
+            discardConfirmationPanel = panelObject;
+            StyleButton(confirm, ButtonContainerType.Danger, LifeColor, 1.05f, ConfirmDiscard);
+            StyleButton(cancel, ButtonContainerType.Dark, TextDim, 1.05f, CancelDiscard);
+            discardConfirmationPanel.SetActive(false);
+        }
+
+        /// <summary>Builds the discard confirmation's layout in code under <paramref name="root"/>, for the bake command and the tests.</summary>
+        public static GameObject BuildDiscardPanelForPrefab(Transform root) => BuildDiscardPanelLayout(root);
+
+        /// <summary>True when <paramref name="candidate"/> has every named part the HUD binds to; otherwise lists what is missing.</summary>
+        public static bool ValidateDiscardPanel(GameObject candidate, out string missing) => TryResolveDiscardPanel(candidate, out _, out _, out missing);
+
+        private static bool TryResolveDiscardPanel(GameObject root, out Button confirm, out Button cancel, out string missing)
+        {
+            var names = new UiPrefabLookup(root);
+            names.Find<RectTransform>("DiscardCard");
+            names.Find<Text>("Message"); // ShowDiscardConfirmation fills it in by the path "DiscardCard/Message"
+            confirm = names.Find<Button>("ConfirmDiscardButton");
+            cancel = names.Find<Button>("CancelDiscardButton");
+            missing = names.Missing;
+            return names.IsComplete;
+        }
+
+        private static GameObject BuildDiscardPanelLayout(Transform root)
+        {
+            var panelObject = new GameObject("DiscardConfirmationPanel", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+            panelObject.transform.SetParent(root, false);
+            Stretch(panelObject.GetComponent<RectTransform>());
+            panelObject.GetComponent<Image>().color = new Color(0.01f, 0.012f, 0.02f, 0.78f);
 
             var card = new GameObject("DiscardCard", typeof(RectTransform), typeof(Image));
-            card.transform.SetParent(discardConfirmationPanel.transform, false);
+            card.transform.SetParent(panelObject.transform, false);
             var cardRect = card.GetComponent<RectTransform>();
             SetPosition(cardRect, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(480f, 260f), new Vector2(0.5f, 0.5f));
             ApplyModalCard(card);
@@ -538,22 +595,18 @@ namespace TrashTD.UI
                 new Vector2(430f, 40f), new Vector2(0.5f, 0.5f));
             var message = CreateText(card.transform, "Message", string.Empty, 17, TextAnchor.MiddleCenter);
             message.color = TextDim;
-            message.name = "Message";
             SetPosition(message.GetComponent<RectTransform>(), new Vector2(0f, 28f), new Vector2(0.5f, 0.5f),
                 new Vector2(430f, 32f), new Vector2(0.5f, 0.5f));
 
             var confirm = CreateButton(card.transform, "ConfirmDiscardButton", "DISCARD", new Vector2(175f, 52f), ButtonContainerType.Danger);
             SetPosition(confirm.GetComponent<RectTransform>(), new Vector2(-100f, -60f), new Vector2(0.5f, 0.5f),
                 new Vector2(175f, 52f), new Vector2(0.5f, 0.5f));
-            StyleButton(confirm, ButtonContainerType.Danger, LifeColor, 1.05f,
-                ConfirmDiscard);
 
             var cancel = CreateButton(card.transform, "CancelDiscardButton", "CANCEL", new Vector2(175f, 52f), ButtonContainerType.Dark);
             SetPosition(cancel.GetComponent<RectTransform>(), new Vector2(100f, -60f), new Vector2(0.5f, 0.5f),
                 new Vector2(175f, 52f), new Vector2(0.5f, 0.5f));
-            StyleButton(cancel, ButtonContainerType.Dark, TextDim, 1.05f, CancelDiscard);
 
-            discardConfirmationPanel.SetActive(false);
+            return panelObject;
         }
 
         private void ShowDiscardConfirmation(int slotIndex, DraftCard card)

@@ -298,6 +298,7 @@ namespace TrashTD.UI
         private bool phaseBannerAlarm;
         private bool phaseBannerGlitch;
         private RectTransform cooldownToastRect;
+        private Vector2 cooldownToastShownPosition;
         private CanvasGroup cooldownToastGroup;
         private Text cooldownToastTitle;
         private Text cooldownToastMessage;

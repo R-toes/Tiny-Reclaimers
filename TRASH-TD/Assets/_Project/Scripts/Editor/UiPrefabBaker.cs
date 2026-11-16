@@ -53,6 +53,48 @@ namespace TrashTD.Editor
             });
         }
 
+        [MenuItem(MenuRoot + "Bake Operator Death Notice Prefab", false, 24)]
+        private static void BakeOperatorDeathNotice()
+        {
+            Bake("Operator Death Notice", OperatorDeathNoticeUI.PrefabAssetPath, "OperatorDeathNotice", canvas =>
+            {
+                GameObject plate = OperatorDeathNoticeUI.BuildPlateForPrefab(canvas);
+                bool ok = OperatorDeathNoticeUI.ValidatePlate(plate, out string missing);
+                return (plate, ok, missing);
+            });
+        }
+
+        [MenuItem(MenuRoot + "Bake Discard Confirmation Prefab", false, 26)]
+        private static void BakeDiscardConfirmation()
+        {
+            Bake("Discard Confirmation", GameplayHUDUI.DiscardPanelPrefabAssetPath, "DiscardConfirmationPanel", canvas =>
+            {
+                GameObject panel = GameplayHUDUI.BuildDiscardPanelForPrefab(canvas);
+                bool ok = GameplayHUDUI.ValidateDiscardPanel(panel, out string missing);
+                return (panel, ok, missing);
+            });
+        }
+
+        [MenuItem(MenuRoot + "Bake Cooldown Toast Prefab", false, 28)]
+        private static void BakeCooldownToast()
+        {
+            Bake("Cooldown Toast", GameplayHUDUI.CooldownToastPrefabAssetPath, "CooldownToast", canvas =>
+            {
+                GameObject toast = GameplayHUDUI.BuildCooldownToastForPrefab(canvas);
+                bool ok = GameplayHUDUI.ValidateCooldownToast(toast, out string missing);
+                return (toast, ok, missing);
+            });
+        }
+
+        [MenuItem(MenuRoot + "Remove Baked Operator Death Notice (use code layout)", false, 25)]
+        private static void RemoveOperatorDeathNotice() => Remove("Operator Death Notice", OperatorDeathNoticeUI.PrefabAssetPath);
+
+        [MenuItem(MenuRoot + "Remove Baked Discard Confirmation (use code layout)", false, 27)]
+        private static void RemoveDiscardConfirmation() => Remove("Discard Confirmation", GameplayHUDUI.DiscardPanelPrefabAssetPath);
+
+        [MenuItem(MenuRoot + "Remove Baked Cooldown Toast (use code layout)", false, 29)]
+        private static void RemoveCooldownToast() => Remove("Cooldown Toast", GameplayHUDUI.CooldownToastPrefabAssetPath);
+
         [MenuItem(MenuRoot + "Remove Baked Settings Panel (use code layout)", false, 21)]
         private static void RemoveSettingsPanel() => Remove("Settings Panel", AudioSettingsUI.PrefabAssetPath);
 

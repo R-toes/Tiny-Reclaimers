@@ -25,7 +25,11 @@ namespace TrashTD.UI
         private const float SlideInTime = 0.22f;
         private const float VisibleTime = 3.6f;
         private const float FadeOutTime = 0.45f;
-        private const float OffscreenX = -NoticeWidth - 30f;
+        private const float OffscreenMargin = 30f; // how far past its own width a notice starts to the left
+
+        /// <summary>The baked notice plate (a template instantiated once per death). Missing = the plate is built in code.</summary>
+        public const string PrefabAssetPath = "Assets/Resources/UI/Prefabs/OperatorDeathNotice.prefab";
+        private const string PrefabResourcePath = "UI/Prefabs/OperatorDeathNotice";
 
         private static readonly Color PlateColor = new Color(0.04f, 0.045f, 0.055f, 0.92f);
         private static readonly Color AccentRed = new Color(1f, 0.3f, 0.28f, 1f);
@@ -42,6 +46,19 @@ namespace TrashTD.UI
         private readonly List<Notice> notices = new List<Notice>();
         private OperatorManager operatorManager;
         private RectTransform container;
+        private GameObject plateTemplate;
+        // The plate's own size, so a resized plate in the prefab keeps its spacing and slide distance
+        private float noticeWidth = NoticeWidth;
+        private float noticeHeight = NoticeHeight;
+
+        /// <summary>The named parts of a notice plate (see TryResolvePlate).</summary>
+        private sealed class PlateRefs
+        {
+            public RectTransform rect;
+            public CanvasGroup group;
+            public Image portrait;
+            public Text nameText;
+        }
 
         public static OperatorDeathNoticeUI Create(Transform canvasRoot, OperatorManager manager)
         {
@@ -55,6 +72,7 @@ namespace TrashTD.UI
 
             var notice = root.AddComponent<OperatorDeathNoticeUI>();
             notice.container = rect;
+            notice.plateTemplate = Resources.Load<GameObject>(PrefabResourcePath);
             notice.operatorManager = manager != null ? manager : FindAnyObjectByType<OperatorManager>();
             if (notice.operatorManager != null) notice.operatorManager.OnOperatorDied += notice.HandleOperatorDied;
             return notice;
@@ -87,8 +105,67 @@ namespace TrashTD.UI
 
         private Notice BuildNotice(string displayName, Sprite portrait)
         {
+            // The plate's look comes from the baked prefab when there is one (TRASH TD > UI > Bake Operator Death Notice
+            // Prefab, then edit it in Prefab Mode); otherwise it is built in code. The name and portrait are filled in here.
+            PlateRefs refs = null;
+            if (plateTemplate != null)
+            {
+                GameObject instance = Instantiate(plateTemplate, container, false);
+                if (!TryResolvePlate(instance, out refs, out string missing))
+                {
+                    Debug.LogError("OperatorDeathNoticeUI: the baked plate (" + PrefabAssetPath + ") is missing " + missing +
+                                   ". Building it in code instead; rebake it with TRASH TD > UI > Bake Operator Death Notice Prefab.");
+                    instance.SetActive(false);
+                    Destroy(instance);
+                    refs = null;
+                    plateTemplate = null; // do not try again
+                }
+            }
+            if (refs == null) TryResolvePlate(BuildPlateLayout(container), out refs, out _);
+
+            // Notices are positioned as offsets from the bottom-left corner (ApplyPosition), whatever the prefab says
+            refs.rect.anchorMin = refs.rect.anchorMax = refs.rect.pivot = Vector2.zero;
+            noticeWidth = refs.rect.sizeDelta.x;
+            noticeHeight = refs.rect.sizeDelta.y;
+
+            refs.nameText.text = displayName;
+            refs.portrait.gameObject.SetActive(portrait != null);
+            if (portrait != null)
+            {
+                refs.portrait.sprite = portrait;
+                refs.portrait.preserveAspect = true;
+            }
+
+            refs.group.alpha = 0f;
+            refs.group.interactable = false;
+            refs.group.blocksRaycasts = false;
+            return new Notice { Rect = refs.rect, Group = refs.group };
+        }
+
+        /// <summary>Builds the plate's layout in code under <paramref name="parent"/>, for the bake command and the tests.</summary>
+        public static GameObject BuildPlateForPrefab(Transform parent) => BuildPlateLayout(parent);
+
+        /// <summary>True when <paramref name="candidate"/> has every named part the notice binds to; otherwise lists what is missing.</summary>
+        public static bool ValidatePlate(GameObject candidate, out string missing) => TryResolvePlate(candidate, out _, out missing);
+
+        private static bool TryResolvePlate(GameObject root, out PlateRefs refs, out string missing)
+        {
+            var names = new UiPrefabLookup(root);
+            refs = new PlateRefs
+            {
+                rect = root.GetComponent<RectTransform>(),
+                group = names.FindOnRoot<CanvasGroup>(),
+                portrait = names.Find<Image>("Portrait"),
+                nameText = names.Find<Text>("Name")
+            };
+            missing = names.Missing;
+            return names.IsComplete && refs.rect != null;
+        }
+
+        private static GameObject BuildPlateLayout(Transform parent)
+        {
             var plateObject = new GameObject("DeathNotice", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
-            plateObject.transform.SetParent(container, false);
+            plateObject.transform.SetParent(parent, false);
             var rect = (RectTransform)plateObject.transform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 0f);
             rect.sizeDelta = new Vector2(NoticeWidth, NoticeHeight);
@@ -101,11 +178,6 @@ namespace TrashTD.UI
             outline.effectDistance = new Vector2(2f, -2f);
             outline.useGraphicAlpha = false;
 
-            CanvasGroup group = plateObject.GetComponent<CanvasGroup>();
-            group.alpha = 0f;
-            group.interactable = false;
-            group.blocksRaycasts = false;
-
             // Red edge bar on the left
             Image bar = CreateImage(rect, "Accent", AccentRed);
             bar.rectTransform.anchorMin = new Vector2(0f, 0f);
@@ -114,22 +186,18 @@ namespace TrashTD.UI
             bar.rectTransform.sizeDelta = new Vector2(5f, 0f);
             bar.rectTransform.anchoredPosition = Vector2.zero;
 
-            // Portrait in a square frame
+            // Portrait in a square frame (the sprite is set per notice; the notice hides it when there is none)
             Image frame = CreateImage(rect, "PortraitFrame", new Color(1f, 1f, 1f, 0.08f));
             frame.rectTransform.anchorMin = frame.rectTransform.anchorMax = new Vector2(0f, 0.5f);
             frame.rectTransform.pivot = new Vector2(0f, 0.5f);
             frame.rectTransform.sizeDelta = new Vector2(34f, 34f);
             frame.rectTransform.anchoredPosition = new Vector2(12f, 0f);
-            if (portrait != null)
-            {
-                Image icon = CreateImage(frame.rectTransform, "Portrait", Color.white);
-                icon.sprite = portrait;
-                icon.preserveAspect = true;
-                icon.rectTransform.anchorMin = Vector2.zero;
-                icon.rectTransform.anchorMax = Vector2.one;
-                icon.rectTransform.offsetMin = new Vector2(2f, 2f);
-                icon.rectTransform.offsetMax = new Vector2(-2f, -2f);
-            }
+            Image icon = CreateImage(frame.rectTransform, "Portrait", Color.white);
+            icon.preserveAspect = true;
+            icon.rectTransform.anchorMin = Vector2.zero;
+            icon.rectTransform.anchorMax = Vector2.one;
+            icon.rectTransform.offsetMin = new Vector2(2f, 2f);
+            icon.rectTransform.offsetMax = new Vector2(-2f, -2f);
 
             Text header = CreateText(rect, "Header", "OPERATOR DOWN", 11, AccentRed);
             header.rectTransform.anchorMin = new Vector2(0f, 1f);
@@ -138,7 +206,7 @@ namespace TrashTD.UI
             header.rectTransform.offsetMin = new Vector2(56f, -22f);
             header.rectTransform.offsetMax = new Vector2(-10f, -6f);
 
-            Text nameText = CreateText(rect, "Name", displayName, 16, NameColor);
+            Text nameText = CreateText(rect, "Name", "OPERATOR", 16, NameColor);
             nameText.resizeTextForBestFit = true;
             nameText.resizeTextMinSize = 10;
             nameText.resizeTextMaxSize = 16;
@@ -149,7 +217,7 @@ namespace TrashTD.UI
             nameText.rectTransform.offsetMin = new Vector2(56f, 6f);
             nameText.rectTransform.offsetMax = new Vector2(-10f, 28f);
 
-            return new Notice { Rect = rect, Group = group };
+            return plateObject;
         }
 
         private void Update()
@@ -175,16 +243,16 @@ namespace TrashTD.UI
             }
         }
 
-        private static float GetTargetY(int index)
+        private float GetTargetY(int index)
         {
-            return BottomOffset + index * (NoticeHeight + NoticeGap);
+            return BottomOffset + index * (noticeHeight + NoticeGap);
         }
 
-        private static void ApplyPosition(Notice notice, float age)
+        private void ApplyPosition(Notice notice, float age)
         {
             float slide = Mathf.Clamp01(age / SlideInTime);
             float eased = 1f - (1f - slide) * (1f - slide) * (1f - slide);
-            float x = Mathf.Lerp(OffscreenX, LeftMargin, eased);
+            float x = Mathf.Lerp(-noticeWidth - OffscreenMargin, LeftMargin, eased);
 
             float fadeOut = Mathf.Clamp01((age - SlideInTime - VisibleTime) / FadeOutTime);
             notice.Group.alpha = Mathf.Clamp01(slide * 2f) * (1f - fadeOut);
