@@ -9,7 +9,8 @@ using static TrashTD.UI.UiKit;
 namespace TrashTD.Audio
 {
     /// <summary>
-    /// Runtime-built settings panel shared by menu and gameplay, in four tabs: AUDIO (music, SFX), DISPLAY
+    /// Settings panel shared by menu and gameplay (its layout is a prefab when one is baked, otherwise built in code; see
+    /// <see cref="BuildPanelForPrefab"/>), in four tabs: AUDIO (music, SFX), DISPLAY
     /// (resolution and window mode, CRT style, brightness; see GameGraphicsSettings), CONTROLS (operator
     /// placement scheme with animated diagrams; see ControlSettings) and GAMEPLAY (notices; see
     /// GameplaySettings). The class keeps its original name because several screens create it.
@@ -81,6 +82,8 @@ namespace TrashTD.Audio
         private Button hideHudOnButton;
         private Button hideHudOffButton;
         private Button resetProgressButton;
+        private Button closeButton;
+        private GameObject editorHint;
         private Text resetProgressHint;
         private float resetConfirmUntil;   // unscaled time until which the RESET button asks "SURE?"
         private int shownResetState = -1;
@@ -110,6 +113,10 @@ namespace TrashTD.Audio
             return settings;
         }
 
+        /// <summary>Where the baked layout lives (Resources, so a build can load it). Missing = the layout is built in code.</summary>
+        public const string PrefabAssetPath = "Assets/Resources/UI/Prefabs/SettingsPanel.prefab";
+        private const string PrefabResourcePath = "UI/Prefabs/SettingsPanel";
+
         private void Build(Transform buttonParent, Action<Button> styleButton, Action<RectTransform> positionButton)
         {
             SettingsButton = CreateButton(buttonParent, "AudioSettingsButton", "SETTINGS", new Vector2(200f, 48f));
@@ -117,8 +124,78 @@ namespace TrashTD.Audio
             positionButton?.Invoke(SettingsButton.GetComponent<RectTransform>());
             SettingsButton.onClick.AddListener(Show);
 
-            // Full-screen dimmer (blocks clicks to whatever is underneath) holding the card
+            // The panel's layout comes from the baked prefab when there is one (TRASH TD > UI > Bake Settings Panel
+            // Prefab, then edit it in Prefab Mode); otherwise it is built in code. Either way the same hierarchy is
+            // found by name, and everything dynamic (listeners, sounds, the placement diagrams) is attached after.
             Transform canvasRoot = transform.parent;
+            if (!TryCreatePanelFromPrefab(canvasRoot))
+            {
+                BuildLayout(canvasRoot);
+                ResolveReferences(panel, out _);
+            }
+            Wire();
+
+            RefreshGraphicsControls();
+            RefreshControls();
+            RefreshGameplay();
+            SyncResolutions();
+            SelectTab(lastTab);
+            panel.SetActive(false);
+        }
+
+        private bool TryCreatePanelFromPrefab(Transform canvasRoot)
+        {
+            GameObject prefab = Resources.Load<GameObject>(PrefabResourcePath);
+            if (prefab == null) return false;
+
+            GameObject instance = Instantiate(prefab, canvasRoot, false);
+            instance.name = "AudioSettingsPanel";
+            if (ResolveReferences(instance, out string missing)) return true;
+
+            Debug.LogError("AudioSettingsUI: the baked prefab (" + PrefabAssetPath + ") is missing " + missing +
+                           ". Building the panel in code instead; rebake it with TRASH TD > UI > Bake Settings Panel Prefab.");
+            instance.SetActive(false);
+            Destroy(instance);
+            return false;
+        }
+
+        /// <summary>
+        /// Builds the panel's layout in code under <paramref name="canvasRoot"/> and returns it, for the editor's bake command
+        /// (UiPrefabBaker) and the tests. Nothing dynamic is attached: no listeners, no feedback components.
+        /// </summary>
+        public static GameObject BuildPanelForPrefab(Transform canvasRoot)
+        {
+            AudioSettingsUI host = new GameObject("AudioSettingsUI.Bake", typeof(RectTransform)).AddComponent<AudioSettingsUI>();
+            host.enabled = false;
+            host.BuildLayout(canvasRoot);
+            GameObject result = host.panel;
+            DestroyHost(host);
+            return result;
+        }
+
+        /// <summary>True when <paramref name="candidate"/> has every named object this class binds to; otherwise lists what is missing.</summary>
+        public static bool ValidatePanel(GameObject candidate, out string missing)
+        {
+            AudioSettingsUI host = new GameObject("AudioSettingsUI.Validate", typeof(RectTransform)).AddComponent<AudioSettingsUI>();
+            host.enabled = false;
+            bool ok = host.ResolveReferences(candidate, out missing);
+            DestroyHost(host);
+            return ok;
+        }
+
+        private static void DestroyHost(AudioSettingsUI host)
+        {
+            if (Application.isPlaying) Destroy(host.gameObject);
+            else DestroyImmediate(host.gameObject);
+        }
+
+        /// <summary>
+        /// The visual layout only: every element has a stable name that <see cref="ResolveReferences"/> looks up. Text that
+        /// changes at runtime starts empty or at a default; <see cref="Wire"/> and the Refresh methods fill it in.
+        /// </summary>
+        private void BuildLayout(Transform canvasRoot)
+        {
+            // Full-screen dimmer (blocks clicks to whatever is underneath) holding the card
             panel = new GameObject("AudioSettingsPanel", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
             panel.transform.SetParent(canvasRoot, false);
             SetStretch(panel.GetComponent<RectTransform>());
@@ -141,18 +218,17 @@ namespace TrashTD.Audio
             PlaceTopLeft(headerLine.rectTransform, 0f, HeaderHeight, CardWidth, 2f);
 
             Text title = CreateText(header.transform, "SETTINGS", 20, TextAnchor.MiddleLeft, AccentBright);
+            title.gameObject.name = "Title";
             PlaceTopLeft(title.rectTransform, Padding - 8f, 0f, 400f, HeaderHeight);
             Text escHint = CreateText(header.transform, "[ESC] CLOSE", 11, TextAnchor.MiddleRight, HintColor);
+            escHint.gameObject.name = "EscHint";
             PlaceTopLeft(escHint.rectTransform, CardWidth - Padding + 8f - 300f, 0f, 300f, HeaderHeight);
 
             // ── Tabs ──
             for (int i = 0; i < TabLabels.Length; i++)
             {
-                Tab tab = (Tab)i;
                 tabButtons[i] = CreateTerminalButton(card, TabLabels[i] + "Tab", TabLabels[i], 13);
                 PlaceTopLeft(tabButtons[i].GetComponent<RectTransform>(), Padding + i * (TabWidth + 10f), TabY, TabWidth, TabHeight);
-                tabButtons[i].onClick.AddListener(() => SelectTab(tab));
-                AttachFeedback(tabButtons[i], SfxId.UiClick);
             }
             Image tabLine = CreateImage(card, "TabLine", new Color(LineColor.r, LineColor.g, LineColor.b, 0.35f));
             PlaceTopLeft(tabLine.rectTransform, Padding, TabY + TabHeight + 6f, CardWidth - 2f * Padding, 2f);
@@ -160,68 +236,60 @@ namespace TrashTD.Audio
             // ── Audio ──
             pageRoot = CreatePage(Tab.Audio);
             CreateSectionHeader("VOLUME", 160f);
-            float musicValue = AudioManager.Instance != null ? AudioManager.Instance.MusicVolume : 0.45f;
-            musicSlider = CreateSliderRow("MUSIC", 210f, 0f, 1f, musicValue, out musicValueText);
-            float sfxValue = AudioManager.Instance != null ? AudioManager.Instance.SfxVolume : 0.45f;
-            sfxSlider = CreateSliderRow("SFX", 262f, 0f, 1f, sfxValue, out sfxValueText);
+            CreateSliderRow("MUSIC", 210f, 0f, 1f, 0.45f, out _);
+            CreateSliderRow("SFX", 262f, 0f, 1f, 0.45f, out _);
 
             // ── Display ──
             pageRoot = CreatePage(Tab.Display);
             CreateSectionHeader("SCREEN", 150f);
             CreateResolutionRow(196f);
             CreateRowLabel("MODE", 244f);
-            fullscreenButton = CreateSegmentButton("FullscreenButton", "FULLSCREEN", 0, 244f, () => SetWindowMode(true));
-            windowedButton = CreateSegmentButton("WindowedButton", "WINDOWED", 1, 244f, () => SetWindowMode(false));
+            CreateSegmentButton("FullscreenButton", "FULLSCREEN", 0, 244f);
+            CreateSegmentButton("WindowedButton", "WINDOWED", 1, 244f);
 #if UNITY_EDITOR
-            Text editorHint = CreateText(pageRoot, "(In the editor, the Game view sets these.)", 9, TextAnchor.MiddleLeft, HintColor);
-            PlaceTopLeft(editorHint.rectTransform, ControlX, 268f, CardWidth - Padding - ControlX, 18f);
+            Text editorHintText = CreateText(pageRoot, "(In the editor, the Game view sets these.)", 9, TextAnchor.MiddleLeft, HintColor);
+            editorHintText.gameObject.name = "EditorHint"; // Wire hides it outside the editor (a baked prefab ships in builds too)
+            PlaceTopLeft(editorHintText.rectTransform, ControlX, 268f, CardWidth - Padding - ControlX, 18f);
 #endif
 
             CreateSectionHeader("CRT STYLE", 310f);
             CreateRowLabel("STYLE", 356f);
-            fullTvButton = CreateStyleButton("CrtFullTvButton", "FULL TV", 0, CrtStyle.FullTv, 356f);
-            classicButton = CreateStyleButton("CrtClassicButton", "CLASSIC", 1, CrtStyle.Classic, 356f);
-            offButton = CreateStyleButton("CrtOffButton", "OFF", 2, CrtStyle.Off, 356f);
+            CreateStyleButton("CrtFullTvButton", "FULL TV", 0, 356f);
+            CreateStyleButton("CrtClassicButton", "CLASSIC", 1, 356f);
+            CreateStyleButton("CrtOffButton", "OFF", 2, 356f);
 
-            crtStyleHint = CreateText(pageRoot, string.Empty, 11, TextAnchor.UpperLeft, HintColor);
-            crtStyleHint.horizontalOverflow = HorizontalWrapMode.Wrap;
-            crtStyleHint.verticalOverflow = VerticalWrapMode.Overflow;
-            crtStyleHint.lineSpacing = 1.4f;
-            PlaceTopLeft(crtStyleHint.rectTransform, ControlX, 388f, CardWidth - Padding - ControlX, 40f);
+            Text crtHint = CreateText(pageRoot, string.Empty, 11, TextAnchor.UpperLeft, HintColor);
+            crtHint.gameObject.name = "CrtStyleHint";
+            crtHint.horizontalOverflow = HorizontalWrapMode.Wrap;
+            crtHint.verticalOverflow = VerticalWrapMode.Overflow;
+            crtHint.lineSpacing = 1.4f;
+            PlaceTopLeft(crtHint.rectTransform, ControlX, 388f, CardWidth - Padding - ControlX, 40f);
 
             CreateSectionHeader("PICTURE", 450f);
-            brightnessSlider = CreateSliderRow("BRIGHTNESS", 494f,
+            CreateSliderRow("BRIGHTNESS", 494f,
                 GameGraphicsSettings.MinBrightness, GameGraphicsSettings.MaxBrightness, GameGraphicsSettings.Brightness,
-                out brightnessValueText);
+                out _);
 
-            // ── Controls ──
+            // ── Controls ── (the three placement-scheme options are animated and generated at runtime: see Wire)
             pageRoot = CreatePage(Tab.Controls);
             CreateSectionHeader("OPERATOR PLACEMENT", 150f);
             Text placementHint = CreateText(pageRoot, "After a card is dropped (or clicked, then a tile clicked):", 10, TextAnchor.MiddleLeft, HintColor);
+            placementHint.gameObject.name = "PlacementHint";
             PlaceTopLeft(placementHint.rectTransform, Padding, 168f, CardWidth - 2f * Padding, 20f);
-            Vector2 optionSize = new Vector2(250f, 300f);
-            float optionGap = (CardWidth - 2f * Padding - 3f * optionSize.x) * 0.5f;
-            for (int i = 0; i < schemeOptions.Length; i++)
-            {
-                PlacementControlScheme scheme = (PlacementControlScheme)i;
-                PlacementSchemeOption option = PlacementSchemeOption.Create(pageRoot, scheme, optionSize);
-                PlaceTopLeft(option.Button.GetComponent<RectTransform>(), Padding + i * (optionSize.x + optionGap), 194f, optionSize.x, optionSize.y);
-                option.Button.onClick.AddListener(() => SetPlacementScheme(scheme));
-                AttachFeedback(option.Button, SfxId.UiClick);
-                schemeOptions[i] = option;
-            }
             Text keysHint = CreateText(pageRoot, "KEYS: WASD / ARROWS FACE  |  ENTER PLACES  |  ESC / RIGHT-CLICK CANCELS", 9, TextAnchor.MiddleCenter, HintColor);
+            keysHint.gameObject.name = "KeysHint";
             PlaceTopLeft(keysHint.rectTransform, Padding, 504f, CardWidth - 2f * Padding, 20f);
 
             // ── Gameplay ──
             pageRoot = CreatePage(Tab.Gameplay);
             CreateSectionHeader("NOTICES", 160f);
             CreateRowLabel("REROLL NOTICE", 210f);
-            noticeOnButton = CreateSegmentButton("RerollNoticeOnButton", "ON", 0, 210f, () => SetRerollNotice(true));
-            noticeOffButton = CreateSegmentButton("RerollNoticeOffButton", "OFF", 1, 210f, () => SetRerollNotice(false));
+            CreateSegmentButton("RerollNoticeOnButton", "ON", 0, 210f);
+            CreateSegmentButton("RerollNoticeOffButton", "OFF", 1, 210f);
             Text noticeHint = CreateText(pageRoot,
                 "Warns before you reroll the first draft of a run, which only deals 1-star operators.",
                 11, TextAnchor.UpperLeft, HintColor);
+            noticeHint.gameObject.name = "RerollNoticeHint";
             noticeHint.horizontalOverflow = HorizontalWrapMode.Wrap;
             noticeHint.verticalOverflow = VerticalWrapMode.Overflow;
             noticeHint.lineSpacing = 1.4f;
@@ -229,11 +297,12 @@ namespace TrashTD.Audio
 
             CreateSectionHeader("INTERFACE", 310f);
             CreateRowLabel("HIDE UI", 360f);
-            hideHudOnButton = CreateSegmentButton("HideHudOnButton", "ON", 0, 360f, () => SetHideHud(true));
-            hideHudOffButton = CreateSegmentButton("HideHudOffButton", "OFF", 1, 360f, () => SetHideHud(false));
+            CreateSegmentButton("HideHudOnButton", "ON", 0, 360f);
+            CreateSegmentButton("HideHudOffButton", "OFF", 1, 360f);
             Text hideHudHint = CreateText(pageRoot,
                 "Hides the HUD while you play, for a clean view of the map. Press H in a stage to switch it too.",
                 11, TextAnchor.UpperLeft, HintColor);
+            hideHudHint.gameObject.name = "HideHudHint";
             hideHudHint.horizontalOverflow = HorizontalWrapMode.Wrap;
             hideHudHint.verticalOverflow = VerticalWrapMode.Overflow;
             hideHudHint.lineSpacing = 1.4f;
@@ -241,22 +310,134 @@ namespace TrashTD.Audio
 
             CreateSectionHeader("SAVE DATA", 450f);
             CreateRowLabel("PROGRESS", 492f);
-            resetProgressButton = CreateSegmentButton("ResetProgressButton", "RESET", 0, 492f, OnResetProgressClicked);
-            resetProgressHint = CreateText(pageRoot, string.Empty, 11, TextAnchor.UpperLeft, HintColor);
-            resetProgressHint.horizontalOverflow = HorizontalWrapMode.Wrap;
-            resetProgressHint.verticalOverflow = VerticalWrapMode.Overflow;
-            resetProgressHint.lineSpacing = 1.4f;
-            PlaceTopLeft(resetProgressHint.rectTransform, ControlX + SegmentWidth + 12f, 474f, 2f * SegmentWidth + 12f, 40f);
+            CreateSegmentButton("ResetProgressButton", "RESET", 0, 492f);
+            Text resetHint = CreateText(pageRoot, string.Empty, 11, TextAnchor.UpperLeft, HintColor);
+            resetHint.gameObject.name = "ResetProgressHint";
+            resetHint.horizontalOverflow = HorizontalWrapMode.Wrap;
+            resetHint.verticalOverflow = VerticalWrapMode.Overflow;
+            resetHint.lineSpacing = 1.4f;
+            PlaceTopLeft(resetHint.rectTransform, ControlX + SegmentWidth + 12f, 474f, 2f * SegmentWidth + 12f, 40f);
             pageRoot = card;
 
             // Footer
             Image footerLine = CreateImage(card, "FooterLine", new Color(LineColor.r, LineColor.g, LineColor.b, 0.25f));
             PlaceTopLeft(footerLine.rectTransform, Padding, FooterY, CardWidth - 2f * Padding, 2f);
-            Button closeButton = CreateTerminalButton(card, "CloseButton", "CLOSE", 16);
-            PlaceTopLeft(closeButton.GetComponent<RectTransform>(), (CardWidth - 220f) * 0.5f, FooterY + 18f, 220f, 48f);
-            AddCornerBrackets(closeButton.GetComponent<RectTransform>(), 10f, 2f, LineColor);
-            closeButton.onClick.AddListener(Hide);
-            AttachFeedback(closeButton, SfxId.UiBack);
+            Button close = CreateTerminalButton(card, "CloseButton", "CLOSE", 16);
+            PlaceTopLeft(close.GetComponent<RectTransform>(), (CardWidth - 220f) * 0.5f, FooterY + 18f, 220f, 48f);
+            AddCornerBrackets(close.GetComponent<RectTransform>(), 10f, 2f, LineColor);
+        }
+
+        /// <summary>
+        /// Finds the named objects of a panel (built in code or instantiated from the prefab) and fills this class's fields.
+        /// False, with the missing names, when any is absent or lacks its component.
+        /// </summary>
+        private bool ResolveReferences(GameObject root, out string missing)
+        {
+            var byName = new Dictionary<string, Transform>();
+            foreach (Transform child in root.GetComponentsInChildren<Transform>(true)) byName.TryAdd(child.name, child);
+
+            var missingNames = new List<string>();
+            T Find<T>(string objectName) where T : Component
+            {
+                if (byName.TryGetValue(objectName, out Transform found))
+                {
+                    T component = found.GetComponent<T>();
+                    if (component != null) return component;
+                }
+                missingNames.Add(objectName + " (" + typeof(T).Name + ")");
+                return null;
+            }
+
+            panel = root;
+            panelGroup = root.GetComponent<CanvasGroup>();
+            if (panelGroup == null) missingNames.Add("CanvasGroup on the root");
+            card = Find<RectTransform>("SettingsCard");
+
+            for (int i = 0; i < TabLabels.Length; i++)
+            {
+                tabButtons[i] = Find<Button>(TabLabels[i] + "Tab");
+                RectTransform page = Find<RectTransform>(TabLabels[i] + "Page");
+                pages[i] = page != null ? page.gameObject : null;
+            }
+
+            musicSlider = Find<Slider>("MUSICSlider");
+            sfxSlider = Find<Slider>("SFXSlider");
+            brightnessSlider = Find<Slider>("BRIGHTNESSSlider");
+            musicValueText = Find<Text>("MUSICValue");
+            sfxValueText = Find<Text>("SFXValue");
+            brightnessValueText = Find<Text>("BRIGHTNESSValue");
+
+            resolutionPrevButton = Find<Button>("ResolutionPrevButton");
+            resolutionNextButton = Find<Button>("ResolutionNextButton");
+            resolutionApplyButton = Find<Button>("ResolutionApplyButton");
+            resolutionText = Find<Text>("ResolutionValue");
+            fullscreenButton = Find<Button>("FullscreenButton");
+            windowedButton = Find<Button>("WindowedButton");
+            fullTvButton = Find<Button>("CrtFullTvButton");
+            classicButton = Find<Button>("CrtClassicButton");
+            offButton = Find<Button>("CrtOffButton");
+            crtStyleHint = Find<Text>("CrtStyleHint");
+
+            noticeOnButton = Find<Button>("RerollNoticeOnButton");
+            noticeOffButton = Find<Button>("RerollNoticeOffButton");
+            hideHudOnButton = Find<Button>("HideHudOnButton");
+            hideHudOffButton = Find<Button>("HideHudOffButton");
+            resetProgressButton = Find<Button>("ResetProgressButton");
+            resetProgressHint = Find<Text>("ResetProgressHint");
+            closeButton = Find<Button>("CloseButton");
+
+            // Optional: only present when the layout was built in the editor
+            editorHint = byName.TryGetValue("EditorHint", out Transform hint) ? hint.gameObject : null;
+
+            pageRoot = card;
+            missing = string.Join(", ", missingNames);
+            return missingNames.Count == 0;
+        }
+
+        /// <summary>Everything dynamic: starting values, click listeners and sounds, and the animated placement options.</summary>
+        private void Wire()
+        {
+            musicSlider.SetValueWithoutNotify(AudioManager.Instance != null ? AudioManager.Instance.MusicVolume : 0.45f);
+            sfxSlider.SetValueWithoutNotify(AudioManager.Instance != null ? AudioManager.Instance.SfxVolume : 0.45f);
+            brightnessSlider.minValue = GameGraphicsSettings.MinBrightness;
+            brightnessSlider.maxValue = GameGraphicsSettings.MaxBrightness;
+            brightnessSlider.SetValueWithoutNotify(GameGraphicsSettings.Brightness);
+            if (editorHint != null) editorHint.SetActive(Application.isEditor);
+
+            for (int i = 0; i < tabButtons.Length; i++)
+            {
+                Tab tab = (Tab)i;
+                Bind(tabButtons[i], () => SelectTab(tab));
+            }
+
+            Bind(resolutionPrevButton, () => StepResolution(-1));
+            Bind(resolutionNextButton, () => StepResolution(1));
+            Bind(resolutionApplyButton, ApplyResolution);
+            Bind(fullscreenButton, () => SetWindowMode(true));
+            Bind(windowedButton, () => SetWindowMode(false));
+            Bind(fullTvButton, () => SetCrtStyle(CrtStyle.FullTv));
+            Bind(classicButton, () => SetCrtStyle(CrtStyle.Classic));
+            Bind(offButton, () => SetCrtStyle(CrtStyle.Off));
+
+            Bind(noticeOnButton, () => SetRerollNotice(true));
+            Bind(noticeOffButton, () => SetRerollNotice(false));
+            Bind(hideHudOnButton, () => SetHideHud(true));
+            Bind(hideHudOffButton, () => SetHideHud(false));
+            Bind(resetProgressButton, OnResetProgressClicked);
+            Bind(closeButton, Hide, SfxId.UiBack);
+
+            // The placement options are animated diagrams made from generated sprites, so they are created here, on the CONTROLS page
+            Transform controlsPage = pages[(int)Tab.Controls].transform;
+            Vector2 optionSize = new Vector2(250f, 300f);
+            float optionGap = (CardWidth - 2f * Padding - 3f * optionSize.x) * 0.5f;
+            for (int i = 0; i < schemeOptions.Length; i++)
+            {
+                PlacementControlScheme scheme = (PlacementControlScheme)i;
+                PlacementSchemeOption option = PlacementSchemeOption.Create(controlsPage, scheme, optionSize);
+                PlaceTopLeft(option.Button.GetComponent<RectTransform>(), Padding + i * (optionSize.x + optionGap), 194f, optionSize.x, optionSize.y);
+                Bind(option.Button, () => SetPlacementScheme(scheme));
+                schemeOptions[i] = option;
+            }
 
             musicSlider.onValueChanged.AddListener(value =>
             {
@@ -273,12 +454,13 @@ namespace TrashTD.Audio
                 GameGraphicsSettings.Brightness = value;
                 RefreshGraphicsControls();
             });
-            RefreshGraphicsControls();
-            RefreshControls();
-            RefreshGameplay();
-            SyncResolutions();
-            SelectTab(lastTab);
-            panel.SetActive(false);
+        }
+
+        /// <summary>A click listener plus the terminal button feedback (hover, glow, click sound).</summary>
+        private static void Bind(Button button, Action onClick, SfxId clickSound = SfxId.UiClick)
+        {
+            button.onClick.AddListener(() => onClick());
+            AttachFeedback(button, clickSound);
         }
 
         /// <summary>A full-card container for one tab; rows use the card's own coordinates.</summary>
@@ -408,32 +590,25 @@ namespace TrashTD.Audio
             CreateRowLabel("RESOLUTION", centerY);
             float pickerWidth = 2f * SegmentWidth + 12f;
 
-            resolutionPrevButton = CreateTerminalButton(pageRoot, "ResolutionPrevButton", "<", 14);
-            PlaceTopLeft(resolutionPrevButton.GetComponent<RectTransform>(), ControlX, centerY - 20f, arrowWidth, 40f);
-            resolutionPrevButton.onClick.AddListener(() => StepResolution(-1));
-            AttachFeedback(resolutionPrevButton, SfxId.UiClick);
+            Button prev = CreateTerminalButton(pageRoot, "ResolutionPrevButton", "<", 14);
+            PlaceTopLeft(prev.GetComponent<RectTransform>(), ControlX, centerY - 20f, arrowWidth, 40f);
 
-            resolutionNextButton = CreateTerminalButton(pageRoot, "ResolutionNextButton", ">", 14);
-            PlaceTopLeft(resolutionNextButton.GetComponent<RectTransform>(), ControlX + pickerWidth - arrowWidth, centerY - 20f, arrowWidth, 40f);
-            resolutionNextButton.onClick.AddListener(() => StepResolution(1));
-            AttachFeedback(resolutionNextButton, SfxId.UiClick);
+            Button next = CreateTerminalButton(pageRoot, "ResolutionNextButton", ">", 14);
+            PlaceTopLeft(next.GetComponent<RectTransform>(), ControlX + pickerWidth - arrowWidth, centerY - 20f, arrowWidth, 40f);
 
-            resolutionText = CreateText(pageRoot, string.Empty, LabelSize, TextAnchor.MiddleCenter, AccentBright);
-            PlaceTopLeft(resolutionText.rectTransform, ControlX + arrowWidth, centerY - 15f, pickerWidth - 2f * arrowWidth, 30f);
+            Text value = CreateText(pageRoot, string.Empty, LabelSize, TextAnchor.MiddleCenter, AccentBright);
+            value.gameObject.name = "ResolutionValue";
+            PlaceTopLeft(value.rectTransform, ControlX + arrowWidth, centerY - 15f, pickerWidth - 2f * arrowWidth, 30f);
 
-            resolutionApplyButton = CreateTerminalButton(pageRoot, "ResolutionApplyButton", "APPLY", 13);
-            PlaceTopLeft(resolutionApplyButton.GetComponent<RectTransform>(), ControlX + 2f * (SegmentWidth + 12f), centerY - 20f, SegmentWidth, 40f);
-            resolutionApplyButton.onClick.AddListener(ApplyResolution);
-            AttachFeedback(resolutionApplyButton, SfxId.UiClick);
+            Button apply = CreateTerminalButton(pageRoot, "ResolutionApplyButton", "APPLY", 13);
+            PlaceTopLeft(apply.GetComponent<RectTransform>(), ControlX + 2f * (SegmentWidth + 12f), centerY - 20f, SegmentWidth, 40f);
         }
 
         /// <summary>A button in one of the three control segments of a row (like the CRT style buttons).</summary>
-        private Button CreateSegmentButton(string objectName, string label, int index, float centerY, Action onClick)
+        private Button CreateSegmentButton(string objectName, string label, int index, float centerY)
         {
             Button button = CreateTerminalButton(pageRoot, objectName, label, 13);
             PlaceTopLeft(button.GetComponent<RectTransform>(), ControlX + index * (SegmentWidth + 12f), centerY - 20f, SegmentWidth, 40f);
-            button.onClick.AddListener(() => onClick());
-            AttachFeedback(button, SfxId.UiClick);
             return button;
         }
 
@@ -531,12 +706,10 @@ namespace TrashTD.Audio
             card.localScale = Vector3.one * Mathf.Lerp(0.94f, 1f, eased);
         }
 
-        private Button CreateStyleButton(string objectName, string label, int index, CrtStyle style, float centerY)
+        private Button CreateStyleButton(string objectName, string label, int index, float centerY)
         {
             Button button = CreateTerminalButton(pageRoot, objectName, label, 13);
             PlaceTopLeft(button.GetComponent<RectTransform>(), ControlX + index * (SegmentWidth + 12f), centerY - 20f, SegmentWidth, 40f);
-            button.onClick.AddListener(() => SetCrtStyle(style));
-            AttachFeedback(button, SfxId.UiClick);
             return button;
         }
 
@@ -661,6 +834,7 @@ namespace TrashTD.Audio
             slider.SetValueWithoutNotify(value);
 
             valueText = CreateText(pageRoot, Percent(value), LabelSize, TextAnchor.MiddleRight, AccentBright);
+            valueText.gameObject.name = label + "Value";
             PlaceTopLeft(valueText.rectTransform, CardWidth - Padding - ValueWidth, centerY - 15f, ValueWidth, 30f);
             return slider;
         }

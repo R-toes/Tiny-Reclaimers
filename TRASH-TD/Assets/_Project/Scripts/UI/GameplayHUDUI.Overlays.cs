@@ -523,24 +523,126 @@ namespace TrashTD.UI
             EnvironmentBriefingDismissed?.Invoke();
         }
 
+        /// <summary>Where the baked pause menu layout lives (Resources, so a build can load it). Missing = built in code.</summary>
+        public const string PausePanelPrefabAssetPath = "Assets/Resources/UI/Prefabs/PausePanel.prefab";
+        private const string PausePanelPrefabResourcePath = "UI/Prefabs/PausePanel";
+
+        /// <summary>The named parts of the pause panel that the HUD needs to find (see TryResolvePausePanel).</summary>
+        private sealed class PausePanelRefs
+        {
+            public GameObject panel;
+            public CanvasGroup group;
+            public RectTransform card;
+            public Button resume;
+            public Button retry;
+            public Button exit;
+        }
+
         private void CreatePausePanel(Transform root)
         {
-            pausePanel = new GameObject("PausePanel", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
-            pausePanel.transform.SetParent(root, false);
-            Stretch(pausePanel.GetComponent<RectTransform>());
-            pausePanel.GetComponent<Image>().color = new Color(0.01f, 0.012f, 0.02f, 0.86f);
+            // The layout comes from the baked prefab when there is one (TRASH TD > UI > Bake Pause Panel Prefab, then
+            // edit it in Prefab Mode); otherwise it is built in code. Either way the parts are found by name and
+            // everything dynamic (frame sprites, hover feedback, click listeners) is attached below.
+            PausePanelRefs refs = null;
+            GameObject prefab = Resources.Load<GameObject>(PausePanelPrefabResourcePath);
+            if (prefab != null)
+            {
+                GameObject instance = Instantiate(prefab, root, false);
+                instance.name = "PausePanel";
+                if (!TryResolvePausePanel(instance, out refs, out string missing))
+                {
+                    Debug.LogError("GameplayHUDUI: the baked pause panel (" + PausePanelPrefabAssetPath + ") is missing " + missing +
+                                   ". Building it in code instead; rebake it with TRASH TD > UI > Bake Pause Panel Prefab.");
+                    instance.SetActive(false);
+                    Destroy(instance);
+                    refs = null;
+                }
+            }
+            if (refs == null)
+            {
+                TryResolvePausePanel(BuildPausePanelLayout(root), out refs, out _);
+            }
 
-            pauseGroup = pausePanel.GetComponent<CanvasGroup>();
+            pausePanel = refs.panel;
+            pauseGroup = refs.group;
+            pauseCard = refs.card;
             pauseGroup.alpha = 0f;
+
+            // Row 2 also holds the Settings button (added by AudioSettingsUI in Awake, see PauseSettingsX) and row 3 the
+            // Reclaimers' Intel button (added by ReclaimersIntelUI in Awake): both find this card by its name, "PauseCard".
+            WirePauseButton(refs.resume, ButtonContainerType.Primary, new Color(0.4f, 1f, 0.65f, 1f), ResumeGame);
+            WirePauseButton(refs.retry, ButtonContainerType.Secondary, new Color(0.55f, 0.75f, 1f, 1f), RetryStage);
+            WirePauseButton(refs.exit, ButtonContainerType.Danger, new Color(1f, 0.4f, 0.4f, 1f), ExitToMenu);
+
+            pausePanel.SetActive(false);
+        }
+
+        /// <summary>The frame sprite and hover/click feedback of a pause button, then what a click does.</summary>
+        private void WirePauseButton(Button button, ButtonContainerType containerType, Color glow, UnityEngine.Events.UnityAction onClick)
+        {
+            StyleButton(button, containerType, glow, 1.04f);
+            button.onClick.AddListener(onClick);
+        }
+
+        /// <summary>
+        /// Builds the pause panel's layout in code under <paramref name="root"/> and returns it, for the editor's bake
+        /// command (UiPrefabBaker) and the tests. Layout only: no listeners, no feedback components.
+        /// </summary>
+        public static GameObject BuildPausePanelForPrefab(Transform root) => BuildPausePanelLayout(root);
+
+        /// <summary>True when <paramref name="candidate"/> has every named part the HUD binds to; otherwise lists what is missing.</summary>
+        public static bool ValidatePausePanel(GameObject candidate, out string missing)
+        {
+            return TryResolvePausePanel(candidate, out _, out missing);
+        }
+
+        private static bool TryResolvePausePanel(GameObject root, out PausePanelRefs refs, out string missing)
+        {
+            var byName = new Dictionary<string, Transform>();
+            foreach (Transform child in root.GetComponentsInChildren<Transform>(true)) byName.TryAdd(child.name, child);
+
+            var missingNames = new List<string>();
+            T Find<T>(string objectName) where T : Component
+            {
+                if (byName.TryGetValue(objectName, out Transform found))
+                {
+                    T component = found.GetComponent<T>();
+                    if (component != null) return component;
+                }
+                missingNames.Add(objectName + " (" + typeof(T).Name + ")");
+                return null;
+            }
+
+            refs = new PausePanelRefs
+            {
+                panel = root,
+                group = root.GetComponent<CanvasGroup>(),
+                card = Find<RectTransform>("PauseCard"),
+                resume = Find<Button>("ResumeButton"),
+                retry = Find<Button>("RetryButton"),
+                exit = Find<Button>("ExitButton")
+            };
+            if (refs.group == null) missingNames.Add("CanvasGroup on the root");
+
+            missing = string.Join(", ", missingNames);
+            return missingNames.Count == 0;
+        }
+
+        private static GameObject BuildPausePanelLayout(Transform root)
+        {
+            var panelObject = new GameObject("PausePanel", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+            panelObject.transform.SetParent(root, false);
+            Stretch(panelObject.GetComponent<RectTransform>());
+            panelObject.GetComponent<Image>().color = new Color(0.01f, 0.012f, 0.02f, 0.86f);
 
             // Centered card: the 256x256 pause menu panel art drawn at 2x, grown by one indicator row (see
             // BuildPauseCardArt). Its header screen spans y 37..101 (title), a divider sits at y 103, and the body
             // screen spans y 104..251 (buttons), with four indicator rows (LED on the left, a slot on the right).
             var card = new GameObject("PauseCard", typeof(RectTransform), typeof(Image));
-            card.transform.SetParent(pausePanel.transform, false);
-            pauseCard = card.GetComponent<RectTransform>();
-            SetPosition(pauseCard, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(PauseArtPixels, PauseCardHeightPx) * PauseCardScale, new Vector2(0.5f, 0.5f));
-            if (!BuildPauseCardArt(pauseCard))
+            card.transform.SetParent(panelObject.transform, false);
+            RectTransform cardRect = card.GetComponent<RectTransform>();
+            SetPosition(cardRect, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(PauseArtPixels, PauseCardHeightPx) * PauseCardScale, new Vector2(0.5f, 0.5f));
+            if (!BuildPauseCardArt(cardRect))
             {
                 ApplyModalCard(card);
             }
@@ -563,37 +665,32 @@ namespace TrashTD.UI
 
             float ruleInner = subtitle.preferredWidth * 0.5f + 14f;
             Color ruleColor = new Color(AccentColor.r, AccentColor.g, AccentColor.b, 0.45f);
+            int ruleIndex = 0;
             foreach (float side in new[] { -1f, 1f })
             {
-                CreateIconImage(card.transform, "PauseSubtitleRule", null, ruleColor,
+                CreateIconImage(card.transform, "PauseSubtitleRule" + (ruleIndex++ == 0 ? "Left" : "Right"), null, ruleColor,
                     PausePx(side * (ruleInner + 18f), PauseSubtitleRowPx), new Vector2(0.5f, 1f), new Vector2(36f, 2f), new Vector2(0.5f, 0.5f));
             }
 
             // Body screen: one row per indicator light, all the same width on the card's centre line.
             // Row 2 is Retry plus the square Settings button (added by AudioSettingsUI in Awake, see PauseSettingsX).
-            var resumeButton = CreatePauseButton(card.transform, "ResumeButton", "RESUME", "icon_play",
-                ButtonContainerType.Primary, new Color(0.4f, 1f, 0.65f, 1f), 0f, PauseRow1Px, PauseRowWidth);
-            resumeButton.onClick.AddListener(ResumeGame);
-
-            var retryButton = CreatePauseButton(card.transform, "RetryButton", "RETRY", "icon_reroll",
-                ButtonContainerType.Secondary, new Color(0.55f, 0.75f, 1f, 1f),
-                -(PauseButtonHeight + PauseRowGap) * 0.5f, PauseRow2Px, PauseRowWidth - PauseButtonHeight - PauseRowGap);
-            retryButton.onClick.AddListener(RetryStage);
-
+            CreatePauseButtonLayout(card.transform, "ResumeButton", "RESUME", "icon_play",
+                ButtonContainerType.Primary, 0f, PauseRow1Px, PauseRowWidth);
+            CreatePauseButtonLayout(card.transform, "RetryButton", "RETRY", "icon_reroll",
+                ButtonContainerType.Secondary, -(PauseButtonHeight + PauseRowGap) * 0.5f, PauseRow2Px, PauseRowWidth - PauseButtonHeight - PauseRowGap);
             // Row 3 is the Reclaimers' Intel button (added by ReclaimersIntelUI in Awake).
-            var exitButton = CreatePauseButton(card.transform, "ExitButton", "EXIT TO MENU", "icon_exit",
-                ButtonContainerType.Danger, new Color(1f, 0.4f, 0.4f, 1f), 0f, PauseRow4Px, PauseRowWidth);
-            exitButton.onClick.AddListener(ExitToMenu);
+            CreatePauseButtonLayout(card.transform, "ExitButton", "EXIT TO MENU", "icon_exit",
+                ButtonContainerType.Danger, 0f, PauseRow4Px, PauseRowWidth);
 
-            pausePanel.SetActive(false);
+            return panelObject;
         }
 
-        private Button CreatePauseButton(Transform parent, string objectName, string label, string iconName,
-            ButtonContainerType containerType, Color glow, float x, float rowPx, float width)
+        /// <summary>A pause button's layout: frame, icon and label, positioned on its indicator row. Wired by CreatePausePanel.</summary>
+        private static Button CreatePauseButtonLayout(Transform parent, string objectName, string label, string iconName,
+            ButtonContainerType containerType, float x, float rowPx, float width)
         {
             Button button = CreateButton(parent, objectName, label, new Vector2(width, PauseButtonHeight), containerType);
             SetPosition(button.GetComponent<RectTransform>(), PausePx(x, rowPx), new Vector2(0.5f, 1f), null, new Vector2(0.5f, 0.5f));
-            StyleButton(button, containerType, glow, 1.04f);
             ApplyPauseButtonLook(button, label, iconName);
             return button;
         }
@@ -700,13 +797,15 @@ namespace TrashTD.UI
         private static void AddPauseArtStrip(RectTransform card, Texture2D texture, string name, float fromPx, float toPx, float cardYPx)
         {
             float height = toPx - fromPx;
-            Sprite sprite = Sprite.Create(texture, new Rect(0f, texture.height - toPx, texture.width, height), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
 
-            var strip = new GameObject(name, typeof(RectTransform), typeof(Image));
+            // A RawImage showing a band of the texture: the same pixels as slicing it into a Sprite, but a texture asset can be
+            // saved in the pause prefab and a Sprite made at runtime cannot
+            var strip = new GameObject(name, typeof(RectTransform), typeof(RawImage));
             strip.transform.SetParent(card, false);
             strip.transform.SetAsFirstSibling();
-            var image = strip.GetComponent<Image>();
-            image.sprite = sprite;
+            var image = strip.GetComponent<RawImage>();
+            image.texture = texture;
+            image.uvRect = new Rect(0f, (texture.height - toPx) / texture.height, 1f, height / texture.height);
             image.raycastTarget = false;
             SetPosition(image.rectTransform, PausePx(0f, cardYPx), new Vector2(0.5f, 1f),
                 new Vector2(PauseArtPixels, height) * PauseCardScale, new Vector2(0.5f, 1f));
