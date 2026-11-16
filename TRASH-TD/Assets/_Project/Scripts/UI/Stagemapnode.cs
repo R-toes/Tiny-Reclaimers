@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TrashTD.Data;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -502,20 +503,6 @@ namespace TrashTD.UI
             statusText.color = isLocked ? LockedGrey : (isSelected ? SelectedGlow : Phosphor);
             bool dotOn = isLocked || isSelected || Mathf.Repeat(time + stageNumber * 0.21f, 1.2f) < 0.8f;
             statusDot.color = dotOn ? statusText.color : Color.clear;
-        }
-
-        private static float EaseOutCubic(float t)
-        {
-            float u = 1f - t;
-            return 1f - u * u * u;
-        }
-
-        private static float EaseOutBack(float t)
-        {
-            const float c1 = 1.70158f;
-            const float c3 = c1 + 1f;
-            float u = t - 1f;
-            return 1f + c3 * u * u * u + c1 * u * u;
         }
 
         // ─────────────────────────────────────────────────────

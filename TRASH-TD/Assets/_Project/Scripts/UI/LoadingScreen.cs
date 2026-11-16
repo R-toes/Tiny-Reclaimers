@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TrashTD.Data;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -352,13 +353,6 @@ namespace TrashTD.UI
         //  UI helpers
         // ─────────────────────────────────────────────────────
 
-        private static RectTransform CreateRect(string name, Transform parent)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            return (RectTransform)go.transform;
-        }
-
         /// <summary>A plain coloured block. Images without a sprite draw solid colour, which is intended here.</summary>
         private static Image CreateImage(Transform parent, string name, Color color)
         {
@@ -382,14 +376,6 @@ namespace TrashTD.UI
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;
             return text;
-        }
-
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
         }
 
         private static void Place(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size)

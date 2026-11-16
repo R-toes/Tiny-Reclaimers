@@ -7,6 +7,7 @@ using UnityEngine.InputSystem.UI;
 using TrashTD.Audio;
 using TrashTD.Data;
 using StageProgress = TrashTD.Core.GameLoop.StageProgress;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -105,20 +106,6 @@ namespace TrashTD.UI
             return canvas;
         }
 
-        private static void EnsureEventSystem()
-        {
-            var eventSystem = FindAnyObjectByType<EventSystem>();
-            if (eventSystem == null)
-            {
-                var eventSystemObject = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
-                eventSystem = eventSystemObject.GetComponent<EventSystem>();
-            }
-            else if (eventSystem.GetComponent<BaseInputModule>() == null)
-            {
-                eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
-            }
-        }
-
         // ─────────────────────────────────────────────────────
         //  UI building helpers
         // ─────────────────────────────────────────────────────
@@ -130,20 +117,6 @@ namespace TrashTD.UI
             return group;
         }
 
-        private static float EaseOutCubic(float t)
-        {
-            float u = 1f - t;
-            return 1f - u * u * u;
-        }
-
-        private static float EaseOutBack(float t)
-        {
-            const float c1 = 1.70158f;
-            const float c3 = c1 + 1f;
-            float u = t - 1f;
-            return 1f + c3 * u * u * u + c1 * u * u;
-        }
-
         private static void Place(RectTransform rt, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size)
         {
             rt.anchorMin = anchor;
@@ -151,14 +124,6 @@ namespace TrashTD.UI
             rt.pivot = pivot;
             rt.sizeDelta = size;
             rt.anchoredPosition = position;
-        }
-
-        private static void StretchFill(RectTransform rt)
-        {
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
         }
 
         /// <summary>Full-width strip hanging from the top edge of its parent.</summary>

@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TrashTD.Systems;
 using Random = UnityEngine.Random;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -571,12 +572,6 @@ namespace TrashTD.UI
             Vector3 world = rect.TransformPoint(rect.rect.center);
             Vector3 local = layer.InverseTransformPoint(world);
             return new Vector2(local.x, local.y);
-        }
-
-        private static float EaseOutCubic(float t)
-        {
-            float u = 1f - t;
-            return 1f - u * u * u;
         }
     }
 }

@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TrashTD.UI;
 using TrashTD.Core.GameLoop;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.Audio
 {
@@ -728,21 +729,6 @@ namespace TrashTD.Audio
             return buttonObject.GetComponent<Button>();
         }
 
-        private static Text CreateText(Transform parent, string content, int size, TextAnchor alignment, Color color)
-        {
-            GameObject textObject = new GameObject("Text", typeof(RectTransform), typeof(Text));
-            textObject.transform.SetParent(parent, false);
-            Text text = textObject.GetComponent<Text>();
-            text.text = content;
-            text.font = UIFontHelper.GetPixelFont();
-            text.fontSize = size;
-            text.alignment = alignment;
-            text.color = color;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.raycastTarget = false;
-            return text;
-        }
-
         private static void AttachFeedback(Button button, SfxId clickSound)
         {
             button.transition = Selectable.Transition.None;
@@ -794,24 +780,6 @@ namespace TrashTD.Audio
             image.color = color;
             image.raycastTarget = false;
             return image;
-        }
-
-        /// <summary>Places a rect by its top-left corner, in pixels from the top-left of its parent.</summary>
-        private static void PlaceTopLeft(RectTransform rect, float x, float y, float width, float height)
-        {
-            rect.anchorMin = new Vector2(0f, 1f);
-            rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(x, -y);
-            rect.sizeDelta = new Vector2(width, height);
-        }
-
-        private static void SetStretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
         }
 
         private static void SetPosition(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size)

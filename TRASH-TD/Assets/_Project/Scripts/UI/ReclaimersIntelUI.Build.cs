@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TrashTD.Audio;
 using TrashTD.Data;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {

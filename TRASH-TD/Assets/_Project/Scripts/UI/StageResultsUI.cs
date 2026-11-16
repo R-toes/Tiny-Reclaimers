@@ -9,6 +9,7 @@ using TrashTD.Core.GameLoop;
 using TrashTD.Data;
 using TrashTD.Enemies;
 using TrashTD.Systems;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -850,32 +851,6 @@ namespace TrashTD.UI
             return text;
         }
 
-        private static Image CreateImage(Transform parent, string name, Color color)
-        {
-            var imageObject = new GameObject(name, typeof(RectTransform), typeof(Image));
-            imageObject.transform.SetParent(parent, false);
-            Image image = imageObject.GetComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
-        }
-
-        private static RectTransform CreateRect(Transform parent, string name)
-        {
-            var rectObject = new GameObject(name, typeof(RectTransform));
-            rectObject.transform.SetParent(parent, false);
-            return rectObject.GetComponent<RectTransform>();
-        }
-
-        private static void PlaceTopLeft(RectTransform rect, float x, float y, float width, float height)
-        {
-            rect.anchorMin = new Vector2(0f, 1f);
-            rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(x, -y);
-            rect.sizeDelta = new Vector2(width, height);
-        }
-
         /// <summary>Centre at (x, y) measured from the parent's top-left corner.</summary>
         private static void PlaceFromTopLeftCentered(RectTransform rect, float x, float y, float width, float height)
         {
@@ -893,14 +868,6 @@ namespace TrashTD.UI
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = new Vector2(0f, -y);
             rect.sizeDelta = new Vector2(width, height);
-        }
-
-        private static void SetStretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
         }
     }
 }

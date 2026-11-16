@@ -12,6 +12,7 @@ using TrashTD.Core.GameLoop;
 using TrashTD.Data;
 using TrashTD.Operators;
 using TrashTD.Systems;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {

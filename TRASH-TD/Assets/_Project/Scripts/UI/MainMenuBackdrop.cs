@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TrashTD.Data;
 using TrashTD.Enemies;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -536,13 +537,6 @@ namespace TrashTD.UI
             return sprite;
         }
 
-        private static RectTransform CreateRect(string name, Transform parent)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            return (RectTransform)go.transform;
-        }
-
         private static Image CreateImage(string name, Transform parent, Color color)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
@@ -551,14 +545,6 @@ namespace TrashTD.UI
             image.color = color;
             image.raycastTarget = false;
             return image;
-        }
-
-        private static void StretchFill(RectTransform rt)
-        {
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
         }
     }
 }

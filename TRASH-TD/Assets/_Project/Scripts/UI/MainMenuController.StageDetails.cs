@@ -7,6 +7,7 @@ using UnityEngine.InputSystem.UI;
 using TrashTD.Audio;
 using TrashTD.Data;
 using StageProgress = TrashTD.Core.GameLoop.StageProgress;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {

@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using TrashTD.Audio;
 using TrashTD.Data;
 using TrashTD.Systems;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -306,15 +307,6 @@ namespace TrashTD.UI
                 text.rectTransform.sizeDelta = box;
             }
             return text;
-        }
-
-        private static void PlaceTopLeft(RectTransform rect, float x, float y, float width, float height)
-        {
-            rect.anchorMin = new Vector2(0f, 1f);
-            rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(x, -y);
-            rect.sizeDelta = new Vector2(width, height);
         }
     }
 }

@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TrashTD.Operators;
 using TrashTD.Systems;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -195,16 +196,6 @@ namespace TrashTD.UI
             if (index < 0 || index >= notices.Count) return;
             if (notices[index].Rect != null) Destroy(notices[index].Rect.gameObject);
             notices.RemoveAt(index);
-        }
-
-        private static Image CreateImage(Transform parent, string name, Color color)
-        {
-            var imageObject = new GameObject(name, typeof(RectTransform), typeof(Image));
-            imageObject.transform.SetParent(parent, false);
-            Image image = imageObject.GetComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
         }
 
         private static Text CreateText(Transform parent, string name, string content, int size, Color color)

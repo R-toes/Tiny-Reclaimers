@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TrashTD.Core.GameLoop;
 using TrashTD.Data;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -326,31 +327,6 @@ namespace TrashTD.UI
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.raycastTarget = false;
             return text;
-        }
-
-        private static Image CreateImage(Transform parent, string name, Color color)
-        {
-            var imageObject = new GameObject(name, typeof(RectTransform), typeof(Image));
-            imageObject.transform.SetParent(parent, false);
-            Image image = imageObject.GetComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
-        }
-
-        private static RectTransform CreateRect(Transform parent, string name)
-        {
-            var rectObject = new GameObject(name, typeof(RectTransform));
-            rectObject.transform.SetParent(parent, false);
-            return rectObject.GetComponent<RectTransform>();
-        }
-
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
         }
     }
 }

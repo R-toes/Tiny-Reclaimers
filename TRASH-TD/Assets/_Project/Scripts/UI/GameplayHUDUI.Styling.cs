@@ -13,6 +13,7 @@ using TrashTD.Data;
 using TrashTD.Enemies;
 using TrashTD.Operators;
 using TrashTD.Systems;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -352,31 +353,9 @@ namespace TrashTD.UI
             AudioManager.Instance?.PlaySfx(clip, sfxVolume, pitch);
         }
 
-        private static float EaseOutCubic(float t)
-        {
-            float u = 1f - t;
-            return 1f - u * u * u;
-        }
-
-        private static float EaseOutBack(float t)
-        {
-            const float c1 = 1.70158f;
-            const float c3 = c1 + 1f;
-            float u = t - 1f;
-            return 1f + c3 * u * u * u + c1 * u * u;
-        }
-
         // ============================
         // UI Helpers
         // ============================
-
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-        }
 
         private static Text CreateText(Transform parent, string objectName, string value, int fontSize, TextAnchor alignment)
         {
@@ -511,20 +490,6 @@ namespace TrashTD.UI
 
             texture.Apply();
             return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
-        }
-
-        private static void EnsureEventSystem()
-        {
-            var eventSystem = FindAnyObjectByType<EventSystem>();
-            if (eventSystem == null)
-            {
-                var eventSystemObject = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
-                eventSystem = eventSystemObject.GetComponent<EventSystem>();
-            }
-            else if (eventSystem.GetComponent<BaseInputModule>() == null)
-            {
-                eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
-            }
         }
     }
 }

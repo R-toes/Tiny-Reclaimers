@@ -12,6 +12,7 @@ using TrashTD.Core.GameLoop;
 using TrashTD.Data;
 using TrashTD.Operators;
 using TrashTD.Systems;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -222,12 +223,6 @@ namespace TrashTD.UI
             hideRoutine = null;
         }
 
-        private static float EaseOutCubic(float t)
-        {
-            float u = 1f - t;
-            return 1f - u * u * u;
-        }
-
         private static float EaseInCubic(float t)
         {
             return t * t * t;
@@ -236,14 +231,6 @@ namespace TrashTD.UI
         private static float EaseInOutCubic(float t)
         {
             return t < 0.5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) / 2f;
-        }
-
-        private static float EaseOutBack(float t)
-        {
-            const float c1 = 1.70158f;
-            const float c3 = c1 + 1f;
-            float u = t - 1f;
-            return 1f + c3 * u * u * u + c1 * u * u;
         }
 
         // ============================

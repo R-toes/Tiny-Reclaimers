@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TrashTD.Audio;
 using TrashTD.Data;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -149,21 +150,6 @@ namespace TrashTD.UI
             for (int i = parent.childCount - 1; i >= 0; i--) Destroy(parent.GetChild(i).gameObject);
         }
 
-        private static Text CreateText(Transform parent, string content, int size, TextAnchor alignment, Color color)
-        {
-            GameObject textObject = new GameObject("Text", typeof(RectTransform), typeof(Text));
-            textObject.transform.SetParent(parent, false);
-            Text text = textObject.GetComponent<Text>();
-            text.text = content;
-            text.font = UIFontHelper.GetPixelFont();
-            text.fontSize = size;
-            text.alignment = alignment;
-            text.color = color;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.raycastTarget = false;
-            return text;
-        }
-
         private static Image CreateImage(Transform parent, string name, Color color)
         {
             GameObject imageObject = new GameObject(name, typeof(RectTransform), typeof(Image));
@@ -204,30 +190,12 @@ namespace TrashTD.UI
             rect.anchoredPosition = offset;
         }
 
-        /// <summary>Places a rect by its top-left corner, in pixels from the top-left of its parent.</summary>
-        private static void PlaceTopLeft(RectTransform rect, float x, float y, float width, float height)
-        {
-            rect.anchorMin = new Vector2(0f, 1f);
-            rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(x, -y);
-            rect.sizeDelta = new Vector2(width, height);
-        }
-
         private static void SetCentered(RectTransform rect, float width, float height)
         {
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = Vector2.zero;
             rect.sizeDelta = new Vector2(width, height);
-        }
-
-        private static void SetStretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
         }
     }
 }

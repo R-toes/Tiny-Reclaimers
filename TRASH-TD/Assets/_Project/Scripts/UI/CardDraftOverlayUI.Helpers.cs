@@ -12,6 +12,7 @@ using TrashTD.Core.GameLoop;
 using TrashTD.Data;
 using TrashTD.Operators;
 using TrashTD.Systems;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -219,14 +220,6 @@ namespace TrashTD.UI
             rt.anchorMax = anchor;
             rt.anchoredPosition = anchoredPos;
             rt.sizeDelta = size;
-        }
-
-        private static void StretchFill(RectTransform rt)
-        {
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
         }
 
         /// <summary>Full-width strip hanging from the top edge of its parent.</summary>
