@@ -2208,7 +2208,7 @@ namespace TrashTD.Editor
             stage.visualTilePixelSize = 32;
             stage.visualTileOffset = new Vector2(0, -1);
 
-            // The scenery around the map: the 864x384 expanded art holds the 416x384 map 7 tiles in from the left
+            // The scenery around the map: the 864x448 expanded art holds the 416x384 map 7 tiles in from the left and 3 tiles from the bottom
             var boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 5/Level 5 expanded.png");
             if (boundsSprites == null || boundsSprites.Length == 0)
                 boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 5/level 5 expanded.png");
@@ -2224,7 +2224,7 @@ namespace TrashTD.Editor
                     }
                 }
             }
-            stage.boundsTileOffset = new Vector2(-7f, -1f);
+            stage.boundsTileOffset = new Vector2(-7f, -3f);
 
             var fgSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 5/Level 5 bottom.png");
             if (fgSprites == null || fgSprites.Length == 0)
@@ -2616,6 +2616,24 @@ namespace TrashTD.Editor
                     }
                 }
             }
+
+            // The scenery around the map: the 576x256 extended art holds the 384x256 map 3 tiles in from the left
+            var boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 6/Level 6 extended.png");
+            if (boundsSprites == null || boundsSprites.Length == 0)
+                boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 6/level 6 extended.png");
+
+            if (boundsSprites != null)
+            {
+                foreach (var obj in boundsSprites)
+                {
+                    if (obj is Sprite s)
+                    {
+                        stage.boundsVisualSprite = s;
+                        break;
+                    }
+                }
+            }
+            stage.boundsTileOffset = new Vector2(-3f, -1f);
 
             stage.backgroundVisualSprite = null;
             stage.upperBackgroundVisualSprites = null;

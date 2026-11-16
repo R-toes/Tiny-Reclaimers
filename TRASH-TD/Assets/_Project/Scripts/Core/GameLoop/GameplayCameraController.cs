@@ -203,11 +203,11 @@ namespace TrashTD.Core.GameLoop
             min = new Vector2(mapBounds.xMin + halfWidth - centre.x, mapBounds.yMin + halfHeight - centre.y);
             max = new Vector2(mapBounds.xMax - halfWidth - centre.x, mapBounds.yMax - halfHeight - centre.y);
 
-            // A view bigger than the bounds on an axis can't be kept inside: centre it there. The limits are exact, they
-            // don't have to include the home framing (offset 0): when the home view itself would show past the bounds
-            // (Stage 5's art is no taller than the view) it is moved inside them.
+            // A view bigger than the bounds on an axis can't be kept inside: centre it horizontally.
+            // On Y, align the top of the bounds artwork to the bottom of the top HUD bar (Stage 5 and 6)
+            // so the sprite snaps on top without black void.
             if (min.x > max.x) min.x = max.x = (min.x + max.x) * 0.5f;
-            if (min.y > max.y) min.y = max.y = (min.y + max.y) * 0.5f;
+            if (min.y > max.y) min.y = max.y = (mapBounds.yMax - size * (1f - 2f * TopHudFraction)) - centre.y;
         }
 
         /// <summary>

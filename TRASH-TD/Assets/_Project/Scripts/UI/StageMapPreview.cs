@@ -866,7 +866,7 @@ namespace TrashTD.UI
             {
                 int col = i * 2;
                 int dmg = Stage5TrafficCar.CalculateDamage(col);
-                Vector2 uiPos = toUi(new Vector2(col + 0.5f, -0.5f));
+                Vector2 uiPos = toUi(new Vector2(col + 0.5f, 0.5f));
                 AddDamageBadge(uiPos, dmg.ToString(), appearBase + i * 0.04f);
             }
         }

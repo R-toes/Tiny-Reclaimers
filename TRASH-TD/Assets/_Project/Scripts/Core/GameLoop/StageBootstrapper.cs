@@ -579,14 +579,12 @@ namespace TrashTD.Core.GameLoop
             float requiredWorldHeight = (visualHeight + 0.35f) / availableRatio;
             float orthoSize = Mathf.Max(4.10f, requiredWorldHeight * 0.5f);
 
-            // If bounds artwork is present, prevent black void by ensuring the view does not exceed the bounds art in
-            // width or in height (the part under the HUD bars counts: it isn't fully opaque), while keeping the
-            // playable grid visible between the bars
+            // If bounds artwork is present, prevent black void on the sides by ensuring the view
+            // does not exceed the bounds art width, while keeping the playable grid fully visible
             if (stageData.boundsVisualSprite != null && cam.aspect > 0f)
             {
                 float boundsWidth = cameraMaxX - cameraMinX;
-                float boundsHeight = cameraMaxY - cameraMinY;
-                float maxOrthoForBounds = Mathf.Min(boundsWidth / (2f * cam.aspect), boundsHeight * 0.5f);
+                float maxOrthoForBounds = boundsWidth / (2f * cam.aspect);
                 float minOrthoForGrid = ((stageData.gridHeight * cellSize) + 0.35f) / (availableRatio * 2f);
                 if (maxOrthoForBounds >= minOrthoForGrid)
                 {
@@ -598,6 +596,14 @@ namespace TrashTD.Core.GameLoop
             // so visual content is vertically centered in the unobstructed play area
             float hudCenterOffset = ((170f - 90f) / 1080f) * orthoSize;
             float camY = visualCenterY - hudCenterOffset;
+
+            // On stages where the bounds art height is shorter than the camera view (specifically Stage 5 and Stage 6),
+            // snap the top of the bounds art to the bottom of the TopBar so the sprite snaps into place
+            // with no black void at the top.
+            if (stageData.boundsVisualSprite != null && (EnvironmentStageId == "STAGE_05" || EnvironmentStageId == "STAGE_06" || (cameraMaxY - cameraMinY) < (orthoSize * 2f)))
+            {
+                camY = cameraMaxY - orthoSize * (1f - 2f * (90f / 1080f));
+            }
 
             cam.transform.position = new Vector3(centerX, camY, -10f);
             cam.orthographic = true;
