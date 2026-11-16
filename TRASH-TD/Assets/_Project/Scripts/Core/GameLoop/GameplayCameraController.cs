@@ -175,7 +175,10 @@ namespace TrashTD.Core.GameLoop
         /// When zoomed in, the home framing (which keeps the playable area between the HUD bars centred on the map)
         /// shifts with the size so the zoom stays centred on the playable area instead of the screen centre.
         /// </summary>
-        private Vector2 GetZoomCentreShift(float size)
+        private Vector2 GetZoomCentreShift(float size) => CalculateZoomCentreShift(homeSize, size);
+
+        /// <summary>Pure form of the zoom centre shift (see GetZoomCentreShift), for tests.</summary>
+        public static Vector2 CalculateZoomCentreShift(float homeSize, float size)
         {
             float hudShift = (BottomHudFraction - TopHudFraction) * (homeSize - size);
             return new Vector2(0f, hudShift);
@@ -189,15 +192,25 @@ namespace TrashTD.Core.GameLoop
         /// </summary>
         private void GetViewLimits(float size, float aspect, out Vector2 min, out Vector2 max)
         {
+            CalculateViewLimits(mapBounds, homePosition, homeSize, size, aspect, strictBounds, out min, out max);
+        }
+
+        /// <summary>
+        /// The pure form of <see cref="GetViewLimits"/>, so the rule can be tested without a camera: how far the view may move
+        /// from the framing at <paramref name="size"/> in each direction.
+        /// </summary>
+        public static void CalculateViewLimits(Rect mapBounds, Vector2 homePosition, float homeSize, float size, float aspect, bool strictBounds,
+            out Vector2 min, out Vector2 max)
+        {
             if (!strictBounds)
             {
-                Vector2 range = GetViewRange(size, aspect);
+                Vector2 range = CalculateViewRange(mapBounds, size, aspect);
                 min = -range;
                 max = range;
                 return;
             }
 
-            Vector2 centre = homePosition + GetZoomCentreShift(size);
+            Vector2 centre = homePosition + CalculateZoomCentreShift(homeSize, size);
             float halfWidth = size * aspect;
             float halfHeight = size;
             min = new Vector2(mapBounds.xMin + halfWidth - centre.x, mapBounds.yMin + halfHeight - centre.y);
@@ -214,7 +227,9 @@ namespace TrashTD.Core.GameLoop
         /// <summary>
         /// Non-strict range: how far the view may move from the home framing per axis, symmetric.
         /// </summary>
-        private Vector2 GetViewRange(float size, float aspect)
+        private Vector2 GetViewRange(float size, float aspect) => CalculateViewRange(mapBounds, size, aspect);
+
+        private static Vector2 CalculateViewRange(Rect mapBounds, float size, float aspect)
         {
             float playHalfWidth = size * aspect;
             float playHalfHeight = size * (1f - TopHudFraction - BottomHudFraction);

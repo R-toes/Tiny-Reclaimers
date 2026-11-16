@@ -229,6 +229,33 @@ namespace TrashTD.Core.GameLoop
             };
         }
 
+        /// <summary>
+        /// The camera's home orthographic size. It shows the whole visual map between the HUD bars (the deck bar and the top
+        /// bar leave about 76% of the screen height; never smaller than 4.10). When the stage has bounds artwork the home
+        /// view is also capped to fit inside it, in width and in height (the part under the HUD bars counts: it isn't fully
+        /// opaque), so no void shows; the cap is skipped when the playable grid itself would not fit between the bars. Every
+        /// stage with bounds art follows this same rule (1, 3, 4, 5, 6). Pure, so the rule can be tested.
+        /// </summary>
+        public static float CalculateHomeOrthoSize(float visualHeight, float gridHeight, bool hasBounds, float boundsWidth, float boundsHeight, float aspect)
+        {
+            // Available vertical ratio between DeckBar (170px) and TopBar (90px) on 1080p reference (~76%)
+            const float availableRatio = 0.759f;
+            float requiredWorldHeight = (visualHeight + 0.35f) / availableRatio;
+            float orthoSize = Mathf.Max(4.10f, requiredWorldHeight * 0.5f);
+
+            if (hasBounds && aspect > 0f)
+            {
+                float maxOrthoForBounds = Mathf.Min(boundsWidth / (2f * aspect), boundsHeight * 0.5f);
+                float minOrthoForGrid = (gridHeight + 0.35f) / (availableRatio * 2f);
+                if (maxOrthoForBounds >= minOrthoForGrid)
+                {
+                    orthoSize = Mathf.Min(orthoSize, maxOrthoForBounds);
+                }
+            }
+
+            return orthoSize;
+        }
+
         private void CenterCameraOnGrid()
         {
             Camera cam = Camera.main;
@@ -273,26 +300,8 @@ namespace TrashTD.Core.GameLoop
                 cameraMaxY = Mathf.Max(cameraMaxY, boundsBottom + boundsRect.height / boundsPixelPerTile * cellSize);
             }
 
-            // Available vertical ratio between DeckBar (170px) and TopBar (90px) on 1080p reference (~76%)
-            const float availableRatio = 0.759f;
-            float requiredWorldHeight = (visualHeight + 0.35f) / availableRatio;
-            float orthoSize = Mathf.Max(4.10f, requiredWorldHeight * 0.5f);
-
-            // If bounds artwork is present, prevent black void by ensuring the home view fits inside the bounds art,
-            // in width and in height (the part under the HUD bars counts: it isn't fully opaque), while keeping the
-            // playable grid visible between the bars. Every stage with bounds art follows this same rule (1, 3, 5, 6);
-            // when the view fits, the camera clamps smoothly inside the bounds at every zoom.
-            if (stageData.boundsVisualSprite != null && cam.aspect > 0f)
-            {
-                float boundsWidth = cameraMaxX - cameraMinX;
-                float boundsHeight = cameraMaxY - cameraMinY;
-                float maxOrthoForBounds = Mathf.Min(boundsWidth / (2f * cam.aspect), boundsHeight * 0.5f);
-                float minOrthoForGrid = ((stageData.gridHeight * cellSize) + 0.35f) / (availableRatio * 2f);
-                if (maxOrthoForBounds >= minOrthoForGrid)
-                {
-                    orthoSize = Mathf.Min(orthoSize, maxOrthoForBounds);
-                }
-            }
+            float orthoSize = CalculateHomeOrthoSize(visualHeight, stageData.gridHeight * cellSize,
+                stageData.boundsVisualSprite != null, cameraMaxX - cameraMinX, cameraMaxY - cameraMinY, cam.aspect);
 
             // Shift camera down by the difference between bottom DeckBar (170px) and TopBar (90px)
             // so visual content is vertically centered in the unobstructed play area
