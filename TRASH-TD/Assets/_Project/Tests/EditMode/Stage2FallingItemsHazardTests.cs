@@ -3,6 +3,7 @@ using NUnit.Framework;
 using UnityEngine;
 using TrashTD.Combat;
 using TrashTD.Core.GameLoop;
+using TrashTD.Core.Grid;
 using TrashTD.Data;
 using TrashTD.Enemies;
 using TrashTD.Operators;
@@ -55,7 +56,9 @@ namespace TrashTD.Tests
             opData.blockCount = 1;
 
             op.Initialize(opData, OperatorRarity.Star1, OperatorFacing.Right);
-            op.Deploy(null);
+            // Deploy reads the cell, so it needs a real one (the data is Melee, which a Low Ground tile accepts)
+            var cell = new GridCell(0, 0, TileType.LowGround, Vector3.zero);
+            Assert.IsTrue(op.Deploy(cell), name + " should deploy on a Low Ground cell.");
             return op;
         }
 
