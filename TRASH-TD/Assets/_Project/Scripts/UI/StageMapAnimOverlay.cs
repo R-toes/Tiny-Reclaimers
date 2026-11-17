@@ -6,7 +6,7 @@ namespace TrashTD.UI
 {
     /// <summary>
     /// Animates the 12-frame radar/sonar pulse overlay (Resources/StageMap_Anim_Overlay.png) stretched over
-    /// the stage selection map ("Stage Selector Map.png").
+    /// the stage selection map (Act 1's "Act 1 Stage Selector Map.png"; every act's map gets the overlay).
     /// </summary>
     [RequireComponent(typeof(Image))]
     public class StageMapAnimOverlay : MonoBehaviour

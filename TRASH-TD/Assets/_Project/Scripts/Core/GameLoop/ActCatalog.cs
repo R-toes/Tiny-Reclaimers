@@ -17,12 +17,16 @@ namespace TrashTD.Core.GameLoop
         public const string ResourcesFolder = "Acts";
         public const string Act1AssetPath = "Assets/Resources/Acts/ACT_01.asset";
 
+        /// <summary>Act 1's stage selector map art: its Resources name, and the project file it is edited as (used when Resources has no copy).</summary>
+        public const string Act1MapResourceName = "Act1StageSelectorMap";
+        public const string Act1MapEditorPath = "Assets/_Project/Art/Levels/Act 1 Stage Selector Map.png";
+
         // ---- Act 1 as the game first shipped it (the source for the built-in Act 1 and for the editor command)
         private const string BuiltInZoneName = "NERC Development Zone";
         private const string BuiltInLoreTag = "\u25C6 NATIONAL ENERGY RESOURCE CORPORATION";
         private const string BuiltInZoneLore = "Once a thriving industrial region built around energy production, Calder Basin became the center of NERC's ambitious development program. What began as an effort to modernize the nation's energy infrastructure eventually left behind abandoned facilities, contaminated settlements, and entire districts deemed uninhabitable. Now, the NERC Development Zone is a fractured landscape of decaying industry and tightly controlled settlements, where the remnants of the corporation's legacy are impossible to escape.";
 
-        // Marker positions on the Stage Selector Map, origin top-left
+        // Marker positions on Act 1's stage selector map, origin top-left
         private static readonly Vector2[] BuiltInStagePositions =
         {
             new Vector2(0.245f, 0.740f),  // Stage 1

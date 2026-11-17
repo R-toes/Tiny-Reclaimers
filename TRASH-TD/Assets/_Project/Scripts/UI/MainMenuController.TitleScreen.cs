@@ -58,7 +58,7 @@ namespace TrashTD.UI
                 stageMapImage = mapBg;
                 if (stageMapBackgroundSprite == null)
                 {
-                    stageMapBackgroundSprite = LoadSpriteSafely("StageSelectorMap", "Assets/_Project/Art/Levels/Stage Selector Map.png");
+                    stageMapBackgroundSprite = LoadSpriteSafely(TrashTD.Core.GameLoop.ActCatalog.Act1MapResourceName, TrashTD.Core.GameLoop.ActCatalog.Act1MapEditorPath);
                 }
 
                 if (stageMapBackgroundSprite != null)

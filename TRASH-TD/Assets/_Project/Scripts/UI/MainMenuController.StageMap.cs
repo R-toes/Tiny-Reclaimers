@@ -42,7 +42,7 @@ namespace TrashTD.UI
 
         private ActData CurrentAct => currentAct != null ? currentAct : (currentAct = ActCatalog.All[0]);
 
-        /// <summary>The current act's own stage map art, or the project's default Stage Selector Map.</summary>
+        /// <summary>The current act's own stage map art, or Act 1's map when the act has none (the default).</summary>
         private Sprite CurrentMapSprite => CurrentAct.stageMapSprite != null ? CurrentAct.stageMapSprite : stageMapBackgroundSprite;
 
         private void EnsureWorldMap()

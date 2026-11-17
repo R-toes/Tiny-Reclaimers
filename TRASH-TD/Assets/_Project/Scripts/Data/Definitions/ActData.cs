@@ -43,7 +43,7 @@ namespace TrashTD.Data
         public string loreTag;
 
         [Header("Stage map")]
-        [Tooltip("The stage selector map art for this act, also shown on its card on the act selection screen. Leave empty to use the project's default Stage Selector Map.")]
+        [Tooltip("The stage selector map art for this act, also shown on its card on the act selection screen. Leave empty to use Act 1's map (the default).")]
         public Sprite stageMapSprite;
 
         [Tooltip("The act's stages in play order. Their ids must continue the previous act's (STAGE_07 after STAGE_06).")]

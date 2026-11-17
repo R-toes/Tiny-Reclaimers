@@ -16,7 +16,7 @@ MonoBehaviour:
   zoneName: NERC Development Zone
   zoneLore: Once a thriving industrial region built around energy production, Calder Basin became the center of NERC's ambitious development program. What began as an effort to modernize the nation's energy infrastructure eventually left behind abandoned facilities, contaminated settlements, and entire districts deemed uninhabitable. Now, the NERC Development Zone is a fractured landscape of decaying industry and tightly controlled settlements, where the remnants of the corporation's legacy are impossible to escape.
   loreTag: "\u25C6 NATIONAL ENERGY RESOURCE CORPORATION"
-  stageMapSprite: {fileID: 0}
+  stageMapSprite: {fileID: 7216766000039636041, guid: 61af1733fa4f43e479a5795c627f4558, type: 3}
   stages:
   - stage: {fileID: 11400000, guid: b97c14cbe92d9954aba65fb42a12c827, type: 2}
     mapPosition: {x: 0.245, y: 0.74}

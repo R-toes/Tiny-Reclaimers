@@ -11,7 +11,7 @@ namespace TrashTD.UI
     /// The act selection screen: one card per act in a horizontal scroll view, shown between the main menu and an act's stage
     /// map once there is more than one act (with a single act PLAY goes straight to its stage map). The cards are always the
     /// same size however many acts there are: they sit centred while they fit and scroll sideways (drag, mouse wheel or the
-    /// slider underneath) when they do not. A card shows the act's own stage map art (the default Stage Selector Map when the
+    /// slider underneath) when they do not. A card shows the act's own stage map art (Act 1's map as the default when the
     /// act has none), its name and zone, and how many stages are cleared; an act that is still a placeholder shows COMING SOON
     /// in place of the art, and a locked act shows what unlocks it. Clicking an open act opens its stage map.
     /// All sizes are for the 1920 x 1080 reference.
@@ -236,7 +236,7 @@ namespace TrashTD.UI
 
         /// <summary>
         /// Rebuilds the cards, so progress and locks are current each time the screen is shown.
-        /// <paramref name="defaultMapArt"/> is the Stage Selector Map, used by an act that has no art of its own.
+        /// <paramref name="defaultMapArt"/> is Act 1's stage selector map, used by an act that has no art of its own.
         /// </summary>
         public void Refresh(IReadOnlyList<ActData> acts, Sprite defaultMapArt)
         {

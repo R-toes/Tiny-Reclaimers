@@ -307,6 +307,19 @@ namespace TrashTD.Tests
         }
 
         [Test]
+        public void ActOnesMapArt_LoadsFromResourcesUnderItsActName_AndIsTheActsOwnSprite()
+        {
+            Sprite[] sprites = Resources.LoadAll<Sprite>(ActCatalog.Act1MapResourceName);
+            Assert.IsNotEmpty(sprites, "Resources/" + ActCatalog.Act1MapResourceName + " is missing (the file was renamed from StageSelectorMap)");
+            Assert.IsNotNull(UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(ActCatalog.Act1MapEditorPath),
+                "the editor copy " + ActCatalog.Act1MapEditorPath + " is missing");
+
+            ActCatalog.UseActs(null);
+            ActData act1 = ActCatalog.GetAct(1);
+            if (act1 != null && UnityEditor.AssetDatabase.Contains(act1)) Assert.IsNotNull(act1.stageMapSprite, "ACT_01 should name its own map");
+        }
+
+        [Test]
         public void EveryNumberedStageAsset_BelongsToAnAct()
         {
             // A new STAGE_07 asset that is not listed in an act would never appear on any stage map
