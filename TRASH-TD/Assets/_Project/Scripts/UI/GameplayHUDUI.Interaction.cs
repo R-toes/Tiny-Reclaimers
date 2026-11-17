@@ -786,6 +786,44 @@ namespace TrashTD.UI
             {
                 TogglePathPreview();
             }
+
+            // Space starts the wave, like the START WAVE button
+            bool spacePressed = keyboard != null && keyboard.spaceKey.wasPressedThisFrame;
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (!spacePressed && Input.GetKeyDown(KeyCode.Space)) spacePressed = true;
+#endif
+            if (spacePressed && gameManager != null &&
+                ShouldStartWaveOnSpace(
+                    gameManager.CurrentState,
+                    gameManager.CurrentPhase,
+                    IsStartWaveShortcutBlocked(),
+                    IsSandbox,
+                    waveManager != null && waveManager.IsWaveInProgress,
+                    TutorialDirector.Instance == null || TutorialDirector.Instance.AllowsWaveStart))
+            {
+                StartWave();
+            }
+        }
+
+        /// <summary>
+        /// The rule for the Space shortcut: the START WAVE button's own conditions. A stage that is running (not paused,
+        /// won or lost), in Preparation, with nothing else asking for the key (<paramref name="blocked"/>), and the
+        /// tutorial letting the wave start. In the sandbox the button also stops a wave, so Space only starts one.
+        /// </summary>
+        public static bool ShouldStartWaveOnSpace(
+            GamePlayState state, StagePhase phase, bool blocked, bool sandbox, bool sandboxWaveRunning, bool tutorialAllowsWaveStart)
+        {
+            if (state != GamePlayState.Playing || blocked) return false;
+            if (sandbox) return !sandboxWaveRunning;
+            return phase == StagePhase.Preparation && tutorialAllowsWaveStart;
+        }
+
+        /// <summary>Space belongs to something else: a text field, the pause menu, a draft, a briefing, a menu, or a placement waiting for PLACE.</summary>
+        private bool IsStartWaveShortcutBlocked()
+        {
+            return IsPaused || IsTypingInTextField() || IsFramiliarCopyMenuOpen || IsEnvironmentBriefingActive ||
+                   (draftOverlayUI != null && draftOverlayUI.IsShowing) ||
+                   (placementControlsRoot != null && placementControlsRoot.activeSelf);
         }
 
         /// <summary>

@@ -46,6 +46,7 @@ namespace TrashTD.UI
         private static readonly string[] Tips =
         {
             "Press P before a wave to preview the enemy route.",
+            "Press Space to start the wave.",
             "Most ranged operators deploy on High Ground. Melee operators hold Low Ground.",
             "After placing an operator, hold and drag from it to choose which way it faces.",
             "Placed someone on the wrong tile? Recall them and deploy again.",
