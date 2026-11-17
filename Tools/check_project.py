@@ -42,7 +42,7 @@ def tracked_or_all(base):
     try:
         out = subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z', base],
                                       cwd=ROOT, stderr=subprocess.DEVNULL).decode('utf-8', 'replace')
-        files = [os.path.join(ROOT, p) for p in out.split('\0') if p]
+        files = [os.path.normpath(os.path.join(ROOT, p)) for p in out.split('\0') if p]  # git prints '/', so normalise on Windows
         if files:
             return [f for f in files if os.path.exists(f)]
     except (OSError, subprocess.CalledProcessError):
