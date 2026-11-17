@@ -64,12 +64,15 @@ namespace TrashTD.UI
         public const int VirtualPictureHeight = 2160;
 
         /// <summary>
-        /// Classic: the first working CRT (originally on the stage selection screen only), kept exactly: sine
-        /// scanlines every 3 px, light RGB stripe tint, small glow. CrtDisplay applies it to the whole game.
+        /// Classic: the first working CRT (originally on the stage selection screen only): sine scanlines every
+        /// 3 px, light RGB stripe tint, small glow. CrtDisplay applies it to the whole game. The effects that grow
+        /// toward the screen edge are toned down (curvature, colour fringing, vignette) so text near the edges stays
+        /// readable: at 1920 px wide the picture cut off by the curve went from about 12 px to 5 px each side, the
+        /// red/blue fringing from 6 px to 3.5 px, and the vignette from 42% to 30% darker at 2% in from the edge.
         /// </summary>
         public static Settings ClassicTelevision => new Settings
         {
-            curvature = 0.05f,
+            curvature = 0.02f,
             cornerRadius = 0.04f,
             sharpness = 1f,
             scanlineStrength = 0.38f,
@@ -80,9 +83,9 @@ namespace TrashTD.UI
             maskStrength = 0.22f,
             maskDark = 1f,
             maskLight = 1f,
-            chromatic = 0.0016f,
+            chromatic = 0.0009f,
             bloom = 0.55f,
-            vignette = 0.85f,
+            vignette = 0.55f,
             noise = 0.045f,
             flicker = 0.025f,
             rollStrength = 0.05f,
