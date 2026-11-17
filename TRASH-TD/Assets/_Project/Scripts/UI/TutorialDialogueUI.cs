@@ -73,12 +73,25 @@ namespace TrashTD.UI
         private const float TaskStripHeight = 96f;
         private const float GameplayRight = 24f;
         private const float GameplayTaskBottom = 345f;
-        private const float GameplaySkipTop = 104f; // Under the HUD's top bar (90 px)
         // Stage map: QA SANDBOX and the ESC hint fill the bottom-right corner up to y ~118; the stage progress
-        // readout sits top-right down to y ~-74
+        // readout sits top-right down to y ~-102
         private const float StageMapRight = 60f;
         private const float StageMapTaskBottom = 130f;
-        private const float StageMapSkipTop = 86f;
+        // SKIP TUTORIAL: a hazard-yellow button parked where nothing else lives in each layout (top-right corner offsets)
+        private const float SkipWidth = 240f;
+        private const float SkipHeight = 48f;
+        // Gameplay: under the surveillance feed's date and mission clock (y ~108-168), above the operator details
+        // panel (y ~278 at 16:9), over the tutorial map's empty right-hand columns
+        private const float GameplaySkipRight = 40f;
+        private const float GameplaySkipTop = 182f;
+        // Stage map: level with the ACT title plate, just left of the MAP OVERVIEW column (60 + 256 wide + 24 gap),
+        // below the stage progress readout and above every stage marker
+        private const float StageMapSkipRight = 340f;
+        private const float StageMapSkipTop = 115f;
+        // Draft: under the DECK count (y 32-80); the checkboxes and draft odds there are hidden in the tutorial draft,
+        // and the cards and details panel start at y 230
+        private const float CompactSkipRight = 28f;
+        private const float CompactSkipTop = 96f;
 
         private const float SlideSeconds = 0.32f;
         private const float TaskHoldBase = 1.4f;     // A typed task line stays this long (plus per character)...

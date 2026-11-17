@@ -213,17 +213,27 @@ namespace TrashTD.UI
 
         private void BuildSkip()
         {
-            Image plate = CreateImage(root, "SkipTutorialButton", new Color(0.02f, 0.05f, 0.035f, 0.92f));
+            // Easy to find: a hazard-yellow rim, corner brackets and a bold yellow label that turns white on hover
+            Image plate = CreateImage(root, "SkipTutorialButton", PanelColor);
             skipButton = plate.gameObject.AddComponent<Button>();
-            skipButton.targetGraphic = plate;
             skipButton.navigation = new Navigation { mode = Navigation.Mode.None };
             skipButton.onClick.AddListener(OpenSkipConfirm);
             var outline = plate.gameObject.AddComponent<Outline>();
-            outline.effectColor = PhosphorDim;
-            outline.effectDistance = new Vector2(1f, -1f);
-            Text label = CreateText(plate.rectTransform, "Label", "SKIP TUTORIAL ▶▶", 10, TextAnchor.MiddleCenter, PhosphorDim);
+            outline.effectColor = new Color(HazardYellow.r, HazardYellow.g, HazardYellow.b, 0.85f);
+            outline.effectDistance = new Vector2(2f, -2f);
+            AddCornerBrackets(plate.rectTransform, 12f, 3f, HazardYellow, -5f);
+            Text label = CreateText(plate.rectTransform, "Label", "SKIP TUTORIAL  ▶▶", 16, TextAnchor.MiddleCenter, Color.white);
+            label.fontStyle = FontStyle.Bold;
             Stretch(label.rectTransform);
-            plate.rectTransform.sizeDelta = new Vector2(176f, 32f);
+            skipButton.targetGraphic = label; // The tint below colours the label (white text x tint)
+            ColorBlock colors = skipButton.colors;
+            colors.normalColor = HazardYellow;
+            colors.highlightedColor = Color.white;
+            colors.selectedColor = HazardYellow;
+            colors.pressedColor = new Color(0.78f, 0.62f, 0.12f, 1f);
+            colors.fadeDuration = 0.08f;
+            skipButton.colors = colors;
+            plate.rectTransform.sizeDelta = new Vector2(SkipWidth, SkipHeight);
 
             // Confirm prompt, centred, above everything else on this canvas
             Image shade = CreateImage(root, "SkipConfirm", new Color(0f, 0f, 0f, 0.6f));

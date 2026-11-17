@@ -16,13 +16,14 @@ namespace TrashTD.UI
             RectTransform skipRect = skipButton.GetComponent<RectTransform>();
             if (layout == TutorialDialogueLayout.Compact)
             {
-                // Bottom-left: Coalesce, bubble to the right, skip above Coalesce; slides off to the left
+                // Bottom-left: Coalesce, bubble to the right; slides off to the left. Skip sits top right, under the
+                // draft's deck count, clear of the cards
                 float size = CompactSpriteSize;
                 Anchor(speakerRig, new Vector2(0f, 0f), new Vector2(40f, 24f), new Vector2(size, size));
                 Anchor(bubble, new Vector2(0f, 0f), new Vector2(40f + size + 22f, 24f), new Vector2(CompactBubbleWidth, CompactBubbleHeight));
                 tail.anchorMin = tail.anchorMax = new Vector2(0f, 0f);
                 tail.anchoredPosition = new Vector2(0f, size * 0.5f);
-                Anchor(skipRect, new Vector2(0f, 0f), new Vector2(40f, 24f + size + 10f), new Vector2(176f, 32f));
+                Anchor(skipRect, new Vector2(1f, 1f), new Vector2(-CompactSkipRight, -CompactSkipTop), new Vector2(SkipWidth, SkipHeight));
                 slideSign = -1f;
                 slideDistance = 40f + size + 22f + CompactBubbleWidth + 40f;
                 return;
@@ -36,7 +37,9 @@ namespace TrashTD.UI
             Anchor(bubble, new Vector2(1f, 0f), new Vector2(-BubbleRight, BubbleBottom), new Vector2(BubbleWidth, BubbleHeight));
             tail.anchorMin = tail.anchorMax = new Vector2(1f, 0f);
             tail.anchoredPosition = new Vector2(0f, TailY);
-            Anchor(skipRect, new Vector2(1f, 1f), new Vector2(-right, -(map ? StageMapSkipTop : GameplaySkipTop)), new Vector2(176f, 32f));
+            Anchor(skipRect, new Vector2(1f, 1f),
+                map ? new Vector2(-StageMapSkipRight, -StageMapSkipTop) : new Vector2(-GameplaySkipRight, -GameplaySkipTop),
+                new Vector2(SkipWidth, SkipHeight));
             Anchor(taskStripRect, new Vector2(1f, 0f), new Vector2(-right, map ? StageMapTaskBottom : GameplayTaskBottom), new Vector2(TaskStripWidth, TaskStripHeight));
             taskStripHome = taskStripRect.anchoredPosition;
             slideSign = 1f;

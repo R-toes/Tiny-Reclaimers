@@ -890,7 +890,11 @@ Coalesce teaches the basics on a guided stage. Added 2026-10-29 on branch `tutor
   - **Task lines:** they show a yellow ▶ TASK tag and leave the game clickable. Once the line has typed out and held 1.4 s plus 0.01 s per character, Coalesce slides out. A pinned ▶ TASK strip then keeps the instruction on screen until the next line. It sits on the HUD's bottom-right panel, where Coalesce used to stand. Pointers and tile highlights don't change.
   - **Stays on screen:** during draft tasks, in a compact bottom-left layout under the card column (it slides in from the left), and while a line has choices (`DefeatChoice`).
   - **Pointer:** pulsing brackets frame any UI element on any canvas, drawn above Coalesce.
-  - **Skip:** SKIP TUTORIAL ▶▶ stays put while Coalesce comes and goes. In-game it's top right under the HUD's top bar. On the map it's top right under the stage progress readout. In the draft layout it sits above Coalesce. It asks for confirmation.
+  - **Skip:** SKIP TUTORIAL ▶▶ stays put while Coalesce comes and goes. It asks for confirmation. Since 2026-11-18 it is a 240×48 button with a bold hazard-yellow label (white on hover), a yellow outline and corner brackets; it used to be a small dim 10 pt tag that sat on top of other UI. Each layout puts it where nothing else is (`TutorialDialogueUI` constants `*SkipRight` / `*SkipTop`, offsets from the top-right corner):
+    - **In-game:** top right, below the surveillance feed's date stamp and mission clock (y ~108–168) and above the operator details panel (y ~278), over the tutorial map's empty right-hand columns. It used to cover the date stamp.
+    - **Stage map:** top edge, level with the ACT title plate and just left of the MAP OVERVIEW column (right 340). It used to sit on the MAP OVERVIEW header and minimap.
+    - **Draft:** top right under the DECK count (the checkboxes and draft odds there are hidden in the tutorial draft). It used to sit above the compact Coalesce, on the left card's corner.
+    - Moving it: check the HUD, the surveillance overlay (`SurveillanceOverlayUI`), the stage map's navigator and title plate, and the draft's top-right controls before picking a spot.
 - **Voice:** `SfxId.TutorialVoice` (`SFX/UI/TutorialVoice`). It is played as a clip (the shared repeat throttle would drop most blips). Until a file exists, a code-generated 45 ms blip plays instead.
 
 ### 7.9 Dev Mode vs Player Mode
