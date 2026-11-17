@@ -30,6 +30,8 @@ traffic, acid rain).
   (spawn, exit, low / high ground, acid low / high ground, blocked, hole), add stage and bounds art (size-checked), preview
   the enemy routes and redraw them by hand. See
   `PROJECT_GUIDELINES.md`, "Stage Maker".
+- **Lore & Text Sheet** (*TRASH TD* menu): edits every name, field note, ability text, stage / act description and
+  tutorial line in one place, with checks, find and replace and CSV export / import. See `PROJECT_GUIDELINES.md`.
 - **Git hooks:** `.githooks/` runs those repository checks before every commit and every push, so a half-resolved merge
   or stash never leaves your machine. Opening the Unity project turns them on for your clone; without Unity run
   `python Tools/setup_hooks.py` once. Python 3 must be installed or the commit is stopped.
