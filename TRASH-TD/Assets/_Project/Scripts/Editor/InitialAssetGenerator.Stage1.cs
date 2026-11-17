@@ -196,8 +196,8 @@ namespace TrashTD.Editor
         }
 
         // On editor load, only create stage assets that are missing. Existing stages are never
-        // regenerated automatically (that used to overwrite hand-edited waves on every recompile);
-        // use the TRASH TD > Generate Stage menu items to regenerate one on purpose.
+        // regenerated automatically (that used to overwrite hand-edited waves on every recompile).
+        // To reset one on purpose, delete its asset and let this recreate it.
         [InitializeOnLoadMethod]
         private static void AutoEnsureStages()
         {

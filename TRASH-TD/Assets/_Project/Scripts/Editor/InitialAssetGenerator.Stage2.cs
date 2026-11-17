@@ -11,7 +11,8 @@ namespace TrashTD.Editor
     // Generating Stage 2.
     public partial class InitialAssetGenerator
     {
-        [MenuItem("TRASH TD/Generate Stage 2 (Scrapyard Junction)")]
+        // No menu item: this only runs to create a missing STAGE_02.asset (AutoEnsureStages) or from Generate Sample Data
+        // Assets. The stage asset is tuned by hand, so there is no menu command to reset it.
         public static void GenerateStage2()
         {
             string path = $"{StageDataFolder}/STAGE_02.asset";

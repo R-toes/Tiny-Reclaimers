@@ -11,7 +11,8 @@ namespace TrashTD.Editor
     // Generating Stage 6.
     public partial class InitialAssetGenerator
     {
-        [MenuItem("TRASH TD/Generate Stage 6 (Meltdown)")]
+        // No menu item: this only runs to create a missing STAGE_06.asset (AutoEnsureStages) or from Generate Sample Data
+        // Assets. The stage asset is tuned by hand, so there is no menu command to reset it.
         public static void GenerateStage6()
         {
             string path = $"{StageDataFolder}/STAGE_06.asset";
