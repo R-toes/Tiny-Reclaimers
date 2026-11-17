@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0c08d600ed5474bb6bb6c1dc4740b3d, type: 3}
+  m_Name: ACT_03
+  m_EditorClassIdentifier: TrashTD.Runtime::TrashTD.Data.ActData
+  actNumber: 3
+  zoneName:
+  zoneLore: Act 3 is still in development.
+  loreTag: ACT 3
+  stageMapSprite: {fileID: 0}
+  stages:
+  - stage: {fileID: 11400000, guid: 4edfc6c5dcbd46da8367e0759074b0fd, type: 2}
+    mapPosition: {x: 0.245, y: 0.74}
+  - stage: {fileID: 11400000, guid: f909396968f4440b9856d21c1535b093, type: 2}
+    mapPosition: {x: 0.38, y: 0.55}
+  - stage: {fileID: 11400000, guid: 3545e20806ac429db619717c81d29370, type: 2}
+    mapPosition: {x: 0.47, y: 0.74}
+  - stage: {fileID: 11400000, guid: f04e68aeb5ca4bccbcedf9b11131c446, type: 2}
+    mapPosition: {x: 0.61, y: 0.46}
+  - stage: {fileID: 11400000, guid: 5886848a343d4610a5292e61636d6c7a, type: 2}
+    mapPosition: {x: 0.82, y: 0.67}
+  - stage: {fileID: 11400000, guid: b38b1f37ebde4fd7a0e7cbb8c1483894, type: 2}
+    mapPosition: {x: 0.82, y: 0.35}
+  tutorialStage: {fileID: 0}
+  tutorialMapPosition: {x: 0.5, y: 0.5}

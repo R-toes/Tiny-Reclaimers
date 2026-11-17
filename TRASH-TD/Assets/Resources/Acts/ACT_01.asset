@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0c08d600ed5474bb6bb6c1dc4740b3d, type: 3}
+  m_Name: ACT_01
+  m_EditorClassIdentifier: TrashTD.Runtime::TrashTD.Data.ActData
+  actNumber: 1
+  zoneName: NERC Development Zone
+  zoneLore: Once a thriving industrial region built around energy production, Calder Basin became the center of NERC's ambitious development program. What began as an effort to modernize the nation's energy infrastructure eventually left behind abandoned facilities, contaminated settlements, and entire districts deemed uninhabitable. Now, the NERC Development Zone is a fractured landscape of decaying industry and tightly controlled settlements, where the remnants of the corporation's legacy are impossible to escape.
+  loreTag: "\u25C6 NATIONAL ENERGY RESOURCE CORPORATION"
+  stageMapSprite: {fileID: 0}
+  stages:
+  - stage: {fileID: 11400000, guid: b97c14cbe92d9954aba65fb42a12c827, type: 2}
+    mapPosition: {x: 0.245, y: 0.74}
+  - stage: {fileID: 11400000, guid: 57bd51bf2bccd984d9efeefa7c3b29bf, type: 2}
+    mapPosition: {x: 0.38, y: 0.55}
+  - stage: {fileID: 11400000, guid: fbb7b0945ebe1754a91e84682e62e370, type: 2}
+    mapPosition: {x: 0.47, y: 0.74}
+  - stage: {fileID: 11400000, guid: a4c2f1e8b5d7309c6e8f4a2b1c7d9e5f, type: 2}
+    mapPosition: {x: 0.61, y: 0.46}
+  - stage: {fileID: 11400000, guid: d5a49c25f9174092b3ee3871981e505a, type: 2}
+    mapPosition: {x: 0.82, y: 0.67}
+  - stage: {fileID: 11400000, guid: eb997be260fb0b349bffff4d715959f0, type: 2}
+    mapPosition: {x: 0.82, y: 0.35}
+  tutorialStage: {fileID: 11400000, guid: f0293b0b98b84dd48774e2e23c761e30, type: 2}
+  tutorialMapPosition: {x: 0.275, y: 0.345}

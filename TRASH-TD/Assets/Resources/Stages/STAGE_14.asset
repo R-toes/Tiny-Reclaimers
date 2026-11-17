@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0d1f336f3983b94c9ec7ed405acc69f, type: 3}
+  m_Name: STAGE_14
+  m_EditorClassIdentifier: TrashTD.Runtime::TrashTD.Data.StageData
+  stageId: STAGE_14
+  comingSoon: 1
+  environment: 0
+  mapName: COMING SOON
+  shortDescription: Act 3 is still in development.
+  gridWidth: 0
+  gridHeight: 0
