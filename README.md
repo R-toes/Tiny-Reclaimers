@@ -26,6 +26,10 @@ traffic, acid rain).
 - **Repository checks:** `python Tools/check_project.py` (no Unity needed). It verifies that every asset has its `.meta`
   file and no GUID is used twice, that C# files have balanced braces, that no merge-conflict markers were left behind,
   and it warns about oversized files and stage-id string checks.
+- **Stage Maker:** *TRASH TD > Stage Maker* is a level editor for every stage: set the grid size, paint or drag tiles
+  (spawn, exit, low / high ground, acid low / high ground, blocked, hole), add stage and bounds art (size-checked), preview
+  the enemy routes and redraw them by hand. See
+  `PROJECT_GUIDELINES.md`, "Stage Maker".
 - **Git hooks:** `.githooks/` runs those repository checks before every commit and every push, so a half-resolved merge
   or stash never leaves your machine. Opening the Unity project turns them on for your clone; without Unity run
   `python Tools/setup_hooks.py` once. Python 3 must be installed or the commit is stopped.

@@ -865,7 +865,12 @@ namespace TrashTD.UI
             }
             finally
             {
-                if (gridObject != null) Destroy(gridObject);
+                // The Stage Maker editor window also calls this outside play mode, where Destroy is not allowed.
+                if (gridObject != null)
+                {
+                    if (Application.isPlaying) Destroy(gridObject);
+                    else DestroyImmediate(gridObject);
+                }
             }
 
             foreach (KeyValuePair<int, List<Vector2Int>> entry in bySpawn) result.Add((entry.Key, entry.Value));
