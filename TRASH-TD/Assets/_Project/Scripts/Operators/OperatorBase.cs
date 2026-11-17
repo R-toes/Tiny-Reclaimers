@@ -213,7 +213,7 @@ namespace TrashTD.Operators
         /// Where this operator's shots leave its sprite: <see cref="OperatorData.projectileOrigin"/> from the sprite
         /// centre, mirrored like the sprite (the art faces left and is flipped only when facing right).
         /// </summary>
-        public Vector3 ProjectileOrigin
+        public virtual Vector3 ProjectileOrigin
         {
             get
             {

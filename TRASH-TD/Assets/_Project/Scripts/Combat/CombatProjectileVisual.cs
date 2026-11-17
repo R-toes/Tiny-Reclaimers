@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using TrashTD.Enemies;
+using TrashTD.Operators;
 using Random = UnityEngine.Random;
 
 namespace TrashTD.Combat
@@ -45,6 +46,7 @@ namespace TrashTD.Combat
 
         private Vector3 targetPosition;
         private EnemyBase targetEnemy;
+        private OperatorBase targetOperator;
         private Vector3 targetOffset;
         private float speed;
         private Action onImpact;
@@ -88,7 +90,24 @@ namespace TrashTD.Combat
         {
             if (target == null) return;
 
-            Spawn(start, target.VisualPosition, color, speed, style, onImpact, target);
+            Spawn(start, target.VisualPosition, color, speed, style, onImpact, targetEnemy: target);
+        }
+
+        public static void Fire(
+            Vector3 start,
+            OperatorBase target,
+            Color color,
+            float speed,
+            float size,
+            float trailWidth,
+            bool burstOnImpact = false,
+            Action onImpact = null,
+            ProjectileStyle style = ProjectileStyle.Bolt)
+        {
+            if (target == null) return;
+
+            Vector3 targetPos = target.transform.position + new Vector3(0f, 0.25f, 0f);
+            Spawn(start, targetPos, color, speed, style, onImpact, targetOperator: target);
         }
 
         public static void FireSand(
@@ -169,7 +188,8 @@ namespace TrashTD.Combat
             bool muzzleFlash = true,
             Sprite customProjectileSprite = null,
             Color customGlowColor = default,
-            float customProjectileScale = 1f)
+            float customProjectileScale = 1f,
+            OperatorBase targetOperator = null)
         {
             if (style == ProjectileStyle.Proxishot && customProjectileSprite == null)
             {
@@ -186,6 +206,7 @@ namespace TrashTD.Combat
             var visual = projectile.AddComponent<CombatProjectileVisual>();
             visual.targetPosition = target + targetOffset;
             visual.targetEnemy = targetEnemy;
+            visual.targetOperator = targetOperator;
             visual.targetOffset = targetOffset;
             visual.speed = speed;
             visual.onImpact = onImpact;
@@ -267,7 +288,7 @@ namespace TrashTD.Combat
                 ProjectileStyle.Sludge => 0.45f,
                 ProjectileStyle.Sand => 0.4f,
                 ProjectileStyle.Heal => 0.3f,
-                ProjectileStyle.Bubble => 0.2f,
+                ProjectileStyle.Bubble => 0.35f,
                 _ => 0f
             };
         }
@@ -378,6 +399,8 @@ namespace TrashTD.Combat
 
             if (targetEnemy != null)
                 targetPosition = targetEnemy.VisualPosition + targetOffset;
+            else if (targetOperator != null)
+                targetPosition = targetOperator.transform.position + new Vector3(0f, 0.25f, 0f) + targetOffset;
 
             Vector3 toTarget = targetPosition - groundPosition;
             float step = speed * deltaTime;
@@ -450,7 +473,7 @@ namespace TrashTD.Combat
                 ProjectileStyle.Pellet => 2f,
                 ProjectileStyle.Proxishot => 1f,
                 ProjectileStyle.Heal => 6f,
-                ProjectileStyle.Bubble => 7f,
+                ProjectileStyle.Bubble => 3f,
                 ProjectileStyle.Sludge => 5f,
                 ProjectileStyle.Quill => 0f,
                 ProjectileStyle.ThornchinSpike => 0f,
@@ -620,14 +643,18 @@ namespace TrashTD.Combat
                     break;
 
                 case ProjectileStyle.Bubble:
+                    float bubbleRoll = Random.value;
+                    Sprite bubbleSprite = bubbleRoll < 0.45f ? CombatFxArt.BubbleSmall(color) :
+                                          bubbleRoll < 0.80f ? CombatFxArt.BubbleTiny(color) :
+                                          CombatFxArt.Dot1();
                     PixelParticles.Emit(new PixelParticle
                     {
-                        Position = position + Random.insideUnitCircle * CombatFxArt.Pixel * 3f,
-                        Velocity = new Vector2(0f, 0.2f),
-                        Life = 0.3f,
+                        Position = position + (Vector2)(Random.insideUnitCircle * CombatFxArt.Pixel * 2.5f),
+                        Velocity = new Vector2(Random.Range(-0.15f, 0.15f), Random.Range(0.2f, 0.45f)),
+                        Life = Random.Range(0.25f, 0.42f),
                         StartColor = Color.white,
                         EndColor = faded,
-                        Sprite = CombatFxArt.Dot1(),
+                        Sprite = bubbleSprite,
                         SortingOrder = CombatFx.TrailSortingOrder
                     });
                     break;

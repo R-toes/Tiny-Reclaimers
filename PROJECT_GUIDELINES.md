@@ -950,7 +950,7 @@ Added by the team between 2026-11-04 and 2026-11-07 (Chester and R-toes, one com
 | Resicochet | 3★ | charge every 3 s (was 5), +1 bounce | bounces lose no damage; operators in range extend its range, used only when fully charged |
 | Coalesce | 1★ | extra-heal chance 40% (was 20%) | extra heal triggers below 60% HP (was 30%); allies in range get +10% max HP |
 | Progeny | 2★ | +1 bounce, range +1 on every adjacent tile | bounces lose no healing |
-| Bubblets | 3★ | pop damage 50% ATK (was 30%) | shields a second operator; allies in range +5 RES, +20 DEF |
+| Bubblets | 3★ | pop damage 50% ATK (was 30%); allies in range +10 RES, +40 DEF | shields a second operator; can now attack enemies like a caster |
 | Panacea | 3★ | every 3 s (was 5), heals up to 2 operators | +5 HP/s to every operator on the map (not Drawgoo) |
 | Drawgoo | 1★ | its 2 death cards arrive 1 rank up | 2 ranks up |
 | Framiliar | 2★ | copies as at least 1st upgrade | copies as 2nd upgrade |

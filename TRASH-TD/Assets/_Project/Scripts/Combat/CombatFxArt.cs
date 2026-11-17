@@ -192,6 +192,20 @@ namespace TrashTD.Combat
             ".CCbbbCC.",
             "...CCC...");
 
+        /// <summary>5x5 small translucent soap bubble with highlight for bubble trail.</summary>
+        public static Sprite BubbleSmall(Color color) => Shaded("bubblesmall", color,
+            ".CCC.",
+            "CwwbC",
+            "CbbDC",
+            "CbbDC",
+            ".CCC.");
+
+        /// <summary>3x3 tiny bubble with highlight for bubble trail.</summary>
+        public static Sprite BubbleTiny(Color color) => Shaded("bubbletiny", color,
+            ".C.",
+            "CwC",
+            ".C.");
+
         /// <summary>8x8 spherical poison/venom bubble with bright specular glint and deep shaded rim.</summary>
         public static Sprite PoisonBubbleLarge(Color color) => Shaded("poisonbubblelg", color,
             "..OOOO..",

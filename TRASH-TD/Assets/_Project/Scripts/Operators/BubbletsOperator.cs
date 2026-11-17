@@ -17,20 +17,63 @@ namespace TrashTD.Operators
     /// to enemies on that tile and surrounding tiles.
     /// Upgrades:
     /// - Base (3★): Deals Arts damage equal to 30% of Bubblets' ATK when popped.
-    /// - 1x Upgraded (4★): Arts damage increases to 50% of Bubblets' ATK.
-    /// - 2x Upgraded (5★): Gives bubble shield to an additional operator (up to 2), and allies in range gain +5 RES and +20 DEF.
+    /// - 1x Upgraded (4★): Arts damage increases to 50% of Bubblets' ATK, and allies in range gain +10 RES and +40 DEF.
+    /// - 2x Upgraded (5★): Gives bubble shield to an additional operator (up to 2), and Bubblets can now attack enemies like a caster.
     /// </summary>
     public class BubbletsOperator : MedicOperator
     {
-        public const int AuraDefBonus = 20;
+        public const int AuraDefBonus = 40;
         public const string AuraSourceName = "BUBBLETS";
-        public const int AuraResBonus = 5;
+        public const int AuraResBonus = 10;
+        public static readonly Color BubbleProjectileColor = new Color(0.45f, 0.85f, 1f, 0.95f);
+
+        /// <summary>
+        /// Local offsets for Bubblets' 3 mouths (relative to 32x32 sprite center, in unflipped/left-facing coordinates):
+        /// - [0] Lower-left head (front mouth)
+        /// - [1] Lower-right head (back mouth)
+        /// - [2] Top head (upper mouth)
+        /// </summary>
+        public static readonly Vector2[] MouthOffsets = new Vector2[]
+        {
+            new Vector2(-0.28f, -0.13f), // Lower-left mouth
+            new Vector2(0.17f, -0.06f),  // Lower-right mouth
+            new Vector2(-0.06f, 0.12f)   // Top mouth
+        };
 
         public bool HasFirstUpgrade => currentRarity >= OperatorRarity.Star4;
         public bool HasSecondUpgrade => currentRarity >= OperatorRarity.Star5;
 
         public float ArtsDamageMultiplier => HasFirstUpgrade ? 0.50f : 0.30f;
         public int TargetCount => HasSecondUpgrade ? 2 : 1;
+
+        /// <summary>
+        /// Where Bubblets' shots and shields leave its body: randomly chosen among the 3 mouths.
+        /// </summary>
+        public override Vector3 ProjectileOrigin => GetRandomMouthOrigin();
+
+        /// <summary>
+        /// Gets the world-space launch origin for a specific mouth index (0, 1, or 2), respecting facing direction.
+        /// </summary>
+        public Vector3 GetMouthOrigin(int mouthIndex)
+        {
+            if (MouthOffsets == null || MouthOffsets.Length == 0)
+                return transform.position;
+
+            int idx = Mathf.Clamp(mouthIndex, 0, MouthOffsets.Length - 1);
+            Vector2 offset = MouthOffsets[idx];
+            if (facing == OperatorFacing.Right) offset.x = -offset.x;
+            Vector3 scale = transform.lossyScale;
+            return transform.position + new Vector3(offset.x * scale.x, offset.y * scale.y, 0f);
+        }
+
+        /// <summary>
+        /// Returns a randomly chosen mouth launch origin among Bubblets' 3 heads.
+        /// </summary>
+        public Vector3 GetRandomMouthOrigin()
+        {
+            int index = UnityEngine.Random.Range(0, MouthOffsets.Length);
+            return GetMouthOrigin(index);
+        }
 
         private readonly HashSet<OperatorBase> appliedAuraAllies = new HashSet<OperatorBase>();
         private readonly List<OperatorBase> tempAuraCleanupList = new List<OperatorBase>();
@@ -44,13 +87,136 @@ namespace TrashTD.Operators
 
         protected override EnemyBase FindTarget()
         {
-            // Bubblets does not target enemies
-            return null;
+            if (!HasSecondUpgrade)
+            {
+                return null;
+            }
+
+            return FindCasterTargetInternal();
         }
 
         public override void Attack(EnemyBase target)
         {
-            // Bubblets does not deal basic attack damage directly to enemies
+            if (target == null || !isDeployed) return;
+
+            PlayAttackSound();
+            FireCasterAttack(target);
+        }
+
+        private void FireCasterAttack(EnemyBase target)
+        {
+            if (target == null) return;
+
+            if (!Application.isPlaying)
+            {
+                ApplyCasterAttackImpact(target);
+                return;
+            }
+
+            CombatProjectileVisual.Fire(
+                ProjectileOrigin,
+                target,
+                BubbleProjectileColor,
+                9.5f,
+                0.22f,
+                0.14f,
+                true,
+                () => ApplyCasterAttackImpact(target),
+                ProjectileStyle.Bubble);
+        }
+
+        public void ApplyCasterAttackImpact(EnemyBase target)
+        {
+            if (target == null) return;
+
+            PlayShieldPopSound();
+
+            const float armorDamageBonusRatio = 0.5f;
+
+            // Single target Arts damage bypassing DEF and hitting RES, with caster DEF bonus
+            if (!target.IsDead)
+            {
+                int armorBonus = Mathf.RoundToInt(target.CurrentDEF * armorDamageBonusRatio);
+                int primaryPower = currentATK + armorBonus;
+                int primaryDamage = DamageCalculator.CalculateDamage(primaryPower, target.CurrentRES);
+                target.TryTakeAttackDamage(primaryDamage, DamageType.Arts, this);
+            }
+        }
+
+        private EnemyBase FindCasterTargetInternal()
+        {
+            if (deployedCell == null || data == null || data.rangePattern == null)
+                return GetNearbyEnemiesFallback();
+
+            GridManager gridManager = FindAnyObjectByType<GridManager>();
+            if (gridManager == null && OperatorManager.Instance != null)
+            {
+                gridManager = OperatorManager.Instance.GridManager;
+            }
+            if (gridManager == null) return GetNearbyEnemiesFallback();
+
+            if (EnemyManager.Instance == null) return null;
+
+            GridCell[] rangeCells = gridManager.GetCellsInRange(deployedCell.GridPosition, GetRangePattern(), Facing);
+            List<EnemyBase> candidates = EnemyManager.Instance.GetEnemiesInCells(rangeCells, data.position);
+            if (candidates == null || candidates.Count == 0) return null;
+
+            EnemyBase bestTarget = null;
+            int highestDefense = -1;
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                var candidate = candidates[i];
+                if (candidate == null || candidate.IsDead || !CanAttackTarget(candidate)) continue;
+
+                bool isTaunt = candidate.HasTaunt;
+                bool bestIsTaunt = bestTarget != null && bestTarget.HasTaunt;
+                int defense = candidate.CurrentDEF;
+                bool better;
+
+                if (bestTarget == null || (isTaunt && !bestIsTaunt)) better = true;
+                else if (isTaunt != bestIsTaunt) better = false;
+                else if (defense > highestDefense) better = true;
+                else better = false;
+
+                if (better)
+                {
+                    highestDefense = defense;
+                    bestTarget = candidate;
+                }
+            }
+
+            return bestTarget;
+        }
+
+        private EnemyBase GetNearbyEnemiesFallback()
+        {
+            if (EnemyManager.Instance == null) return null;
+            var active = EnemyManager.Instance.ActiveEnemies;
+            if (active == null || active.Count == 0) return null;
+
+            float maxDist = (data != null && data.attackRange > 0) ? data.attackRange + 0.5f : 1.5f;
+            EnemyBase best = null;
+            int highestDef = -1;
+
+            for (int i = 0; i < active.Count; i++)
+            {
+                var e = active[i];
+                if (e == null || e.IsDead || !CanAttackTarget(e)) continue;
+
+                float dx = Mathf.Abs(e.transform.position.x - transform.position.x);
+                float dy = Mathf.Abs(e.transform.position.y - transform.position.y);
+                if (dx <= maxDist && dy <= maxDist)
+                {
+                    if (best == null || (e.HasTaunt && !best.HasTaunt) || e.CurrentDEF > highestDef)
+                    {
+                        best = e;
+                        highestDef = e.CurrentDEF;
+                    }
+                }
+            }
+
+            return best;
         }
 
         public override void Heal(OperatorBase target)
@@ -58,7 +224,8 @@ namespace TrashTD.Operators
             // Forward healing requests to shielding
             if (target != null && isDeployed)
             {
-                Shield(target);
+                int firstMouth = UnityEngine.Random.Range(0, MouthOffsets.Length);
+                Shield(target, firstMouth);
                 if (HasSecondUpgrade)
                 {
                     var targets = FindShieldTargets(2);
@@ -66,7 +233,7 @@ namespace TrashTD.Operators
                     {
                         if (targets[i] != target)
                         {
-                            Shield(targets[i]);
+                            Shield(targets[i], (firstMouth + 1) % MouthOffsets.Length);
                             break;
                         }
                     }
@@ -95,22 +262,43 @@ namespace TrashTD.Operators
 
             equippedSkill?.UpdateSkill(Time.deltaTime);
 
-            if (HasSecondUpgrade && currentHP > 0)
+            if (HasFirstUpgrade && currentHP > 0)
             {
                 UpdateDefResAura();
             }
 
             if (attackTimer >= interval)
             {
+                bool performedAction = false;
+
+                // 1. Shield allies (core Medic ability)
                 int count = TargetCount;
                 var targets = FindShieldTargets(count);
                 if (targets != null && targets.Count > 0)
                 {
-                    attackTimer = 0f;
+                    int firstMouth = UnityEngine.Random.Range(0, MouthOffsets.Length);
                     for (int i = 0; i < targets.Count; i++)
                     {
-                        Shield(targets[i]);
+                        int mouth = (firstMouth + i) % MouthOffsets.Length;
+                        Shield(targets[i], mouth);
                     }
+                    performedAction = true;
+                }
+
+                // 2. 2nd Upgrade: Bubblets can now attack enemies like a caster
+                if (HasSecondUpgrade)
+                {
+                    EnemyBase enemyTarget = FindTarget();
+                    if (enemyTarget != null && CanAttackTarget(enemyTarget))
+                    {
+                        Attack(enemyTarget);
+                        performedAction = true;
+                    }
+                }
+
+                if (performedAction)
+                {
+                    attackTimer = 0f;
                 }
             }
         }
@@ -118,7 +306,7 @@ namespace TrashTD.Operators
         protected override void OnDeployed()
         {
             base.OnDeployed();
-            if (HasSecondUpgrade)
+            if (HasFirstUpgrade)
             {
                 UpdateDefResAura();
             }
@@ -138,7 +326,7 @@ namespace TrashTD.Operators
         /// <summary>Played by a bubble this Bubblets cast when it pops.</summary>
         public void PlayShieldPopSound() => PlayAbilitySound(Audio.SfxId.GameplayMagicAttack);
 
-        public void Shield(OperatorBase target)
+        public void Shield(OperatorBase target, int mouthIndex = -1)
         {
             if (target == null || !isDeployed || IsCombatPaused || isStunned || isBound) return;
 
@@ -150,13 +338,15 @@ namespace TrashTD.Operators
                 return;
             }
 
+            Vector3 origin = mouthIndex >= 0 ? GetMouthOrigin(mouthIndex) : GetRandomMouthOrigin();
+
             CombatProjectileVisual.Fire(
-                ProjectileOrigin,
-                target.transform.position,
-                new Color(0.4f, 0.85f, 1f, 0.9f),
-                11f,
-                0.15f,
-                0.08f,
+                origin,
+                target,
+                BubbleProjectileColor,
+                6.5f,
+                0.22f,
+                0.14f,
                 true,
                 () =>
                 {
@@ -235,11 +425,11 @@ namespace TrashTD.Operators
         }
 
         /// <summary>
-        /// Updates the 2x Upgrade DEF & RES aura (+20 DEF, +5 RES to allies in range).
+        /// Updates the DEF & RES aura (+40 DEF, +10 RES to allies in range, unlocked on 1st upgrade).
         /// </summary>
         public void UpdateDefResAura()
         {
-            if (!HasSecondUpgrade || !isDeployed || currentHP <= 0)
+            if (!HasFirstUpgrade || !isDeployed || currentHP <= 0)
             {
                 if (appliedAuraAllies.Count > 0)
                 {
