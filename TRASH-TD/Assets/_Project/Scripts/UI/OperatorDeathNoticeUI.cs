@@ -268,18 +268,7 @@ namespace TrashTD.UI
 
         private static Text CreateText(Transform parent, string name, string content, int size, Color color)
         {
-            var textObject = new GameObject(name, typeof(RectTransform), typeof(Text));
-            textObject.transform.SetParent(parent, false);
-            Text text = textObject.GetComponent<Text>();
-            text.text = content;
-            text.font = UIFontHelper.GetPixelFont();
-            text.fontSize = size;
-            text.alignment = TextAnchor.MiddleLeft;
-            text.color = color;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
-            text.raycastTarget = false;
-            return text;
+            return UiKit.MakeText(parent, name, content, size, TextAnchor.MiddleLeft, color, FontStyle.Normal, HorizontalWrapMode.Overflow, VerticalWrapMode.Overflow, false);
         }
     }
 }

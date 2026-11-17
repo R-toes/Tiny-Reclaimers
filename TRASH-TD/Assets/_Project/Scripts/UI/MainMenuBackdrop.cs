@@ -539,12 +539,7 @@ namespace TrashTD.UI
 
         private static Image CreateImage(string name, Transform parent, Color color)
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(parent, false);
-            var image = go.GetComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
+            return UiKit.CreateImage(parent, name, color);
         }
     }
 }

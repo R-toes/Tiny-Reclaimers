@@ -12,7 +12,7 @@ namespace TrashTD.UI
     /// differs (a different font or default colour, say). A class that declares a member with the same name as one
     /// of these must not call the kit version unqualified: use <c>UiKit.Name(...)</c> there.
     /// </summary>
-    internal static class UiKit
+    internal static partial class UiKit
     {
         internal static Image CreateImage(Transform parent, string name, Color color)
         {

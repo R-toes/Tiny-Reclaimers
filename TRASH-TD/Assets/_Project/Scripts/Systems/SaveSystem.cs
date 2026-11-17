@@ -7,14 +7,6 @@ using TrashTD.Data;
 namespace TrashTD.Systems
 {
     [Serializable]
-    public class OperatorSaveEntry
-    {
-        public string operatorName;
-        public int highestRarity;
-        public int copyCount;
-    }
-
-    [Serializable]
     public class StageProgressEntry
     {
         public string stageId;
@@ -34,14 +26,13 @@ namespace TrashTD.Systems
     [Serializable]
     public class SaveData
     {
-        // TODO: economy beyond card-draft — awaiting design input from Raim (currencies, shop, etc.)
-        // TODO: persistence model — awaiting design input (whether progression persists between runs or resets per run)
+        // Not stored yet, waiting on design (PROJECT_GUIDELINES.md, "Save data"): an economy beyond the card draft (currencies,
+        // a shop) and whether a roster or a run in progress persists. Adding a field later is backward compatible: older saves
+        // simply lack it and JsonUtility leaves it at its default.
         public int version = SaveSystem.CurrentVersion;
         /// <summary>The old PlayerPrefs progress has been moved into this file (see SaveSystem.LegacyPrefs).</summary>
         public bool legacyPrefsImported;
         public bool tutorialDone;
-        public int currency = 0;
-        public List<OperatorSaveEntry> roster = new List<OperatorSaveEntry>();
         public List<StageProgressEntry> stageProgress = new List<StageProgressEntry>();
         public List<EnemyIntelEntry> enemyIntel = new List<EnemyIntelEntry>();
 
@@ -86,7 +77,6 @@ namespace TrashTD.Systems
         /// <summary>A file written by an older build (or by hand) may lack a list; JsonUtility leaves it null.</summary>
         internal void Normalize()
         {
-            if (roster == null) roster = new List<OperatorSaveEntry>();
             if (stageProgress == null) stageProgress = new List<StageProgressEntry>();
             if (enemyIntel == null) enemyIntel = new List<EnemyIntelEntry>();
             for (int i = 0; i < enemyIntel.Count; i++)

@@ -844,7 +844,7 @@ namespace TrashTD.UI
         {
             Time.timeScale = 1f;
             MainMenuController.ReturnToStageSelectorOnLoad();
-            SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene(TrashTD.Core.SceneNames.MainMenu);
         }
 
         private void SetPauseVisible(bool show)

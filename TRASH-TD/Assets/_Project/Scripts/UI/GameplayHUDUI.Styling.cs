@@ -315,34 +315,8 @@ namespace TrashTD.UI
 
         private MenuButtonFeedback AttachFeedback(Button button, Color glow, float hoverScale = 1.05f, System.Action clicked = null)
         {
-            if (button == null) return null;
-
-            // The feedback component drives the visuals, so disable Unity's color tint transition.
-            button.transition = Selectable.Transition.None;
-
-            var feedback = button.GetComponent<MenuButtonFeedback>();
-            if (feedback == null) feedback = button.gameObject.AddComponent<MenuButtonFeedback>();
-
-            feedback.hoverScale = hoverScale;
-            feedback.respondToFocus = false; // clicked HUD buttons stay "selected"; don't keep them lit
-            feedback.Hovered = PlayHover;
-            if (clicked != null) feedback.Clicked = clicked;
-            else feedback.Clicked = PlayClick;
-
-            var image = button.GetComponent<Image>();
-            if (image != null)
-            {
-                var outline = image.GetComponent<Outline>();
-                if (outline == null) outline = image.gameObject.AddComponent<Outline>();
-                outline.useGraphicAlpha = false;
-                outline.effectDistance = new Vector2(2f, -2f);
-                outline.effectColor = new Color(glow.r, glow.g, glow.b, 0f);
-
-                feedback.glowOutline = outline;
-                feedback.glowColor = new Color(glow.r, glow.g, glow.b, 0.9f);
-            }
-
-            return feedback;
+            // clicked HUD buttons stay "selected"; don't keep them lit
+            return UiKit.AttachFeedbackCore(button, glow, hoverScale, PlayHover, clicked ?? PlayClick, false);
         }
 
         private void PlayHover() { PlaySfx(hoverClip, Random.Range(0.97f, 1.03f)); }
@@ -359,16 +333,8 @@ namespace TrashTD.UI
 
         private static Text CreateText(Transform parent, string objectName, string value, int fontSize, TextAnchor alignment)
         {
-            var textObject = new GameObject(objectName, typeof(RectTransform), typeof(Text));
-            textObject.transform.SetParent(parent, false);
-            var text = textObject.GetComponent<Text>();
-            text.text = value;
-            text.font = UIFontHelper.GetPixelFont();
-            text.fontSize = fontSize;
-            text.fontStyle = FontStyle.Bold;
-            text.alignment = alignment;
-            text.color = Color.white;
-            return text;
+            return UiKit.MakeText(parent, objectName, value, fontSize, alignment, Color.white, FontStyle.Bold,
+                HorizontalWrapMode.Wrap, VerticalWrapMode.Truncate, true);
         }
 
         private static void SetPosition(RectTransform rect, Vector2 position, Vector2 anchor, Vector2? size = null, Vector2? pivot = null)

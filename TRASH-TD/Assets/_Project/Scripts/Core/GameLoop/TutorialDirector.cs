@@ -26,7 +26,7 @@ namespace TrashTD.Core.GameLoop
         public const string TutorialStageId = "TUTORIAL";
         public const string TutorialStageResourcePath = "Stages/STAGE_TUTORIAL";
         private const string ScriptResourcePath = "Tutorial/TutorialScript";
-        private const string MainMenuScene = "MainMenu";
+        private const string MainMenuScene = TrashTD.Core.SceneNames.MainMenu;
         // Let a new hostile walk on screen for a moment before Coalesce freezes the wave to introduce it
         private const float EnemyIntroDelay = 1.4f;
         // Let the defeat screen finish animating in before Coalesce talks over it

@@ -511,28 +511,14 @@ namespace TrashTD.UI
 
         private static Image CreateImage(string name, Transform parent, Sprite sprite, float size)
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(parent, false);
-            var image = go.GetComponent<Image>();
-            image.sprite = sprite;
-            image.raycastTarget = false;
+            Image image = UiKit.MakeImage(parent, name, null, sprite, false);
             if (size > 0f) image.rectTransform.sizeDelta = new Vector2(size, size);
             return image;
         }
 
         private static Text CreateText(string name, Transform parent, string content, int fontSize, TextAnchor alignment)
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-            var text = go.GetComponent<Text>();
-            text.font = UIFontHelper.GetPixelFont();
-            text.fontSize = fontSize;
-            text.alignment = alignment;
-            text.text = content;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
-            text.raycastTarget = false;
-            return text;
+            return UiKit.MakeText(parent, name, content, fontSize, alignment, null, FontStyle.Normal, HorizontalWrapMode.Overflow, VerticalWrapMode.Overflow, false);
         }
 
         private static Sprite LoadUiSprite(string path)

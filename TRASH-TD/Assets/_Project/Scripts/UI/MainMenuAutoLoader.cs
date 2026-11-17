@@ -9,7 +9,7 @@ namespace TrashTD.UI
     /// </summary>
     public static class MainMenuAutoLoader
     {
-        private const string MenuSceneName = "MainMenu";
+        private const string MenuSceneName = TrashTD.Core.SceneNames.MainMenu;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()

@@ -72,27 +72,12 @@ namespace TrashTD.UI
 
         private static Image CreateImage(Transform parent, string name, Color color)
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(parent, false);
-            var image = go.GetComponent<Image>();
-            image.color = color;
-            return image;
+            return UiKit.MakeImage(parent, name, color, null, true); // unlike the kit's, it takes clicks
         }
 
         private static Text CreateText(Transform parent, string name, string content, int size, TextAnchor anchor, Color color)
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-            var text = go.GetComponent<Text>();
-            UIFontHelper.Apply(text);
-            text.text = content;
-            text.fontSize = size;
-            text.alignment = anchor;
-            text.color = color;
-            text.raycastTarget = false;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
-            return text;
+            return UiKit.MakeText(parent, name, content, size, anchor, color, FontStyle.Normal, HorizontalWrapMode.Overflow, VerticalWrapMode.Overflow, false);
         }
 
         private static Button CreateButton(Transform parent, string name, string label, Color labelColor, Color plateColor)

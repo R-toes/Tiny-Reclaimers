@@ -27,7 +27,7 @@ namespace TrashTD.Core.GameLoop
         private const float Stage3BackgroundAnimationFrameDuration = 0.12f;
         private static readonly Color TalentRangeColor = new Color(1f, 0.55f, 0.08f, 0.45f);
 
-        private const string DefaultSandboxMapStageId = "STAGE_01";
+        private static readonly string DefaultSandboxMapStageId = StageProgress.GetStageId(1); // the sandbox starts on the first stage
 
         /// <summary>
         /// Stage whose map (layout, artwork, spawns, exits, paths) the sandbox runs on. Static so it survives

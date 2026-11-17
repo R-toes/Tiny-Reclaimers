@@ -150,16 +150,6 @@ namespace TrashTD.UI
             for (int i = parent.childCount - 1; i >= 0; i--) Destroy(parent.GetChild(i).gameObject);
         }
 
-        private static Image CreateImage(Transform parent, string name, Color color)
-        {
-            GameObject imageObject = new GameObject(name, typeof(RectTransform), typeof(Image));
-            imageObject.transform.SetParent(parent, false);
-            Image image = imageObject.GetComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
-        }
-
         private static RectTransform CreateRect(Transform parent, string name)
         {
             GameObject rectObject = new GameObject(name, typeof(RectTransform));

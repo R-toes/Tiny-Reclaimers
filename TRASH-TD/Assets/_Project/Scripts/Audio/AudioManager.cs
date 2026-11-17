@@ -75,8 +75,8 @@ namespace TrashTD.Audio
     /// </summary>
     public sealed class AudioManager : MonoBehaviour
     {
-        private const string MainMenuScene = "MainMenu";
-        private const string GameplayScene = "GameplayTest";
+        private const string MainMenuScene = TrashTD.Core.SceneNames.MainMenu;
+        private const string GameplayScene = TrashTD.Core.SceneNames.Gameplay;
         private const string MusicResourcesFolder = "Music/";
         private const string SfxResourcesFolder = "SFX/";
         private const string MusicVolumeKey = "TrashTD.MusicVolume";

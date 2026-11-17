@@ -901,13 +901,7 @@ namespace TrashTD.UI
 
         private static Image CreateImage(Transform parent, string objectName, Sprite sprite, Color color)
         {
-            var go = new GameObject(objectName, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(parent, false);
-            Image image = go.GetComponent<Image>();
-            image.sprite = sprite;
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
+            return UiKit.MakeImage(parent, objectName, color, sprite, false);
         }
 
         private static void PlaceBottomLeft(RectTransform rt, Vector2 position, Vector2 size)

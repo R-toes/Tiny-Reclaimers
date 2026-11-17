@@ -313,20 +313,5 @@ namespace TrashTD.UI
             noiseTexture.Apply();
             return noiseTexture;
         }
-
-        private static Text CreateText(Transform parent, string content, int size, TextAnchor alignment, Color color)
-        {
-            var textObject = new GameObject("Text", typeof(RectTransform), typeof(Text));
-            textObject.transform.SetParent(parent, false);
-            Text text = textObject.GetComponent<Text>();
-            text.text = content;
-            text.font = UIFontHelper.GetPixelFont();
-            text.fontSize = size;
-            text.alignment = alignment;
-            text.color = color;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.raycastTarget = false;
-            return text;
-        }
     }
 }

@@ -15,6 +15,7 @@ namespace TrashTD.Editor
         {
             string path = $"{StageDataFolder}/STAGE_01.asset";
             var stage = AssetDatabase.LoadAssetAtPath<StageData>(path);
+            if (stage != null && !ConfirmOverwrite("Regenerate " + stage.name, new List<string> { stage.name })) return;
             if (stage == null)
             {
                 stage = ScriptableObject.CreateInstance<StageData>();

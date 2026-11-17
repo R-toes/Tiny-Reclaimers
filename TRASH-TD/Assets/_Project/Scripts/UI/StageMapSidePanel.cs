@@ -317,13 +317,7 @@ namespace TrashTD.UI
 
         private static Image CreateImage(Transform parent, string name, Sprite sprite, Color color)
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(parent, false);
-            var image = go.GetComponent<Image>();
-            image.sprite = sprite;
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
+            return UiKit.MakeImage(parent, name, color, sprite, false);
         }
 
         private static Sprite LoadSprite(string path)

@@ -39,8 +39,66 @@ namespace TrashTD.Editor
         private const string OperatorPrefabFolder = "Assets/_Project/Prefabs/Operators";
         private const string EnemyPrefabFolder = "Assets/_Project/Prefabs/Enemies";
 
+        // The project's assets are the source of truth, not this generator. Operator, enemy and stage balance is tuned by hand
+        // (the inspector, the Wave Planner, code), and the numbers built in here are an older first draft: several operators
+        // already differ (Bulkhead HP, Pompoth ATK, ...), and some operators and Stage 4 are not generated at all. So nothing
+        // here may reset an existing asset without a per-run confirmation, and never in batch mode. It is a bootstrap tool for
+        // an empty project, and it creates missing assets freely (AutoEnsureStages).
+        private static bool overwriteApproved;
+
+        private static bool ConfirmOverwrite(string title, List<string> existing)
+        {
+            if (overwriteApproved || existing.Count == 0) return true;
+            if (Application.isBatchMode)
+            {
+                Debug.LogWarning("[Generator] " + title + ": " + existing.Count + " asset(s) already exist; not resetting them in batch mode.");
+                return false;
+            }
+
+            string sample = string.Join(", ", existing.GetRange(0, Mathf.Min(6, existing.Count)));
+            return EditorUtility.DisplayDialog(title,
+                existing.Count + " of the assets this would generate already exist (" + sample + (existing.Count > 6 ? ", ..." : "") + ").\n\n" +
+                "Generating RESETS their stats, skill text and, for stages, map layout to the generator's built-in numbers. Those are older " +
+                "than the balance in the project, so hand-tuned changes are lost (git can restore them).\n\n" +
+                "Only continue if you really mean to start those assets over.",
+                "Reset them", "Cancel");
+        }
+
+        private static List<string> FindExistingGeneratedAssets()
+        {
+            var existing = new List<string>();
+            foreach (string guid in AssetDatabase.FindAssets("t:OperatorData", new[] { OperatorDataFolder }))
+                existing.Add(System.IO.Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(guid)));
+            foreach (string guid in AssetDatabase.FindAssets("t:EnemyData", new[] { EnemyDataFolder }))
+                existing.Add(System.IO.Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(guid)));
+            foreach (string stage in new[] { "STAGE_01", "STAGE_02", "STAGE_03", "STAGE_05", "STAGE_06" })
+            {
+                if (AssetDatabase.LoadAssetAtPath<StageData>($"{StageDataFolder}/{stage}.asset") != null) existing.Add(stage);
+            }
+            return existing;
+        }
+
         [MenuItem("TRASH TD/Generate Sample Data Assets")]
         public static void GenerateAllAssets()
+        {
+            if (!ConfirmOverwrite("Generate Sample Data Assets", FindExistingGeneratedAssets()))
+            {
+                Debug.Log("[Generator] Cancelled: nothing was changed.");
+                return;
+            }
+
+            overwriteApproved = true;
+            try
+            {
+                GenerateAllAssetsConfirmed();
+            }
+            finally
+            {
+                overwriteApproved = false;
+            }
+        }
+
+        private static void GenerateAllAssetsConfirmed()
         {
             EnsureFolder(OperatorDataFolder);
             EnsureFolder(EnemyDataFolder);
@@ -69,7 +127,7 @@ namespace TrashTD.Editor
         {
             GenerateAllAssets();
 
-            string scenePath = "Assets/_Project/Scenes/GameplayTest.unity";
+            string scenePath = TrashTD.Core.SceneNames.GameplayScenePath;
             var scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(
                 UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects,
                 UnityEditor.SceneManagement.NewSceneMode.Single);

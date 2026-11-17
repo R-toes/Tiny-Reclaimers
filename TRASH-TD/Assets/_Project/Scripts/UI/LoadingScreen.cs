@@ -353,29 +353,9 @@ namespace TrashTD.UI
         //  UI helpers
         // ─────────────────────────────────────────────────────
 
-        /// <summary>A plain coloured block. Images without a sprite draw solid colour, which is intended here.</summary>
-        private static Image CreateImage(Transform parent, string name, Color color)
-        {
-            RectTransform rect = CreateRect(name, parent);
-            Image image = rect.gameObject.AddComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
-        }
-
         private static Text CreateText(Transform parent, string name, string value, int size, TextAnchor alignment, Color color)
         {
-            RectTransform rect = CreateRect(name, parent);
-            Text text = rect.gameObject.AddComponent<Text>();
-            text.font = UIFontHelper.GetPixelFont();
-            text.text = value;
-            text.fontSize = size;
-            text.alignment = alignment;
-            text.color = color;
-            text.raycastTarget = false;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
-            return text;
+            return UiKit.MakeText(parent, name, value, size, alignment, color, FontStyle.Normal, HorizontalWrapMode.Overflow, VerticalWrapMode.Overflow, false);
         }
 
         private static void Place(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size)

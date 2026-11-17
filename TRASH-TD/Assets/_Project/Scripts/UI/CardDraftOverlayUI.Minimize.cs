@@ -239,31 +239,7 @@ namespace TrashTD.UI
 
         private MenuButtonFeedback AttachFeedback(Button button, Color glow, float hoverScale)
         {
-            // The feedback component drives the visuals, so disable Unity's color tint transition.
-            button.transition = Selectable.Transition.None;
-
-            var feedback = button.GetComponent<MenuButtonFeedback>();
-            if (feedback == null) feedback = button.gameObject.AddComponent<MenuButtonFeedback>();
-
-            feedback.hoverScale = hoverScale;
-            feedback.respondToFocus = false; // clicked buttons stay "selected"; don't keep them lit
-            feedback.Hovered = PlayHover;
-            feedback.Clicked = PlayClick;
-
-            var image = button.GetComponent<Image>();
-            if (image != null)
-            {
-                var outline = image.GetComponent<Outline>();
-                if (outline == null) outline = image.gameObject.AddComponent<Outline>();
-                outline.useGraphicAlpha = false;
-                outline.effectDistance = new Vector2(2f, -2f);
-                outline.effectColor = new Color(glow.r, glow.g, glow.b, 0f);
-
-                feedback.glowOutline = outline;
-                feedback.glowColor = new Color(glow.r, glow.g, glow.b, 0.9f);
-            }
-
-            return feedback;
+            return UiKit.AttachFeedbackCore(button, glow, hoverScale, PlayHover, PlayClick, false); // clicked buttons stay "selected"; don't keep them lit
         }
 
         private void PlayHover() { PlaySfx(hoverClip, UnityEngine.Random.Range(0.97f, 1.03f)); }
