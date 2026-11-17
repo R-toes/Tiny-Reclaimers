@@ -78,7 +78,6 @@ namespace TrashTD.Editor
             return existing;
         }
 
-        [MenuItem("TRASH TD/Generate Sample Data Assets")]
         public static void GenerateAllAssets()
         {
             if (!ConfirmOverwrite("Generate Sample Data Assets", FindExistingGeneratedAssets()))
@@ -120,61 +119,6 @@ namespace TrashTD.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("<color=green>TRASH TD: All sample Operator, Enemy, Stage assets, and Prefabs successfully generated with placeholder sprites!</color>");
-        }
-
-        [MenuItem("TRASH TD/Setup Test Gameplay Scene")]
-        public static void SetupTestScene()
-        {
-            GenerateAllAssets();
-
-            string scenePath = TrashTD.Core.SceneNames.GameplayScenePath;
-            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(
-                UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects,
-                UnityEditor.SceneManagement.NewSceneMode.Single);
-
-            var bootstrapperObj = new GameObject("StageBootstrapper");
-            var bootstrapper = bootstrapperObj.AddComponent<StageBootstrapper>();
-
-            // Assign Stage Data
-            bootstrapper.stageData = AssetDatabase.LoadAssetAtPath<StageData>($"{StageDataFolder}/STAGE_01.asset");
-            bootstrapper.difficulty = StageDifficulty.Normal;
-
-            // Assign Operators Pool
-            bootstrapper.operatorPool = new System.Collections.Generic.List<OperatorData>
-            {
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Scrapper.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Qihou.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Echosquire.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Specialist_Drawgoo.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Vespierce.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Defender_Ironhowl.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Defender_Mossmo.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Deadeye.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Pompoth.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Oquloct.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Basurocket.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Caster_Mechonk.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Caster_Nekhrost.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Medic_Coalesce.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Medic_Bubblets.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Medic_Progeny.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Stagger.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Defender_Thornchin.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Lockburn.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Caster_Resicochet.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Specialist_Framiliar.asset")
-            };
-
-            // Assign Tile Sprites
-            bootstrapper.lowGroundSprite = LoadSprite("tex_tile_lowground.png");
-            bootstrapper.highGroundSprite = LoadSprite("tex_tile_highground.png");
-            bootstrapper.blockedSprite = LoadSprite("tex_tile_blocked.png");
-            bootstrapper.enemyPathSprite = LoadSprite("tex_tile_enemypath.png");
-            bootstrapper.spawnPointSprite = LoadSprite("tex_tile_spawn.png");
-            bootstrapper.exitPointSprite = LoadSprite("tex_tile_exit.png");
-
-            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
-            Debug.Log($"<color=green>TRASH TD: Test Gameplay Scene successfully created and saved at: {scenePath}</color>");
         }
 
         /// <summary>

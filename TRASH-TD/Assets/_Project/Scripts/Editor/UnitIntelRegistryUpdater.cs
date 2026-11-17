@@ -44,7 +44,6 @@ namespace TrashTD.Editor
             };
         }
 
-        [MenuItem("TRASH TD/Rebuild Reclaimers' Intel Registry")]
         public static void Rebuild()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
