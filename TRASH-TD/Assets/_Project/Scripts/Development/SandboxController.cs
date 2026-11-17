@@ -220,7 +220,7 @@ namespace TrashTD.Development
             mapStages.Clear();
             foreach (StageData stage in Resources.LoadAll<StageData>("Stages"))
             {
-                if (stage != null && stage.stageId != "SANDBOX" && stage.gridWidth > 0 && stage.gridHeight > 0)
+                if (stage != null && stage.stageId != "SANDBOX" && !stage.comingSoon && stage.gridWidth > 0 && stage.gridHeight > 0)
                     mapStages.Add(stage);
             }
             mapStages.Sort((a, b) => string.Compare(a.stageId, b.stageId, System.StringComparison.OrdinalIgnoreCase));

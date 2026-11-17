@@ -55,6 +55,7 @@ namespace TrashTD.UI
                 StretchFill(mapContainerRect);
 
                 var mapBg = mapContainerGo.GetComponent<Image>();
+                stageMapImage = mapBg;
                 if (stageMapBackgroundSprite == null)
                 {
                     stageMapBackgroundSprite = LoadSpriteSafely("StageSelectorMap", "Assets/_Project/Art/Levels/Stage Selector Map.png");
@@ -122,7 +123,7 @@ namespace TrashTD.UI
             AddCornerBrackets(stageTitlePlate, 16f, 2f, AccentBright);
 
             // ACT 1 title (prominent large font size)
-            var actTitle = MakeText(stageSelectionPanel.transform, "StageSelectorActTitle", StageActTitle, 38, TextAnchor.MiddleLeft,
+            var actTitle = MakeText(stageSelectionPanel.transform, "StageSelectorActTitle", string.Empty, 38, TextAnchor.MiddleLeft,
                 SidebarYellow, FontStyle.Bold);
             actTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
             actTitle.verticalOverflow = VerticalWrapMode.Overflow;
@@ -133,7 +134,7 @@ namespace TrashTD.UI
             actTitleShadow.effectDistance = new Vector2(0f, -3f);
 
             // NERC Development Zone on a new line below ACT 1
-            var zoneTitle = MakeText(stageSelectionPanel.transform, "StageSelectorZoneTitle", StageZoneTitle, 22, TextAnchor.MiddleLeft,
+            var zoneTitle = MakeText(stageSelectionPanel.transform, "StageSelectorZoneTitle", string.Empty, 22, TextAnchor.MiddleLeft,
                 new Color(0.92f, 0.98f, 0.94f, 1f), FontStyle.Bold);
             zoneTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
             zoneTitle.verticalOverflow = VerticalWrapMode.Overflow;
@@ -210,7 +211,7 @@ namespace TrashTD.UI
             loreDividerImage.color = new Color(AccentColor.r, AccentColor.g, AccentColor.b, 0.35f);
             loreDividerImage.raycastTarget = false;
 
-            var loreBody = MakeText(loreCard.transform, "LoreBody", StageZoneLore, 11, TextAnchor.UpperLeft, new Color(TerminalText.r, TerminalText.g, TerminalText.b, 0.92f));
+            var loreBody = MakeText(loreCard.transform, "LoreBody", string.Empty, 11, TextAnchor.UpperLeft, new Color(TerminalText.r, TerminalText.g, TerminalText.b, 0.92f));
             loreBody.lineSpacing = 1.38f;
             loreBody.horizontalOverflow = HorizontalWrapMode.Wrap;
             loreBody.verticalOverflow = VerticalWrapMode.Overflow;
@@ -261,7 +262,12 @@ namespace TrashTD.UI
             StyleTerminalButton(sandboxButton, AccentBright, 15);
             Place(sandboxButton.GetComponent<RectTransform>(), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-60f, 40f), new Vector2(200f, 48f));
             sandboxButton.onClick.RemoveAllListeners();
-            sandboxButton.onClick.AddListener(() => { PlayClick(); SelectStage(6); });
+            sandboxButton.onClick.AddListener(() =>
+            {
+                PlayClick();
+                int sandboxIndex = SandboxStageIndex;
+                if (sandboxIndex >= 0) SelectStage(sandboxIndex);
+            });
             AttachFeedback(sandboxButton, PlayClick, AccentBright, 1.05f);
 
             var hint = MakeText(stageSelectionPanel.transform, "StageHint", "ESC  BACK", 12, TextAnchor.MiddleRight,
@@ -675,13 +681,16 @@ namespace TrashTD.UI
 
         public void ShowMainMenu()
         {
+            RestoreStageMapBehindDossier();
             bool instant = !menuInitialized;
             stageSelectionOpen = false;
             detailsOpen = false;
+            worldMapOpen = false;
             SetBackgroundInteractable(true);
 
             SetPanelVisible(mainMenuPanel, true, instant);
             SetPanelVisible(stageSelectionPanel, false, instant);
+            if (worldMap != null) SetPanelVisible(worldMap.Root, false, instant);
             SetPanelVisible(stageDetailsPanel, false, true, stageDetailsModal);
 
             if (titleIntroActive) return; // the intro brings the logo and rows in itself (RunTitleIntro)

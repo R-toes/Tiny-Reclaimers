@@ -18,25 +18,18 @@ namespace TrashTD.UI
     /// </summary>
     public partial class MainMenuController : MonoBehaviour
     {
-        private const string FirstPlayableStageId = "STAGE_01";
-        private const string SecondPlayableStageId = "STAGE_02";
-        private const string ThirdPlayableStageId = "STAGE_03";
-        private const string FourthPlayableStageId = "STAGE_04";
-        private const string FifthPlayableStageId = "STAGE_05";
-        private const string SixthPlayableStageId = "STAGE_06";
         private const string SandboxStageId = "SANDBOX";
         private const string TutorialStageId = TrashTD.Core.GameLoop.TutorialDirector.TutorialStageId;
-        private const string GameplaySceneName = "GameplayTest";
+        private const string GameplaySceneName = TrashTD.Core.SceneNames.Gameplay;
         private const float EntranceDuration = 0.45f;
 
+        /// <summary>
+        /// Every numbered stage (STAGE_01, STAGE_02, ...) is playable, so a new StageData asset in Resources/Stages appears on
+        /// the map without a code change; the tutorial always is, and the sandbox only in dev mode.
+        /// </summary>
         private static bool IsStagePlayable(string stageId)
         {
-            return stageId == FirstPlayableStageId
-                || stageId == SecondPlayableStageId
-                || stageId == ThirdPlayableStageId
-                || stageId == FourthPlayableStageId
-                || stageId == FifthPlayableStageId
-                || stageId == SixthPlayableStageId
+            return StageProgress.GetStageNumber(stageId) > 0
                 || (stageId == SandboxStageId && TrashTD.Development.DevMode.IsEnabled)
                 || stageId == TutorialStageId;
         }
@@ -44,7 +37,7 @@ namespace TrashTD.UI
         /// <summary>Online, and unlocked by progress on at least one difficulty (StageProgress; dev mode opens all).</summary>
         private static bool IsStageOpen(StageData stage)
         {
-            return stage != null && IsStagePlayable(stage.stageId) && StageProgress.IsAnyDifficultyUnlocked(stage.stageId);
+            return stage != null && !stage.comingSoon && IsStagePlayable(stage.stageId) && StageProgress.IsAnyDifficultyUnlocked(stage.stageId);
         }
 
         /// <summary>The selected stage can be played on the selected difficulty.</summary>
@@ -106,10 +99,7 @@ namespace TrashTD.UI
             Place(rect, topCenter, topCenter, new Vector2(0f, -top), new Vector2(MenuButtonWidth, height));
         }
         private const float MenuButtonLabelInset = 46f;
-        private const string StageActTitle = "ACT 1";
-        private const string StageZoneTitle = "NERC Development Zone";
         private const string StageSubtitleText = "Choose deployment";
-        private const string StageZoneLore = "Once a thriving industrial region built around energy production, Calder Basin became the center of NERC's ambitious development program. What began as an effort to modernize the nation's energy infrastructure eventually left behind abandoned facilities, contaminated settlements, and entire districts deemed uninhabitable. Now, the NERC Development Zone is a fractured landscape of decaying industry and tightly controlled settlements, where the remnants of the corporation's legacy are impossible to escape.";
         private const string StageTickerIdle = "> AWAITING STAGE SELECTION";
         private const float StageLeftEdge = 280f;      // stage select title block x: clear of StageMapSidePanel (~244 wide at 1080 high)
         private const float StageBackButtonX = 150f;   // clear of the side panel's slanted bottom
@@ -170,6 +160,19 @@ namespace TrashTD.UI
         private Text[] difficultyNotchLabels;
         private StageData selectedStage;
         private int selectedStageIndex = -1;
+
+        // Acts (see MainMenuController.StageMap): the stage map shows one act at a time; with several there is a world map first
+        private TrashTD.Data.ActData currentAct;
+        private Image stageMapImage;
+        private ActWorldMapScreen worldMap;
+        private bool worldMapOpen;
+        private static int lastPlayedActNumber = 1;
+        private static bool lastPlayedSandbox;   // the QA sandbox belongs to no act: coming back from it shows the act selection
+        private bool dossierFromActScreen;       // the open dossier is the sandbox's, opened from the act selection screen
+        // While that dossier is open the stage map's own layers are hidden, so the act selection screen is what shows behind it
+        private readonly List<GameObject> stageMapHiddenBehindDossier = new List<GameObject>();
+        private bool stagePanelImageWasEnabled;
+        private bool stageMapHidden;
         private StageDifficulty selectedDifficulty = StageDifficulty.Normal;
         private Text difficultyLabel;
         private Text difficultyWavesValue;
@@ -387,7 +390,7 @@ namespace TrashTD.UI
             {
                 backButton.onClick.RemoveAllListeners();
                 backButton.onClick.AddListener(PlayBack);
-                backButton.onClick.AddListener(ShowMainMenu);
+                backButton.onClick.AddListener(LeaveStageMap);
             }
 
             if (playStageButton != null)
@@ -405,8 +408,17 @@ namespace TrashTD.UI
 
             if (returnToStageSelector)
             {
+                // Back from a stage: the map of the act it belongs to, not the world map
                 returnToStageSelector = false;
-                ShowStageSelectionInternal();
+                if (lastPlayedSandbox && TrashTD.Core.GameLoop.ActCatalog.HasSeveralActs)
+                {
+                    ShowWorldMap();
+                }
+                else
+                {
+                    SwitchToAct(TrashTD.Core.GameLoop.ActCatalog.GetAct(lastPlayedActNumber) ?? CurrentAct);
+                    ShowStageSelectionInternal();
+                }
             }
         }
 
@@ -471,6 +483,11 @@ namespace TrashTD.UI
                 CloseStageDetails();
             }
             else if (stageSelectionOpen)
+            {
+                PlayBack();
+                LeaveStageMap();
+            }
+            else if (worldMapOpen)
             {
                 PlayBack();
                 ShowMainMenu();

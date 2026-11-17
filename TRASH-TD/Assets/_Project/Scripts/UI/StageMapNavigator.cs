@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
 {
@@ -91,6 +92,7 @@ namespace TrashTD.UI
         private Text hudToggleLabel;
         private bool hudExpanded;           // the overview starts minimized
         private readonly List<Image> minimapDots = new List<Image>();
+        private Image minimapArt;
 
         private static Sprite frameSprite;
 
@@ -400,24 +402,8 @@ namespace TrashTD.UI
             var input = plate.gameObject.AddComponent<StageMapMinimapInput>();
             input.Pressed = JumpToMinimapPoint;
 
-            if (mapSprite != null)
-            {
-                Image art = CreateImage(minimap, "Art", new Color(0.75f, 0.85f, 0.78f, 0.9f));
-                art.sprite = mapSprite;
-                Stretch(art.rectTransform, 2f);
-            }
-
-            if (nodes != null)
-            {
-                foreach (StageMapNode node in nodes)
-                {
-                    Image dot = CreateImage(minimap, "Dot", AccentBright);
-                    Vector2 n = node != null ? NodeNormalized(node) : Vector2.zero;
-                    dot.rectTransform.anchorMin = dot.rectTransform.anchorMax = n;
-                    dot.rectTransform.sizeDelta = new Vector2(6f, 6f);
-                    minimapDots.Add(dot);
-                }
-            }
+            if (mapSprite != null) minimapArt = CreateMinimapArt(mapSprite);
+            BuildMinimapDots();
 
             Image view = CreateImage(minimap, "ViewFrame", AccentBright);
             view.sprite = GetFrameSprite();
@@ -453,6 +439,57 @@ namespace TrashTD.UI
             SetHudExpanded(hudExpanded);
         }
 
+        private Image CreateMinimapArt(Sprite mapSprite)
+        {
+            Image art = CreateImage(minimap, "Art", new Color(0.75f, 0.85f, 0.78f, 0.9f));
+            art.sprite = mapSprite;
+            Stretch(art.rectTransform, 2f);
+            art.rectTransform.SetAsFirstSibling();
+            return art;
+        }
+
+        /// <summary>One dot per stage marker on the minimap (rebuilt when the act, and so the markers, change).</summary>
+        private void BuildMinimapDots()
+        {
+            foreach (Image old in minimapDots)
+            {
+                if (old != null) Destroy(old.gameObject);
+            }
+            minimapDots.Clear();
+
+            if (nodes == null) return;
+            foreach (StageMapNode node in nodes)
+            {
+                Image dot = CreateImage(minimap, "Dot", AccentBright);
+                Vector2 n = node != null ? NodeNormalized(node) : Vector2.zero;
+                dot.rectTransform.anchorMin = dot.rectTransform.anchorMax = n;
+                dot.rectTransform.sizeDelta = new Vector2(6f, 6f);
+                minimapDots.Add(dot);
+            }
+        }
+
+        /// <summary>
+        /// Shows another map: a new map art on the minimap and a dot for each of the new stage markers (another act), then
+        /// resets the view. The navigator keeps working on the same list object, so pass the list of the current markers.
+        /// </summary>
+        public void SetMap(Sprite mapSprite, IList<StageMapNode> stageNodes)
+        {
+            nodes = stageNodes;
+            if (minimap != null)
+            {
+                if (minimapArt == null && mapSprite != null) minimapArt = CreateMinimapArt(mapSprite);
+                if (minimapArt != null)
+                {
+                    minimapArt.sprite = mapSprite;
+                    minimapArt.enabled = mapSprite != null;
+                }
+
+                BuildMinimapDots();
+                if (minimapView != null) minimapView.SetAsLastSibling(); // the visible-area frame stays above the dots
+            }
+            ResetView(true);
+        }
+
         private static readonly Vector2 ToggleSize = new Vector2(28f, 22f);
 
         /// <summary>Shows or hides the minimap, zoom bar and hint (the header and its button always stay).</summary>
@@ -480,27 +517,7 @@ namespace TrashTD.UI
 
         private static Text CreateText(Transform parent, string name, string content, int size, TextAnchor alignment, Color color)
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-            var text = go.GetComponent<Text>();
-            text.font = UIFontHelper.GetPixelFont();
-            text.fontSize = size;
-            text.alignment = alignment;
-            text.color = color;
-            text.text = content;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.raycastTarget = false;
-            return text;
-        }
-
-        private static Image CreateImage(Transform parent, string name, Color color)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(parent, false);
-            var image = go.GetComponent<Image>();
-            image.color = color;
-            image.raycastTarget = false;
-            return image;
+            return UiKit.MakeText(parent, name, content, size, alignment, color, FontStyle.Normal, HorizontalWrapMode.Overflow, VerticalWrapMode.Truncate, false);
         }
 
         private static void Place(RectTransform rt, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size)

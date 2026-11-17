@@ -7,6 +7,7 @@ using UnityEngine.InputSystem.UI;
 using TrashTD.Audio;
 using TrashTD.Data;
 using StageProgress = TrashTD.Core.GameLoop.StageProgress;
+using ActCatalog = TrashTD.Core.GameLoop.ActCatalog;
 using static TrashTD.UI.UiKit;
 
 namespace TrashTD.UI
@@ -14,9 +15,221 @@ namespace TrashTD.UI
     // The stage selection map: stage nodes, map navigation, sprite loading and the status ticker.
     public partial class MainMenuController
     {
+        /// <summary>
+        /// PLAY: with one act straight to its stage map, as before; with several acts the world map first (an act is chosen
+        /// there, and BACK from an act's map returns to it).
+        /// </summary>
         public void ShowStageSelection()
         {
+            if (ActCatalog.HasSeveralActs)
+            {
+                ShowWorldMap();
+                return;
+            }
+
             ShowStageSelectionInternal();
+        }
+
+        private void LeaveStageMap()
+        {
+            if (ActCatalog.HasSeveralActs) ShowWorldMap();
+            else ShowMainMenu();
+        }
+
+        // ─────────────────────────────────────────────────────
+        //  Acts: the world map and switching the stage map to another act
+        // ─────────────────────────────────────────────────────
+
+        private ActData CurrentAct => currentAct != null ? currentAct : (currentAct = ActCatalog.All[0]);
+
+        /// <summary>The current act's own stage map art, or the project's default Stage Selector Map.</summary>
+        private Sprite CurrentMapSprite => CurrentAct.stageMapSprite != null ? CurrentAct.stageMapSprite : stageMapBackgroundSprite;
+
+        private void EnsureWorldMap()
+        {
+            if (worldMap != null || stageSelectionPanel == null) return;
+
+            worldMap = ActWorldMapScreen.Create(stageSelectionPanel.transform.parent, OpenAct,
+                () => { PlayBack(); ShowMainMenu(); }, OpenSandboxFromActScreen, PlayHover, PlayClick, PlayDenied);
+            worldMap.Root.transform.SetSiblingIndex(stageSelectionPanel.transform.GetSiblingIndex() + 1);
+            worldMap.Root.SetActive(false);
+        }
+
+        private void ShowWorldMap()
+        {
+            RestoreStageMapBehindDossier();
+            EnsureWorldMap();
+            if (worldMap == null)
+            {
+                ShowStageSelectionInternal();
+                return;
+            }
+
+            CardDraftOverlayUI.HideAllForMenuTransition();
+            stageSelectionOpen = false;
+            detailsOpen = false;
+            worldMapOpen = true;
+            SetBackgroundInteractable(true);
+
+            worldMap.Refresh(ActCatalog.All, stageMapBackgroundSprite);
+            SetPanelVisible(mainMenuPanel, false, true);
+            SetPanelVisible(stageSelectionPanel, false, true);
+            SetPanelVisible(stageDetailsPanel, false, true, stageDetailsModal);
+            SetPanelVisible(worldMap.Root, true, false);
+        }
+
+        /// <summary>
+        /// QA SANDBOX on the act selection screen (dev mode): opens its dossier over the current act's map. The sandbox picks its
+        /// own map, so it belongs to no act.
+        /// </summary>
+        private void OpenSandboxFromActScreen()
+        {
+            if (!TrashTD.Development.DevMode.IsEnabled) return;
+
+            int sandboxIndex = SandboxStageIndex;
+            if (sandboxIndex < 0) return;
+
+            // The dossier lives on the stage map's panel, so that panel hosts it (behind the dossier's own dark backdrop) while
+            // the act selection screen is hidden. No act is switched to and no map animation plays; closing the dossier
+            // comes back to the act selection screen (CloseStageDetails).
+            CardDraftOverlayUI.HideAllForMenuTransition();
+            stageSelectionOpen = true;
+            SetPanelVisible(mainMenuPanel, false, true);
+
+            // The stage map's panel hosts the dossier, but its own layers (the map, its markers, the side panel, the header) are
+            // hidden and the act selection screen is moved just under it, so the act selection is what shows behind the dossier
+            HideStageMapBehindDossier();
+            SetPanelVisible(stageSelectionPanel, true, true);
+            if (worldMap != null)
+            {
+                SetPanelVisible(worldMap.Root, true, true);
+                worldMap.Root.transform.SetSiblingIndex(stageSelectionPanel.transform.GetSiblingIndex());
+            }
+
+            SelectStage(sandboxIndex);
+            if (detailsOpen) dossierFromActScreen = true;
+            else ShowWorldMap(); // it did not open (for example Coalesce is guiding the map): stay on the act selection
+        }
+
+        private void HideStageMapBehindDossier()
+        {
+            RestoreStageMapBehindDossier();
+            stageMapHidden = true;
+
+            Image panelImage = stageSelectionPanel.GetComponent<Image>();
+            stagePanelImageWasEnabled = panelImage != null && panelImage.enabled;
+            if (panelImage != null) panelImage.enabled = false;
+
+            foreach (Transform child in stageSelectionPanel.transform)
+            {
+                GameObject layer = child.gameObject;
+                if (layer == stageDetailsPanel || !layer.activeSelf) continue;
+                layer.SetActive(false);
+                stageMapHiddenBehindDossier.Add(layer);
+            }
+        }
+
+        /// <summary>Puts the stage map's layers back after the sandbox dossier, and the act selection screen above the stage map again.</summary>
+        private void RestoreStageMapBehindDossier()
+        {
+            if (!stageMapHidden) return;
+            stageMapHidden = false;
+
+            foreach (GameObject layer in stageMapHiddenBehindDossier)
+            {
+                if (layer != null) layer.SetActive(true);
+            }
+            stageMapHiddenBehindDossier.Clear();
+
+            if (stagePanelImageWasEnabled)
+            {
+                Image panelImage = stageSelectionPanel.GetComponent<Image>();
+                if (panelImage != null) panelImage.enabled = true;
+                stagePanelImageWasEnabled = false;
+            }
+
+            if (worldMap != null) worldMap.Root.transform.SetSiblingIndex(stageSelectionPanel.transform.GetSiblingIndex() + 1);
+        }
+
+        /// <summary>A click on an act of the world map: its stage map opens, unless the act is still locked.</summary>
+        private void OpenAct(ActData act)
+        {
+            if (act == null) return;
+            if (!ActCatalog.IsActUnlocked(act))
+            {
+                PlayDenied();
+                return;
+            }
+
+            SwitchToAct(act);
+            if (worldMap != null) SetPanelVisible(worldMap.Root, false, true);
+            worldMapOpen = false;
+            ShowStageSelectionInternal();
+        }
+
+        /// <summary>Makes the stage map show this act: its markers, map art, minimap and header text.</summary>
+        private void SwitchToAct(ActData act)
+        {
+            if (act == null || act == currentAct) return;
+
+            currentAct = act;
+            selectedStage = null;
+            selectedStageIndex = -1;
+            RebuildActNodes();
+            if (mapNavigator != null) mapNavigator.SetMap(CurrentMapSprite, stageMapNodes);
+        }
+
+        /// <summary>The act's name, zone and lore in the stage map's header.</summary>
+        private void ApplyActHeader()
+        {
+            ActData act = CurrentAct;
+            SetHeaderText(stageHeaderTitle, act.DisplayName);
+            SetHeaderText(stageZoneTitle, act.zoneName);
+            if (stageZoneLore != null)
+            {
+                SetHeaderText(stageZoneLore.Find("LoreBody"), act.zoneLore);
+                SetHeaderText(stageZoneLore.Find("LoreTag"), act.loreTag);
+            }
+        }
+
+        private static void SetHeaderText(Component target, string value)
+        {
+            Text text = target != null ? target.GetComponent<Text>() : null;
+            if (text != null) text.text = value ?? string.Empty;
+        }
+
+        /// <summary>The act's map art on the full-screen map.</summary>
+        private void ApplyActMapSprite()
+        {
+            if (stageMapImage == null) return;
+
+            Sprite sprite = CurrentMapSprite;
+            if (sprite != null)
+            {
+                if (sprite.texture != null) sprite.texture.filterMode = FilterMode.Point;
+                stageMapImage.sprite = sprite;
+                stageMapImage.type = Image.Type.Simple;
+                stageMapImage.preserveAspect = false;
+                stageMapImage.color = Color.white;
+            }
+            else
+            {
+                stageMapImage.sprite = null;
+                stageMapImage.color = new Color(0.02f, 0.05f, 0.03f, 1f);
+            }
+        }
+
+        /// <summary>Where the QA sandbox sits in the stage list (right after the current act's stages), or -1.</summary>
+        private int SandboxStageIndex
+        {
+            get
+            {
+                for (int i = 0; i < availableStages.Count; i++)
+                {
+                    if (availableStages[i] != null && availableStages[i].stageId == SandboxStageId) return i;
+                }
+                return -1;
+            }
         }
 
         // ── Coalesce's stage-map intro (MapTutorialGuide), until the tutorial is finished or skipped ──
@@ -52,6 +265,7 @@ namespace TrashTD.UI
 
         private void ShowStageSelectionInternal()
         {
+            RestoreStageMapBehindDossier();
             CardDraftOverlayUI.HideAllForMenuTransition();
             stageSelectionOpen = true;
             detailsOpen = false;
@@ -95,6 +309,14 @@ namespace TrashTD.UI
             SetBackgroundInteractable(true);
             SetPanelVisible(stageDetailsPanel, false, false, stageDetailsModal);
 
+            // The sandbox's dossier was opened from the act selection screen, so closing it goes back there
+            if (dossierFromActScreen)
+            {
+                dossierFromActScreen = false;
+                ShowWorldMap(); // puts the stage map's layers back before hiding that panel
+                return;
+            }
+
             StageMapNode selectedNode = FindStageNode(selectedStage);
             if (selectedNode != null)
             {
@@ -105,7 +327,8 @@ namespace TrashTD.UI
         // Players never see QA SANDBOX (DevMode). The ESC hint drops into its slot so the corner isn't left empty.
         private void ApplyDevModeVisibility()
         {
-            bool dev = TrashTD.Development.DevMode.IsEnabled;
+            // With several acts the sandbox lives on the act selection screen; with one there is no such screen, so it stays here
+            bool dev = TrashTD.Development.DevMode.IsEnabled && !ActCatalog.HasSeveralActs;
             if (sandboxButton != null) sandboxButton.gameObject.SetActive(dev);
             if (stageHint == null) return;
 
@@ -135,63 +358,55 @@ namespace TrashTD.UI
         //  Stage selector
         // ─────────────────────────────────────────────────────
 
-        // ── Normalized node positions for each of the 6 stages on the map art ──
-        // Origin is top-left (0,0), bottom-right is (1,1).
-        private static readonly Vector2[] StageNodePositions = new[]
-        {
-            new Vector2(0.245f, 0.740f),  // Stage 1
-            new Vector2(0.380f, 0.550f),  // Stage 2
-            new Vector2(0.470f, 0.740f),  // Stage 3
-            new Vector2(0.610f, 0.460f),  // Stage 4
-            new Vector2(0.820f, 0.670f),  // Stage 5 (placed where stage 6 previously was)
-            new Vector2(0.820f, 0.350f),  // Stage 6 (straight up above stage 5)
-        };
-
-        // STAGE 00, the tutorial: the small outpost by the lake on the map's west side
-        private static readonly Vector2 TutorialNodePosition = new Vector2(0.275f, 0.345f);
+        private StageData sandboxStageStub;
 
         private void BuildStageButtons()
+        {
+            stageEntrance.Clear();
+            RebuildActNodes();
+        }
+
+        /// <summary>
+        /// Lists the current act's stages and builds their markers. The list keeps the order the rest of the menu relies on:
+        /// the act's stages first (stage i at index i), then the QA sandbox, then the tutorial.
+        /// </summary>
+        private void RebuildActNodes()
         {
             availableStages.Clear();
             stageCards.Clear();
             stageMapNodes.Clear();
-            stageEntrance.Clear();
 
-            string[] stageNames = new[]
+            ActData act = CurrentAct;
+            var markerPositions = new List<Vector2>();
+            if (act.stages != null)
             {
-                "Blackwater Facilities", "Milestone 9", "Railyard Drain",
-                "NERC Works Plant", "New Calder Basin", "The Pale"
-                , "QA Sandbox"
-            };
-
-            string[] stageDescriptions = new[]
-            {
-                "An abandoned NERC research complex hiding the remnants of its secret experiments.",
-                "A deserted roadside fuel and repair station, long abandoned after supply routes collapsed.",
-                "A decaying freight yard choked with debris, stagnant water, and industrial waste.",
-                "A massive power plant left unstable after the disaster that crippled the region.",
-                "A fortified district serving as the last refuge for survivors within the development zone.",
-                "The ruined remains of old Calder Basin, devastated by nuclear catastrophe and industrial contamination.",
-                "Development-only map for enemy and operator testing."
-            };
-
-            for (int i = 0; i < stageNames.Length; i++)
-            {
-                string id = i < 6 ? "STAGE_0" + (i + 1) : SandboxStageId;
-                var stage = Resources.Load<StageData>("Stages/" + id);
-                if (stage == null)
+                foreach (ActStageEntry entry in act.stages)
                 {
-                    stage = ScriptableObject.CreateInstance<StageData>();
-                    stage.stageId = id;
-                    stage.mapName = stageNames[i];
-                    stage.shortDescription = stageDescriptions[i];
+                    if (entry == null || entry.stage == null) continue;
+                    availableStages.Add(entry.stage);
+                    markerPositions.Add(entry.mapPosition);
                 }
-                availableStages.Add(stage);
             }
+            int actStageCount = availableStages.Count;
 
-            // The tutorial comes after the sandbox, so Stage i+1 and the sandbox keep their indices
-            StageData tutorialStage = Resources.Load<StageData>(TrashTD.Core.GameLoop.TutorialDirector.TutorialStageResourcePath);
+            if (sandboxStageStub == null)
+            {
+                sandboxStageStub = Resources.Load<StageData>("Stages/" + SandboxStageId);
+                if (sandboxStageStub == null)
+                {
+                    sandboxStageStub = ScriptableObject.CreateInstance<StageData>();
+                    sandboxStageStub.stageId = SandboxStageId;
+                    sandboxStageStub.mapName = "QA Sandbox";
+                    sandboxStageStub.shortDescription = "Development-only map for enemy and operator testing.";
+                }
+            }
+            availableStages.Add(sandboxStageStub);
+
+            StageData tutorialStage = act.tutorialStage;
             if (tutorialStage != null) availableStages.Add(tutorialStage);
+
+            ApplyActHeader();
+            ApplyActMapSprite();
 
             if (stageListRoot == null)
             {
@@ -207,13 +422,12 @@ namespace TrashTD.UI
                 if (child.name.StartsWith("StageNode_")) Destroy(child.gameObject);
             }
 
-            int mapStageCount = Mathf.Min(6, availableStages.Count);
-            for (int i = 0; i < mapStageCount; i++)
+            for (int i = 0; i < actStageCount; i++)
             {
                 var stage = availableStages[i];
                 bool isPlayable = IsStageOpen(stage);
 
-                var node = CreateStageMapNode(stage, i + 1, isPlayable, StageNodePositions[i]);
+                var node = CreateStageMapNode(stage, i + 1, isPlayable, markerPositions[i]);
                 stageMapNodes.Add(node);
 
                 // Nodes run their own boot-in (PlayStageNodeIntros), not the generic entrance
@@ -223,14 +437,15 @@ namespace TrashTD.UI
 
             if (tutorialStage != null)
             {
-                var tutorialNode = CreateStageMapNode(tutorialStage, 0, true, TutorialNodePosition);
+                var tutorialNode = CreateStageMapNode(tutorialStage, 0, true, act.tutorialMapPosition);
                 stageMapNodes.Add(tutorialNode);
                 var tutorialFeedback = tutorialNode.GetComponent<MenuButtonFeedback>();
                 if (tutorialFeedback != null) stageCards.Add(tutorialFeedback);
             }
 
-            // Re-apply the layout to position everything
-            if (stageMapLayout != null) stageMapLayout.Apply();
+            // Position the markers just built. RefreshNodes, not Apply: the layout caches its markers, and these are new
+            // (switching acts rebuilds them), so Apply alone would leave them all at the middle of the map
+            if (stageMapLayout != null) stageMapLayout.RefreshNodes();
         }
 
         /// <summary>
@@ -279,7 +494,7 @@ namespace TrashTD.UI
             mapNavigator.Initialize(
                 stageSelectionPanel.GetComponent<RectTransform>(),
                 stageMapLayout,
-                stageMapBackgroundSprite,
+                CurrentMapSprite,
                 stageSelectionPanel.transform,
                 stageMapNodes,
                 button =>
@@ -406,9 +621,11 @@ namespace TrashTD.UI
             else
             {
                 string stageName = string.IsNullOrEmpty(node.Stage.mapName) ? "UNKNOWN" : node.Stage.mapName.ToUpperInvariant();
-                message = node.IsLocked
-                    ? $"> STAGE {node.StageNumber:00} // {stageName}  -  SIGNAL LOCKED"
-                    : $"> STAGE {node.StageNumber:00} // {stageName}  -  CLICK TO OPEN DOSSIER";
+                message = node.Stage.comingSoon
+                    ? $"> {ActCatalog.FormatStageLabel(node.Stage.stageId)} // COMING SOON"
+                    : node.IsLocked
+                        ? $"> {ActCatalog.FormatStageLabel(node.Stage.stageId)} // {stageName}  -  SIGNAL LOCKED"
+                        : $"> {ActCatalog.FormatStageLabel(node.Stage.stageId)} // {stageName}  -  CLICK TO OPEN DOSSIER";
             }
 
             SetStageTicker(message);

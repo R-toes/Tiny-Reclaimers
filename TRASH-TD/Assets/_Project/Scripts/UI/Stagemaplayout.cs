@@ -30,6 +30,17 @@ namespace TrashTD.UI
             if (isActiveAndEnabled) Apply();
         }
 
+        /// <summary>
+        /// Forgets the markers it has cached and positions the current ones. Apply keeps the list it found the first time, so
+        /// after markers were destroyed and created again (the stage map switching to another act) call this instead:
+        /// with Apply alone the new markers are never positioned and all sit at the middle of the map.
+        /// </summary>
+        public void RefreshNodes()
+        {
+            nodes = null;
+            Apply();
+        }
+
         [ContextMenu("Apply Layout")]
         public void Apply()
         {

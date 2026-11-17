@@ -16,6 +16,7 @@ namespace TrashTD.UI
     {
         private void SelectStage(int stageIndex)
         {
+            dossierFromActScreen = false; // a marker opens its own dossier; OpenSandboxFromActScreen sets this after
             if (stageIndex < 0 || stageIndex >= availableStages.Count)
             {
                 return;
@@ -606,16 +607,7 @@ namespace TrashTD.UI
             if (selectedStage == null) return 0;
 
             WaveData[] waves = selectedStage.GetWaves(difficulty);
-            if (waves != null && waves.Length > 0) return waves.Length;
-            if (selectedStage.stageId != "STAGE_01" && selectedStage.stageId != "STAGE_02") return 0;
-
-            return difficulty switch
-            {
-                StageDifficulty.Easy => 10,
-                StageDifficulty.Normal => 20,
-                StageDifficulty.Hard => 30,
-                _ => 0
-            };
+            return waves != null ? waves.Length : 0; // 0 shows as "?" until the stage has waves (Wave Planner)
         }
 
         private static Color GetDifficultyColor(StageDifficulty difficulty)

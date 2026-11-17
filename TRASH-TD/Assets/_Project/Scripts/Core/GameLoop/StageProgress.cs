@@ -77,7 +77,8 @@ namespace TrashTD.Core.GameLoop
             int number = GetStageNumber(stageId);
             if (number <= 1) return string.Empty;
 
-            string previous = $"STAGE {number - 1:00}";
+            // Named the way the UI labels it: "STAGE 02", or "ACT 1 // STAGE 06" once there are several acts
+            string previous = ActCatalog.FormatStageLabel(GetStageId(number - 1));
             return difficulty == StageDifficulty.Hard ? $"CLEAR {previous} ON HARD" : $"CLEAR {previous} FIRST";
         }
 

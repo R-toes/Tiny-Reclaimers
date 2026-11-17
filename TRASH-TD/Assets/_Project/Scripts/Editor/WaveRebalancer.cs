@@ -45,7 +45,7 @@ namespace TrashTD.Editor
             foreach (string guid in AssetDatabase.FindAssets("t:StageData"))
             {
                 var stage = AssetDatabase.LoadAssetAtPath<StageData>(AssetDatabase.GUIDToAssetPath(guid));
-                if (stage != null && stage.stageId != "SANDBOX") stages.Add(stage);
+                if (stage != null && stage.stageId != "SANDBOX" && !stage.comingSoon) stages.Add(stage);
             }
 
             if (!EditorUtility.DisplayDialog(

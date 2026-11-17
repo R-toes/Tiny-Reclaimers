@@ -189,7 +189,7 @@ namespace TrashTD.UI
             bool tutorial = manager != null && manager.IsTutorial;
             headerStage.text = tutorial
                 ? $"STAGE 00 // {mapName}"
-                : (stageNumber > 0 ? $"STAGE {stageNumber:00} // " : string.Empty) + $"{mapName} // <color={difficultyColor}>{difficulty}</color>";
+                : (stageNumber > 0 ? TrashTD.Core.GameLoop.ActCatalog.FormatStageLabel(stage.stageId) + " // " : string.Empty) + $"{mapName} // <color={difficultyColor}>{difficulty}</color>";
 
             // Title + subtitle
             fullTitle = victory ? "STAGE CLEARED" : "SIGNAL LOST";
@@ -306,7 +306,8 @@ namespace TrashTD.UI
             if (stage != null && stage.stageId == TutorialDirector.TutorialStageId) return Resources.Load<StageData>("Stages/STAGE_01");
             int number = GetStageNumber(stage);
             if (number <= 0) return null;
-            return Resources.Load<StageData>($"Stages/STAGE_{number + 1:00}");
+            StageData next = Resources.Load<StageData>($"Stages/STAGE_{number + 1:00}");
+            return next != null && next.comingSoon ? null : next; // a placeholder is not a stage to play
         }
 
         // ─────────────────────────────────────────────────────
@@ -589,7 +590,7 @@ namespace TrashTD.UI
         {
             Time.timeScale = 1f;
             MainMenuController.ReturnToStageSelectorOnLoad();
-            SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene(TrashTD.Core.SceneNames.MainMenu);
         }
 
         // ─────────────────────────────────────────────────────
@@ -834,21 +835,6 @@ namespace TrashTD.UI
                     else bar.color = new Color(1f, 1f, 1f, 0.25f);
                 }
             }
-        }
-
-        private static Text CreateText(Transform parent, string content, int size, TextAnchor alignment, Color color)
-        {
-            var textObject = new GameObject("Text", typeof(RectTransform), typeof(Text));
-            textObject.transform.SetParent(parent, false);
-            Text text = textObject.GetComponent<Text>();
-            text.text = content;
-            text.font = UIFontHelper.GetPixelFont();
-            text.fontSize = size;
-            text.alignment = alignment;
-            text.color = color;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.raycastTarget = false;
-            return text;
         }
 
         /// <summary>Centre at (x, y) measured from the parent's top-left corner.</summary>

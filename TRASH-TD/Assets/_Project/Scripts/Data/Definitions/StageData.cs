@@ -74,6 +74,9 @@ namespace TrashTD.Data
         [Tooltip("Unique stage identifier")]
         public string stageId;
 
+        [Tooltip("A placeholder for a stage that is not built yet: it shows on the stage map as a locked marker and can never be opened or played, even in dev mode.")]
+        public bool comingSoon;
+
         [Tooltip("What this map's environment does: its hazard and ambient effects. The sandbox copies it from the map it runs on.")]
         public StageEnvironment environment;
 

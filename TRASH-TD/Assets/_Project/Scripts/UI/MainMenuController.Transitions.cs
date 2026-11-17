@@ -35,9 +35,12 @@ namespace TrashTD.UI
 
             if (overlayRoutine != null) StopCoroutine(overlayRoutine);
 
+            // "STAGE 03" with one act, "ACT 2 // STAGE 01" with several; the tutorial reads "STAGE 00"
             string stageTag = selectedStage.stageId == SandboxStageId
                 ? "QA SANDBOX"
-                : "STAGE " + (IsTutorialStage(selectedStage) ? 0 : selectedStageIndex + 1).ToString("00");
+                : TrashTD.Core.GameLoop.ActCatalog.FormatStageLabel(selectedStage.stageId);
+            lastPlayedSandbox = selectedStage.stageId == SandboxStageId;
+            if (!lastPlayedSandbox) lastPlayedActNumber = CurrentAct.actNumber;
             LoadingScreen.LoadStage(GameplaySceneName, selectedStage, stageTag, selectedDifficulty, GetDifficultyColor(selectedDifficulty));
         }
 
@@ -68,33 +71,7 @@ namespace TrashTD.UI
 
         private MenuButtonFeedback AttachFeedback(Button button, System.Action clicked, Color glow, float hoverScale)
         {
-            if (button == null) return null;
-
-            // Feedback component drives the visuals, so disable Unity's color tint transition.
-            button.transition = Selectable.Transition.None;
-
-            var feedback = button.GetComponent<MenuButtonFeedback>();
-            if (feedback == null) feedback = button.gameObject.AddComponent<MenuButtonFeedback>();
-
-            feedback.hoverScale = hoverScale;
-            feedback.Hovered = PlayHover;
-            if (clicked != null) feedback.Clicked = clicked;
-            else feedback.Clicked = PlayClick;
-
-            var image = button.GetComponent<Image>();
-            if (image != null)
-            {
-                var outline = image.GetComponent<Outline>();
-                if (outline == null) outline = image.gameObject.AddComponent<Outline>();
-                outline.useGraphicAlpha = false;
-                outline.effectDistance = new Vector2(2f, -2f);
-                outline.effectColor = new Color(glow.r, glow.g, glow.b, 0f);
-
-                feedback.glowOutline = outline;
-                feedback.glowColor = new Color(glow.r, glow.g, glow.b, 0.9f);
-            }
-
-            return feedback;
+            return UiKit.AttachFeedbackCore(button, glow, hoverScale, PlayHover, clicked ?? PlayClick, null);
         }
 
         private void PlayHover() { PlaySfx(hoverClip, Random.Range(0.97f, 1.03f)); }

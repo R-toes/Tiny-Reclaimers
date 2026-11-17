@@ -156,9 +156,11 @@ namespace TrashTD.Tests
         public void UnlockRequirement_NamesTheStageBefore()
         {
             Assert.AreEqual(string.Empty, StageProgress.GetUnlockRequirement("STAGE_01", StageDifficulty.Hard));
-            Assert.AreEqual("CLEAR STAGE 02 FIRST", StageProgress.GetUnlockRequirement("STAGE_03", StageDifficulty.Easy));
-            Assert.AreEqual("CLEAR STAGE 02 FIRST", StageProgress.GetUnlockRequirement("STAGE_03", StageDifficulty.Normal));
-            Assert.AreEqual("CLEAR STAGE 02 ON HARD", StageProgress.GetUnlockRequirement("STAGE_03", StageDifficulty.Hard));
+            // The previous stage is named the way the UI labels it, which depends on how many acts there are
+            string previous = ActCatalog.FormatStageLabel("STAGE_02");
+            Assert.AreEqual("CLEAR " + previous + " FIRST", StageProgress.GetUnlockRequirement("STAGE_03", StageDifficulty.Easy));
+            Assert.AreEqual("CLEAR " + previous + " FIRST", StageProgress.GetUnlockRequirement("STAGE_03", StageDifficulty.Normal));
+            Assert.AreEqual("CLEAR " + previous + " ON HARD", StageProgress.GetUnlockRequirement("STAGE_03", StageDifficulty.Hard));
         }
     }
 }

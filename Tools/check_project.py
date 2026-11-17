@@ -7,10 +7,11 @@ Errors (exit code 1):
   - a C# file with unbalanced braces (a quick way to catch a bad merge or edit before Unity compiles)
   - merge-conflict markers left in a text file
   - a C# file over MAX_LINES lines
-Warnings (printed, exit code unchanged):
-  - a C# file over WARN_LINES lines
   - a runtime script comparing against a stage id string such as "STAGE_04" (stage behaviour is StageData data;
     see PROJECT_GUIDELINES.md, "Stage environments")
+  - a scene named in SceneNames.cs that is missing from the project or from the Build Settings scene list
+Warnings (printed, exit code unchanged):
+  - a C# file over WARN_LINES lines
 """
 import os
 import re
@@ -25,10 +26,8 @@ SCRIPTS = os.path.join(ASSETS, '_Project', 'Scripts')
 WARN_LINES = 1000
 MAX_LINES = 1500
 TEXT_EXTENSIONS = ('.cs', '.asmdef', '.md', '.json', '.shader', '.asset', '.prefab', '.unity', '.meta', '.yml', '.py')
-# Files that may still name a stage id (default sandbox map, a legacy fallback). Keep this list short.
-STAGE_ID_ALLOWED = ('StageBootstrapper.cs', 'MainMenuController.StageMap.cs', 'MainMenuController.cs',
-                    'MainMenuController.StageDetails.cs', 'MainMenuController.TitleScreen.cs', 'StageProgress.cs',
-                    'EnemyIntelProgress.cs', 'SaveSystem.cs', 'TutorialDirector.cs', 'AudioManager.cs')
+# Runtime files that may still compare against a stage id string. None do any more: stage behaviour is StageData data.
+STAGE_ID_ALLOWED = ()
 
 errors = []
 warnings = []
@@ -226,9 +225,29 @@ def check_text_files(files):
         in_runtime = f.startswith(SCRIPTS) and os.sep + 'Editor' + os.sep not in f
         if in_runtime and os.path.basename(f) not in STAGE_ID_ALLOWED:
             for m in re.finditer(r'(==|!=)\s*"STAGE_\d+"|case\s+"STAGE_\d+"', text):
-                warnings.append('%s compares against a stage id string (line %d): use StageData data instead'
-                                % (rel(f), text.count('\n', 0, m.start()) + 1))
+                errors.append('%s compares against a stage id string (line %d): use StageData data instead'
+                              % (rel(f), text.count('\n', 0, m.start()) + 1))
                 break
+
+
+def check_scene_names():
+    """The scene names in SceneNames.cs must exist as scene files and be listed in Build Settings."""
+    names_file = os.path.join(SCRIPTS, 'Core', 'SceneNames.cs')
+    settings_file = os.path.join(UNITY, 'ProjectSettings', 'EditorBuildSettings.asset')
+    if not os.path.isfile(names_file) or not os.path.isfile(settings_file):
+        return
+    names = re.findall(r'public const string (?:MainMenu|Gameplay) = "([^"]+)";', open(names_file, encoding='utf-8-sig').read())
+    in_build = set()
+    pattern = re.compile(r'^\s*-?\s*enabled:\s*(\d)\s*\n\s*path:\s*(\S.*?)\s*$', re.M)
+    for m in pattern.finditer(open(settings_file, encoding='utf-8').read()):
+        if m.group(1) == '1':
+            in_build.add(os.path.splitext(os.path.basename(m.group(2)))[0])
+    scene_files = tracked_or_all(os.path.join(ASSETS, '_Project', 'Scenes'))
+    for name in names:
+        if not any(os.path.basename(p) == name + '.unity' for p in scene_files):
+            errors.append('SceneNames.cs names the scene "%s" but no %s.unity exists under Assets/_Project/Scenes' % (name, name))
+        if name not in in_build:
+            errors.append('SceneNames.cs names the scene "%s" but it is not an enabled scene in Build Settings' % name)
 
 
 def main():
@@ -238,6 +257,7 @@ def main():
     files = tracked_or_all(ASSETS)
     check_metas(files)
     check_text_files(files + [os.path.join(ROOT, 'PROJECT_GUIDELINES.md'), os.path.join(ROOT, 'README.md')])
+    check_scene_names()
 
     for w in warnings:
         print('warning: ' + w)
