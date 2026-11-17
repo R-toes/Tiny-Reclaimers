@@ -93,10 +93,14 @@ namespace TrashTD.Core.GameLoop
             CreateVentEmbers();
             CreateFloorMist();
             CreateHeatFlareParticles();
+            CreateReactorFlare();
+            Current = this;
         }
 
         private void OnDestroy()
         {
+            if (Current == this) Current = null;
+
             if (waveManager != null)
             {
                 waveManager.OnWaveStarted -= HandleWaveStarted;
@@ -246,6 +250,7 @@ namespace TrashTD.Core.GameLoop
 
             var deployed = operatorManager.DeployedOperators;
             bool heatStackAdded = false;
+            reactorPulseSuppressed = true; // the blast below pulses the reactor once, not once per operator
             for (int i = 0; i < deployed.Count; i++)
             {
                 OperatorBase op = deployed[i];
@@ -256,9 +261,11 @@ namespace TrashTD.Core.GameLoop
                 heatStackAdded |= op.HeatStacks > previousStacks;
                 OperatorHeatBar.ShowFor(op);
             }
+            reactorPulseSuppressed = false;
 
             if (heatStackAdded)
             {
+                PulseReactor(ReactorWavePulse);
                 heatFlareTimer = HeatFlareDurationSeconds;
                 emberStreamAccumulator = 0f;
                 EmitHeatFlareEmbers();
@@ -291,11 +298,17 @@ namespace TrashTD.Core.GameLoop
             if (op.HeatStacks > previousStacks)
                 AudioManager.Instance?.PlaySfx(SfxId.Stage4HeatUp, 0.7f);
 
+            bool ignited = false;
             if (op.HeatStacks >= MaxHeatStacks && !op.IsBurning)
             {
                 op.IsBurning = true;
+                ignited = true;
                 AudioManager.Instance?.PlaySfx(SfxId.Stage4Ignite);
             }
+
+            // Heat from a wave start, a Roboflame or the Eradicator: the reactor in the art flares, more when it ignites someone
+            if (op.HeatStacks > previousStacks && Current != null)
+                Current.PulseReactor(ignited ? ReactorIgnitePulse : ReactorStackPulse);
 
             // The gauge only used to refresh at the start of a round, so heat from an enemy attack showed up late
             if (Application.isPlaying && op.HeatStacks != previousStacks)
@@ -315,6 +328,7 @@ namespace TrashTD.Core.GameLoop
         private void Update()
         {
             float flare = UpdateHeatFlare();
+            UpdateReactorFlare(flare);
 
             // Subtle breathing shimmer only on the bottom furnace glow
             if (furnaceUnderglowRenderer != null)
