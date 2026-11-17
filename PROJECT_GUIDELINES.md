@@ -45,7 +45,7 @@ Final Damage = max(ATK - DEF, ATK * 0.05)
 - Rarities: **1★ through 5★**
 - Card draft only offers **1★, 2★, or 3★** base creatures
 - 4★ and 5★ are reached **only** via upgrading
-- **Upgraded skills** (team, 2026-11-04 to 2026-11-07): each rank above an operator's draft rarity unlocks more of its kit. Draft rarity +1 is the **1st upgrade**, +2 the **2nd upgrade** (so a 3★ operator upgrades at 4★ and 5★). Every operator except Castiel and Basurocket has them; see §7.11.
+- **Upgraded skills** (team, 2026-11-04 to 2026-11-07): each rank above an operator's draft rarity unlocks more of its kit. Draft rarity +1 is the **1st upgrade**, +2 the **2nd upgrade** (so a 3★ operator upgrades at 4★ and 5★). Every operator except Basurocket has them (Castiel got its upgrades on 2026-11-17); see §7.11.
 - **3 duplicate copies** of a creature → upgrades rarity by one tier
 - **Upgrades merge cards in the deck only.** Deployed operators are never upgraded on the field — recall an operator to return its card to the deck, where it can merge. The upgraded card keeps the longest recall cooldown among the merged copies (`RarityUpgradeSystem.TryMergeOnce`), so a recalled Guard or Specialist (cooldown 0) merges into a card that is ready at once. A recall may merge into a full deck.
 - Each round offers **3 card choices**; **no two cards share the same class**
@@ -199,7 +199,7 @@ Use clearly marked `// TODO:` comments and placeholder implementations instead.
 
 ---
 
-## 7. Current Implementation Notes (as of 2026-11-16)
+## 7. Current Implementation Notes (as of 2026-11-17)
 
 ### 7.1 Roster
 
@@ -224,6 +224,11 @@ Each asset's `skillDescription` is the authoritative description of that operato
 - **Mossmo** (Defender): doesn't attack. It **taunts** (`HasTaunt`): ranged enemies on a surrounding tile target it first. When it takes damage, it heals up to 2 operators in range, itself included.
   - **Enrage** (team-added 2026-11-04, `MossmoOperator.UpdateBlockedEnemiesStall`): each enemy Mossmo blocks has a stall timer (`StallEnrageDuration` 20 s). Any HP loss, from any source (allies, hazards), resets it to 0. The timer is dropped when the enemy stops being blocked. At 20 s the enemy gets `MossmoEnragedEffect`: **+35% ATK** (of its current ATK, added through `EnemyBase.ModifyATK`; `DefaultAtkMultiplier`, raised from 25% on 2026-11-06; Mossmo's 2nd upgrade lowers it to +25%, `UpgradedAtkMultiplier`) and **5% max HP true damage every 1 s** until it dies, which is 20 s from full HP. It shows the animated `EnragedVisual` icon over its head (§7.12; the red "ENRAGED!" text is gone). It doesn't stack: `EnemyBase.IsEnraged` blocks a second application and is reset on spawn. So a Mossmo left alone can still kill what it holds, at the cost of the enraged enemy hitting 35% harder (25% at 5★).
 - **Castiel** (Caster, `CastielOperator`): continuous light laser locked on one target (`LightLaserVisual`, `LaserPalette.Holy`: white core, pale yellow body, gold glow). Ticks every 0.375 s; damage ramps every 1.5 s: 5 → 15 → 30 → 80 → 100 → 150. Its halo animation speeds up (frame 0.10 s → 0.04 s) as the beam ramps.
+  - **Upgrades (2026-11-17):** 1st (3★): ticks every 0.3 s, ramps every 1.2 s, and each step deals 20% more (6 → 18 → 36 → 96 → 120 → 180; `UpgradedBeamDamageByStage`). 2nd (4★): a second laser on another enemy in range.
+  - **Each laser is a `Beam`** (target, lock time, visual) and ramps on its own. `GetBeamStage(lockDuration, firstUpgrade)` and `GetBeamDamageForStage(stage, firstUpgrade)` are static, so the ramp is tested without a scene (`CastielUpgradeTests`).
+  - **The second laser never shares the primary's target:** with one enemy in range it stays off (no doubled damage on a lone boss). It picks like the primary (taunt first, then closest to the goal) and keeps its lock while that enemy stays alive and in range.
+  - **Promotion:** when the primary's target dies or leaves and the second laser still has a valid target, the second beam becomes the primary and keeps its ramp; a new second laser then starts on another enemy from the first step.
+  - `GetAttackInterval` (how often it re-targets) follows the tick interval, so it also drops to 0.3 s at 3★. The laser's own ticks do not go through `StageCombatModifiers` or Harmony (they never did). Only the primary beam plays the attack sound and drives the halo speed. Retreating stops both lasers.
 - **Resicochet** (Caster, `ResicochetOperator`): high DEF, low RES. Stores a charge every 5 s (max 3, starts with 1). Each attack spends all charges (back to 1) in **one** bouncing hit scaled by the charge count: ×1.0 / ×1.10 / ×1.25 (`GetChargeDamageMultiplier`). It deals Arts damage and bounces to up to 4 targets in total, losing 25% per bounce. Every hit applies **Sluggish**. The sprite row follows the charge count (`Resicochet_0–11`, 4 frames per row).
   - **Beam visual** (team-added 2026-11-04, `ResicochetAttackBeamVisual`, `FireChargeAttack`): one beam and orb per charge leaves its floating crystals (`GetCrystalPositions`: 1 = mid, 2 = mid + top, 3 = mid + top + bot, mirrored by facing), in the charge colour (orange / green / blue). **Only the first orb deals damage**; the others are visual. Each bounce draws 1–3 parallel lines in the same colour. This replaced the old burst of 1 projectile per charge 0.5 s apart (`FireBurstRoutine` is gone). `FireSingleBouncingProjectile` and the old `HandleHitAndBounce` overload still exist and forward to the charge-1 path.
   - `EnemyBase.ApplyResicochetHit` records the highest charge level that hit each enemy (`HighestResicochetCharge`, reset on spawn), and `ResicochetCharge` holds the charge of the latest hit. Sluggish enemies receive a pixelated Bloons TD-style glue splatter overlay (`SluggishGlueVisual`) rendered in that charge's colour (Charge 1 Orange / Charge 2 Green / Charge 3 Blue) with viscous dripping, specular glints, droplet bursts, and a subtle body tint, replacing floating text.
@@ -428,7 +433,7 @@ Each asset's `skillDescription` is the authoritative description of that operato
 - `EnemyBase.VisualPosition` — centre of the visible sprite. Aim visuals (projectiles, swipes, damage numbers, health bars) at it, not `transform.position`; game logic (range, grid cells) still uses `transform.position`.
 - **Projectile origins:** shots start at the unit's `ProjectileOrigin` (`OperatorBase` / `EnemyBase`), never at `transform.position` (the tile centre).
   - It reads `OperatorData.projectileOrigin` / `EnemyData.projectileOrigin`: an offset in world units from the sprite's centre, measured on the art as drawn, and mirrored with the sprite. Operator art faces **left** (flipped only when facing Right). Enemy art faces **right** (flipped when walking left). For enemies the centre is the visible `EnemyVisual`, so flyers raised by `visualOffset` shoot from their body, not the ground below. Zero = sprite centre.
-  - Current points: Basurocket's launcher front, Deadeye's arm tip (where the arm points in its shot frame), Pompoth (just above centre), Oquloct's leading eye-light, Mechonk's head flame, Resicochet's floating crystals (its attack bypasses `projectileOrigin` and fires from `GetCrystalPositions`), Progeny's leading heart, Bubblets' front mouth, Lockburn's mouth, Echosquire's sword, Vespierce's raised blade, Sand Poncho's sleeve cannon, Smog's chimney, Hextension's head, Skyshard's glass body, Talon Rat's talons (its swipe), THE ERADICATOR's arm cannon (front of the gun, between its two barrels).
+  - Current points: Basurocket's launcher front, Deadeye's arm tip (where the arm points in its shot frame), Pompoth (just above centre), Oquloct's leading eye-light, Mechonk's head flame, Resicochet's floating crystals (its attack bypasses `projectileOrigin` and fires from `GetCrystalPositions`), Progeny's leading heart, Bubblets' three mouths (it overrides `ProjectileOrigin`, see "Bubblets rework"), Lockburn's mouth, Echosquire's sword, Vespierce's raised blade, Sand Poncho's sleeve cannon, Smog's chimney, Hextension's head, Skyshard's glass body, Talon Rat's talons (its swipe), THE ERADICATOR's arm cannon (front of the gun, between its two barrels).
   - The offset is in the sprite's own units and is multiplied by the unit's scale, so THE ERADICATOR's `(0.47, 0)` lands on the muzzle of its 2× sprite. (Its old `launcherOffset` was measured from the path position, ignoring the scale and `visualOffset`.)
   - Units with their own muzzles keep them: Askalaser (`muzzleOffset`), Roboflame (`flameOriginOffset`), Hextension's wire (`wireOriginOffset`). They have no `visualOffset`, so these match the sprite. Castiel's laser starts at its crystal (the sprite centre).
   - A new shooting unit sets `projectileOrigin` on its data asset; no code change.
@@ -471,7 +476,7 @@ Each asset's `skillDescription` is the authoritative description of that operato
   | HeavyRocket | THE ERADICATOR's every 4th rocket (bigger body, glowing halo, fiery exhaust) |
   | Quill | Thornchin |
   | Heal | Progeny |
-  | Bubble | Bubblets |
+  | Bubble | Bubblets (the shield bubble flying to an ally, and its 5★ attack) |
   | Sludge | enemy shots |
   | Glass | Skyshard: a see-through glass shard that glints in flight (`CombatFxArt.GlassShard`); the shatter is the AoE |
   | Sand | `FireSand` |
@@ -928,7 +933,7 @@ Added by the team between 2026-11-04 and 2026-11-07 (Chester and R-toes, one com
 - **Range that grows with rank** goes through `OperatorData.GetRangePatternForRarity(rarity)` (name checks, §3). Use it instead of `rangePattern` wherever range is drawn or tested.
 - **Card ranks come from merges or from Drawgoo / Framiliar**, never from the draft (the draft still offers only base rarity, §1.4).
 - **Confirming a draft pick never selects the card for placement** (2026-11-15). The pick goes into the deck and nothing is pending. `StageBootstrapper` used to subscribe to `CardDraftSystem.OnCardSelected`, which `SelectCard` raises on confirm, so the new card started placement (tile hints, pending card) by itself. It now only listens to `PlayerDeck.OnCardSelectedForDeployment`, raised when a deck card is clicked.
-- Castiel and Basurocket have no upgrades yet: their `skillDescription` is still a single line.
+- Basurocket has no upgrades yet: its `skillDescription` is still a single line. Castiel's are 3★ and 4★ (it is not in `InitialAssetGenerator`, so its asset is the only place its skill text lives).
 
 | Operator | Draft | 1st upgrade | 2nd upgrade |
 |---|---|---|---|
@@ -947,6 +952,7 @@ Added by the team between 2026-11-04 and 2026-11-07 (Chester and R-toes, one com
 | Oquloct | 2★ | entering Camouflage fires a 50% shotgun blast, heals 25% max HP over the Camouflage and gives +50% DEF for 3 s after it | range grows from the 3-tile fan to an 8-tile cone |
 | Nekhrost | 1★ | while deployed, all operators deal +50% damage to frozen enemies | 3 shards per attack at different enemies (4 on every 4th attack) |
 | Mechonk | 1★ | 2 extra tiles beside the furthest range tile | each Arts AoE hit deals damage twice |
+| Castiel | 2★ | ticks every 0.3 s (was 0.375), ramps every 1.2 s (was 1.5), each step +20% damage | a second laser on another enemy in range, with its own ramp |
 | Resicochet | 3★ | charge every 3 s (was 5), +1 bounce | bounces lose no damage; operators in range extend its range, used only when fully charged |
 | Coalesce | 1★ | extra-heal chance 40% (was 20%) | extra heal triggers below 60% HP (was 30%); allies in range get +10% max HP |
 | Progeny | 2★ | +1 bounce, range +1 on every adjacent tile | bounces lose no healing |
@@ -1075,3 +1081,32 @@ The six stages we have are **Act 1**. More acts will follow, each with more stag
 - **Placeholder acts 2 and 3:** `ACT_02`, `ACT_03` and `STAGE_07` to `STAGE_18` ("COMING SOON") exist so the act selection screen can be seen. `StageData.comingSoon` marks a stage that is not built: it shows as a locked marker, never opens or plays (not even in dev mode), is left out of the sandbox map list and the wave rebalancer, and is never offered as the "next stage" on the results screen. **An act whose first stage is a placeholder can never be opened**, in dev mode or not; the act selection screen shows COMING SOON on its card. **To build the real Act 2:** make each real stage (turn `comingSoon` off, give it a grid, paths and waves), then fill in `ACT_02` (map art, zone text, markers). **To remove the placeholders:** delete the `ACT_NN.asset` and `STAGE_NN.asset` files you no longer want (with their `.meta` files).
 - **Not built yet:** the act selection screen is built in code rather than a prefab, it has no per-act card art separate from the stage map art, and nothing treats an act as a unit beyond the unlock (no per-act difficulty gating or results screen).
 - **QA sandbox:** with several acts its button is on the **act selection screen** (dev mode only), not on any act's stage map; it opens the sandbox dossier, and the sandbox picks its own map. Closing the dossier, or coming back from a sandbox run, returns to the act selection screen (not to an act's map). With a single act there is no act selection screen, so the button stays on the stage map.
+
+## Bubblets rework (2026-11-17)
+
+`BubbletsOperator` (3★ Medic, 3x3 range). It still never heals directly: every `attackInterval` (2 s) it gives an unshielded ally in range a bubble that negates one instance of damage, and the pop heals the ally for 100% of Bubblets' ATK and deals Arts damage around that tile.
+- **Upgrades moved.** The DEF/RES aura is now the **1st** upgrade and it doubled; the 2nd upgrade gained an attack.
+
+  | Rank | Effect |
+  |---|---|
+  | Base (3★) | pop deals 30% ATK Arts |
+  | 1st (4★) | pop deals 50% ATK; allies in range get **+40 DEF, +10 RES** (`AuraDefBonus`, `AuraResBonus`, source name `BUBBLETS`; was +20 / +5 on the 2nd upgrade) |
+  | 2nd (5★) | shields a second operator; **attacks enemies like a caster** |
+
+- **The shield is now a projectile.** `Shield` fires a `ProjectileStyle.Bubble` at the ally and applies `BubbleShield` when it lands. A bubble still in flight when the wave ends, or whose target has retreated, is dropped. In EditMode (not playing) the shield is applied at once, so tests need no frames.
+- **`CombatProjectileVisual.Fire` has an operator-target overload** (`OperatorBase target`), which follows the ally and aims 0.25 above its position. Use it for anything else thrown at an ally.
+- **Three mouths.** `MouthOffsets` holds the launch point of each head (in left-facing sprite coordinates, mirrored when facing right). `ProjectileOrigin` is now `virtual` on `OperatorBase`, and Bubblets overrides it to return a random mouth; two shields cast together leave from two different mouths.
+- **The 5★ attack** shares the shield's timer: one cycle can shield and attack, and the timer resets if either happened. It picks the enemy in range with the **highest DEF** (taunt first), and deals single-target Arts damage with the caster armour bonus: `ATK + 50% of the target's DEF`, against RES. Below 5★ `FindTarget` returns null, so it never attacks.
+- **Bubble trail:** the Bubble style now drips small soap bubbles (`CombatFxArt.BubbleSmall` 5x5, `BubbleTiny` 3x3) that drift up, instead of plain dots.
+- **Keep three texts in step** when the kit changes: `skillDescription` on `OP_Medic_Bubblets.asset`, `BubbletsSkillDescription` in `InitialAssetGenerator`, and the row in the "Upgraded Skills" table (7.11).
+- **No tests yet** for the aura values, the mouth origins or the 5★ attack.
+
+## Darkened scenery outside the playable area (2026-11-17)
+
+On **Stage 5 and Stage 6** the bounds art outside the grid is darkened, so the playable field stands out from the extended scenery (`StageBootstrapper.MapArt.cs`).
+- **Which stages:** `StageHasPlayableBorderDarkening`: the stage has a `boundsVisualSprite` and its environment is `Traffic` or `AcidRain`. The function also compares the stage id to `STAGE_05` / `STAGE_06`, which the environment check already covers; a new stage should get it through data, not another id check (see "Stage environments").
+- **What it draws:** one generated black texture the size of the bounds sprite, drawn at the bounds art's position as `PlayableBorderDarkeningOverlay`: Ground sorting layer, order 3, so above the map art and the upper backgrounds (order 2) and below units.
+- **The gradient** (`CreatePlayableBorderDarkeningTexture`, a pure static function): up to 65% black (`PlayableBorderDarkeningMaxAlpha`). On each side it runs from clear **1.5 tiles inside** the grid edge to full strength **1.5 tiles outside** it (`BorderGradientInnerDistance` / `OuterDistance`), so the outer ring of playable tiles is lightly shaded too. On short maps the vertical inner distance is capped at 35% of `gridHeight - 1`, so the middle rows stay clear.
+  - The two axes are combined as `1 - (1 - ax)(1 - ay)`, which rounds the corners, and the falloff is a smootherstep, so no band or crease shows. The texture is bilinear-filtered (the only non-point texture on the map).
+- **Cleanup:** the texture and sprite belong to the bootstrapper; `CleanupBorderDarkening` destroys them when the stage is rebuilt.
+- **No tests yet**, although `StageHasPlayableBorderDarkening` and `CreatePlayableBorderDarkeningTexture` are both static and testable.
