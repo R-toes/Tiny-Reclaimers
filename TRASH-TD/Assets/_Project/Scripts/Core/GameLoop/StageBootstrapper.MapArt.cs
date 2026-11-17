@@ -60,6 +60,12 @@ namespace TrashTD.Core.GameLoop
                 }
             }
 
+            if (StageHasPlayableBorderDarkening(stageData))
+            {
+                Vector3 boundsBottomLeft = gridBottomLeft + new Vector3(stageData.boundsTileOffset.x * cellSize, stageData.boundsTileOffset.y * cellSize, 0f);
+                CreatePlayableBorderDarkeningOverlay(gridContainer.transform, boundsBottomLeft, cellSize);
+            }
+
             if (stageData.midgroundVisualSprites != null)
             {
                 for (int i = 0; i < stageData.midgroundVisualSprites.Length; i++)
@@ -211,6 +217,185 @@ namespace TrashTD.Core.GameLoop
                 FrameDuration = frameDuration
             });
             spriteRenderer.sprite = frames[0];
+        }
+
+        public const float PlayableBorderDarkeningMaxAlpha = 0.65f;
+        public const int PlayableBorderDarkeningSortingOrder = 3;
+        public const float BorderGradientInnerDistance = 1.5f;
+        public const float BorderGradientOuterDistance = 1.5f;
+
+        private Sprite borderDarkeningSprite;
+
+        /// <summary>
+        /// Only Stage 5 (Traffic) and Stage 6 (Acid Rain) have extended scenery that is darkened outside the
+        /// playable grid with a smooth 2D gradient across all borders (left, right, bottom, top).
+        /// </summary>
+        public static bool StageHasPlayableBorderDarkening(StageData stage)
+        {
+            if (stage == null || stage.boundsVisualSprite == null) return false;
+            return stage.stageId == "STAGE_05" || stage.stageId == "STAGE_06" ||
+                   stage.environment == StageEnvironment.Traffic || stage.environment == StageEnvironment.AcidRain;
+        }
+
+        private void CreatePlayableBorderDarkeningOverlay(Transform parent, Vector3 boundsBottomLeft, float cellSize)
+        {
+            if (stageData == null || stageData.boundsVisualSprite == null) return;
+
+            Sprite boundsSprite = stageData.boundsVisualSprite;
+            int texWidth = Mathf.RoundToInt(boundsSprite.rect.width);
+            int texHeight = Mathf.RoundToInt(boundsSprite.rect.height);
+            if (texWidth <= 0 || texHeight <= 0) return;
+
+            float pixelPerTile = stageData.visualTilePixelSize > 0 ? stageData.visualTilePixelSize : 32f;
+            float boundsTileOffsetX = stageData.boundsTileOffset.x;
+            float boundsTileOffsetY = stageData.boundsTileOffset.y;
+            float gridWidth = stageData.gridWidth;
+            float gridHeight = stageData.gridHeight;
+
+            Texture2D tex = CreatePlayableBorderDarkeningTexture(
+                texWidth,
+                texHeight,
+                pixelPerTile,
+                boundsTileOffsetX,
+                boundsTileOffsetY,
+                gridWidth,
+                gridHeight,
+                PlayableBorderDarkeningMaxAlpha);
+
+            Vector2 normalizedPivot = boundsSprite.rect.width > 0f && boundsSprite.rect.height > 0f
+                ? new Vector2(boundsSprite.pivot.x / boundsSprite.rect.width, boundsSprite.pivot.y / boundsSprite.rect.height)
+                : Vector2.zero;
+
+            Sprite darkeningSprite = Sprite.Create(
+                tex,
+                new Rect(0f, 0f, texWidth, texHeight),
+                normalizedPivot,
+                boundsSprite.pixelsPerUnit,
+                0,
+                SpriteMeshType.FullRect,
+                Vector4.zero);
+
+            borderDarkeningSprite = darkeningSprite;
+
+            DrawMapArtworkLayer(
+                parent,
+                darkeningSprite,
+                "PlayableBorderDarkeningOverlay",
+                PlayableBorderDarkeningSortingOrder,
+                boundsBottomLeft,
+                false,
+                animateAsSpriteSheet: false,
+                onGround: true,
+                sortingLayerId: GridSorting.GroundLayerId);
+        }
+
+        /// <summary>
+        /// Generates a darkening texture where the area outside the playable grid is darkened with maxAlpha,
+        /// while transitioning smoothly across the border on all 4 sides (left, right, bottom, top).
+        /// Uses Perlin's SmootherStep (zero 1st and 2nd derivatives at endpoints) to completely eliminate
+        /// Mach banding and visible crease lines.
+        /// </summary>
+        public static Texture2D CreatePlayableBorderDarkeningTexture(
+            int width,
+            int height,
+            float pixelPerTile,
+            float boundsTileOffsetX,
+            float boundsTileOffsetY,
+            float gridWidth,
+            float gridHeight,
+            float maxAlpha = PlayableBorderDarkeningMaxAlpha,
+            float innerDistance = BorderGradientInnerDistance,
+            float outerDistance = BorderGradientOuterDistance)
+        {
+            var tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            tex.name = "PlayableBorderDarkeningTexture";
+            tex.wrapMode = TextureWrapMode.Clamp;
+            tex.filterMode = FilterMode.Bilinear;
+
+            float innerX = innerDistance;
+            float outerX = outerDistance;
+            float innerY = Mathf.Min(innerDistance, (gridHeight - 1f) * 0.35f);
+            float outerY = outerDistance;
+
+            float[] alphaX = new float[width];
+            for (int x = 0; x < width; x++)
+            {
+                float tileX = boundsTileOffsetX + (x + 0.5f) / pixelPerTile;
+                alphaX[x] = ComputeAlphaFraction(tileX, gridWidth, innerX, outerX);
+            }
+
+            float[] alphaY = new float[height];
+            for (int y = 0; y < height; y++)
+            {
+                float tileY = boundsTileOffsetY + (y + 0.5f) / pixelPerTile;
+                alphaY[y] = ComputeAlphaFraction(tileY, gridHeight, innerY, outerY);
+            }
+
+            Color32[] allPixels = new Color32[width * height];
+            for (int y = 0; y < height; y++)
+            {
+                float ay = alphaY[y];
+                float ty = 1f - ay;
+                int rowOffset = y * width;
+                for (int x = 0; x < width; x++)
+                {
+                    float tx = 1f - alphaX[x];
+                    float combinedAlphaFraction = 1f - (tx * ty);
+                    byte alphaByte = (byte)Mathf.Clamp(Mathf.RoundToInt(maxAlpha * combinedAlphaFraction * 255f), 0, 255);
+                    allPixels[rowOffset + x] = new Color32(0, 0, 0, alphaByte);
+                }
+            }
+
+            tex.SetPixels32(allPixels);
+            tex.Apply(false, false);
+            return tex;
+        }
+
+        private static float ComputeAlphaFraction(float pos, float size, float innerDist, float outerDist)
+        {
+            float outerMin = -outerDist;
+            float innerMin = innerDist;
+            float innerMax = size - innerDist;
+            float outerMax = size + outerDist;
+
+            if (pos <= outerMin)
+            {
+                return 1f;
+            }
+            if (pos < innerMin)
+            {
+                float t = Mathf.InverseLerp(innerMin, outerMin, pos);
+                return SmootherStep(t);
+            }
+            if (pos <= innerMax)
+            {
+                return 0f;
+            }
+            if (pos < outerMax)
+            {
+                float t = Mathf.InverseLerp(innerMax, outerMax, pos);
+                return SmootherStep(t);
+            }
+            return 1f;
+        }
+
+        private static float SmootherStep(float t)
+        {
+            t = Mathf.Clamp01(t);
+            return t * t * t * (t * (t * 6f - 15f) + 10f);
+        }
+
+        private void CleanupBorderDarkening()
+        {
+            if (borderDarkeningSprite != null)
+            {
+                if (borderDarkeningSprite.texture != null)
+                {
+                    Destroy(borderDarkeningSprite.texture);
+                }
+                Destroy(borderDarkeningSprite);
+                borderDarkeningSprite = null;
+            }
         }
 
         private Sprite GetSpriteForTile(TileType type)

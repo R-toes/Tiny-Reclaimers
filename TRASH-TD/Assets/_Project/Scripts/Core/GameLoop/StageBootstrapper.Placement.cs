@@ -43,6 +43,8 @@ namespace TrashTD.Core.GameLoop
                         Destroy(frame);
                 }
             }
+
+            CleanupBorderDarkening();
         }
 
         private void HandleDeckChanged(IReadOnlyList<DraftCard> deck)
