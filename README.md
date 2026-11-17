@@ -58,7 +58,7 @@ controls) are kept separately in `PlayerPrefs`.
 | `TRASH-TD/Assets/_Project/Art`, `Audio`, `Data`, `Prefabs`, `Scenes` | Content, one folder per unit or level |
 | `TRASH-TD/Assets/Resources/Stages/` | One `StageData` asset per stage (map, waves, environment) |
 | `TRASH-TD/Assets/Resources/Acts/` | One `ActData` asset per act: its stages, marker positions on its stage map, map art and zone text (see "Acts" in `PROJECT_GUIDELINES.md`) |
-| `Docs/` | The audio guide |
+| `Docs/` | The audio guide, and the Sound Manager guide (`TRASH_TD_Sound_Manager_Guide.html` / `.pdf`) |
 | `Tools/` | Repository scripts (`check_project.py`, `setup_hooks.py`, placeholder texture generator) |
 | `.githooks/` | Git hooks (pre-commit, pre-push) that run the repository checks |
 | `PROJECT_GUIDELINES.md` | **Read this first when working on the project:** design rules, implementation notes, working agreements |

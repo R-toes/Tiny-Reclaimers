@@ -114,3 +114,5 @@ Docs/TRASH_TD_Wave_Charts_Hard_Mode_Examination.pdf
 # Python bytecode from Tools/
 __pycache__/
 *.pyc
+Docs/TRASH_TD_Sound_Manager_Guide.html
+Docs/TRASH_TD_Sound_Manager_Guide.pdf
