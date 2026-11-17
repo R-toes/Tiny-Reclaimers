@@ -209,7 +209,10 @@ namespace TrashTD.Core.GameLoop
         {
             if (forecast.Count == 0) PlanNextWind();
 
+            Wind previous = wind;
             (wind, windTimeLeft) = forecast.Dequeue();
+            if (wind == Wind.Gust && previous != Wind.Gust)
+                TrashTD.Audio.AudioManager.Instance?.PlaySfx(TrashTD.Audio.SfxId.Stage3Gust);
         }
 
         /// <summary>A steady breeze broken by short gusts; now and then the wind drops to a lull.</summary>

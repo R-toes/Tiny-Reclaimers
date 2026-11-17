@@ -41,6 +41,7 @@ namespace TrashTD.UI
 
             isDragging = true;
             CreateDragVisual(CrtDisplay.ScreenToPicture(eventData.position));
+            TrashTD.Audio.AudioManager.Instance?.PlaySfx(TrashTD.Audio.SfxId.UiCardPickUp);
         }
 
         public void OnDrag(PointerEventData eventData)

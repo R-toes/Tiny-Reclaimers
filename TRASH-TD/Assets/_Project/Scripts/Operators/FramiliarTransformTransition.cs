@@ -237,32 +237,30 @@ namespace TrashTD.Operators
                 return;
             }
 
-            if (sourceData != null && (TrashTD.Audio.UnitSfx.PlayAbility(sourceData, "Transform") ||
+            if (sourceData != null && (TrashTD.Audio.UnitSfx.PlayAbility(sourceData, TrashTD.Audio.SoundNames.Transform) ||
                                        TrashTD.Audio.UnitSfx.Play(sourceData, TrashTD.Audio.UnitSfxEvent.Ability)))
             {
                 return;
             }
 
             if (targetOperator != null && targetOperator.OriginalFramiliarData != null &&
-                (TrashTD.Audio.UnitSfx.PlayAbility(targetOperator.OriginalFramiliarData, "Transform") ||
+                (TrashTD.Audio.UnitSfx.PlayAbility(targetOperator.OriginalFramiliarData, TrashTD.Audio.SoundNames.Transform) ||
                  TrashTD.Audio.UnitSfx.Play(targetOperator.OriginalFramiliarData, TrashTD.Audio.UnitSfxEvent.Ability)))
             {
                 return;
             }
 
             if (targetOperator != null && targetOperator.Data != null &&
-                (TrashTD.Audio.UnitSfx.PlayAbility(targetOperator.Data, "Transform") ||
+                (TrashTD.Audio.UnitSfx.PlayAbility(targetOperator.Data, TrashTD.Audio.SoundNames.Transform) ||
                  TrashTD.Audio.UnitSfx.Play(targetOperator.Data, TrashTD.Audio.UnitSfxEvent.Ability)))
             {
                 return;
             }
 
             // Check conventional folder SFX/Operators/Specialist/Framiliar directly
-            if (TrashTD.Audio.UnitSfx.PlayFromFolder("SFX/Operators/Specialist/Framiliar", "Ability_Transform") ||
-                TrashTD.Audio.UnitSfx.PlayFromFolder("SFX/Operators/Specialist/Framiliar", "Transform") ||
-                TrashTD.Audio.UnitSfx.PlayFromFolder("SFX/Operators/Specialist/Framiliar", "Ability"))
+            foreach (string name in TrashTD.Audio.SoundNames.FramiliarTransform)
             {
-                return;
+                if (TrashTD.Audio.UnitSfx.PlayFromFolder("SFX/Operators/Specialist/Framiliar", name)) return;
             }
 
             TrashTD.Audio.AudioManager.Instance?.PlaySfx(TrashTD.Audio.SfxId.GameplayCardUpgrade);

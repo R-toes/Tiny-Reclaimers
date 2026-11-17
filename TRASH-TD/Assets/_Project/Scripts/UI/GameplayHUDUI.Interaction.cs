@@ -94,6 +94,7 @@ namespace TrashTD.UI
                     if (phase == StagePhase.Preparation)
                     {
                         ShowPhaseBanner("PREPARATION", "DEPLOY YOUR SQUAD", PrepColor);
+                        AudioManager.Instance?.PlaySfx(SfxId.GameplayPreparation);
                     }
                     else if (phase == StagePhase.WaveActive)
                     {
@@ -332,6 +333,7 @@ namespace TrashTD.UI
 
                 stageBootstrapper?.CancelOperatorPlacementPreview(card);
                 playerDeck.MoveCard(slotIndex, targetIndex);
+                if (targetIndex != slotIndex) AudioManager.Instance?.PlaySfx(SfxId.UiCardDrop);
                 return;
             }
 

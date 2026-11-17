@@ -43,13 +43,42 @@ namespace TrashTD.Audio
         private static readonly Dictionary<string, Dictionary<string, List<AudioClip>>> FolderCache =
             new Dictionary<string, Dictionary<string, List<AudioClip>>>();
         private static readonly Dictionary<string, float> LastPlayed = new Dictionary<string, float>();
+        // The Resources folder each loaded clip came from, so AudioManager can apply its volume group to any clip a
+        // screen cached and plays later (see SoundVolumeGroups).
+        private static readonly Dictionary<AudioClip, string> ClipFolders = new Dictionary<AudioClip, string>();
 
         // Fresh lookups every play session, so newly added files are found even without a domain reload.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCache()
         {
             FolderCache.Clear();
+            ClipFolders.Clear();
             LastPlayed.Clear();
+        }
+
+        /// <summary>
+        /// Forgets every loaded folder, so added, replaced or deleted files are found again (the Sound Manager calls it).
+        /// Clips already loaded keep their folder, so a screen's cached clip keeps its volume group.
+        /// </summary>
+        public static void ClearCache()
+        {
+            FolderCache.Clear();
+        }
+
+        /// <summary>The Resources folder a clip was loaded from ("SFX/Operators/Guard/Qihou"), or null if UnitSfx didn't load it.</summary>
+        public static string GetLoadedFolder(AudioClip clip)
+        {
+            return clip != null && ClipFolders.TryGetValue(clip, out string folder) ? folder : null;
+        }
+
+        /// <summary>True if a file named clipName is a file for this event: "Attack_2" and "attack" are both Attack files.</summary>
+        public static bool IsClipFor(string clipName, string eventName)
+        {
+            if (string.IsNullOrEmpty(clipName) || string.IsNullOrEmpty(eventName)) return false;
+
+            string clipEvent = StripVariant(clipName);
+            return string.Equals(clipEvent, eventName, System.StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(clipEvent.Replace(" ", ""), eventName.Replace(" ", ""), System.StringComparison.OrdinalIgnoreCase);
         }
 
         public static string GetFolder(OperatorData data)
@@ -126,21 +155,46 @@ namespace TrashTD.Audio
             return PlayAttack(data, attackVariant, out _, volume, ignoreThrottle);
         }
 
-        public static string AttackClipName(string variantName) => $"{nameof(UnitSfxEvent.Attack)}_{variantName}";
+        public static string AttackClipName(string variantName) => SoundNames.AttackClip(variantName);
 
         /// <summary>
         /// Plays one of the operator's named ability clips ("Dodge" -> Ability_Dodge or Dodge), falling back to its plain
-        /// Ability clip, so a unit with a single Ability file uses it for every trigger.
+        /// Ability clip, so a unit with a single Ability file uses it for every trigger. With fallbackToAbility false
+        /// (an ability whose plain Ability file means something else, like Mossmo's enrage), only the named clip plays.
         /// </summary>
-        public static bool PlayAbility(OperatorData data, string abilityName, float volume = 1f, bool ignoreThrottle = false)
+        public static bool PlayAbility(OperatorData data, string abilityName, float volume = 1f, bool ignoreThrottle = false,
+            bool fallbackToAbility = true)
+        {
+            return PlayAbilityFrom(GetFolder(data), abilityName, volume, ignoreThrottle, fallbackToAbility);
+        }
+
+        /// <summary>The enemy's named ability clip ("Bind" -> Ability_Bind or Bind), falling back to its plain Ability clip.</summary>
+        public static bool PlayAbility(EnemyData data, string abilityName, float volume = 1f, bool ignoreThrottle = false)
+        {
+            return PlayAbilityFrom(GetFolder(data), abilityName, volume, ignoreThrottle, true);
+        }
+
+        /// <summary>
+        /// A named variant of an event ("Attack_Heavy"), falling back to the plain event (Attack), so one Attack file
+        /// still covers it.
+        /// </summary>
+        public static bool PlayVariant(EnemyData data, string variantClipName, UnitSfxEvent fallbackEvent, out AudioSource voice,
+            float volume = 1f, bool ignoreThrottle = false)
         {
             string folder = GetFolder(data);
+            if (!string.IsNullOrEmpty(variantClipName) &&
+                PlayFrom(folder, variantClipName, volume, out voice, out _, ignoreThrottle)) return true;
+            return PlayFrom(folder, fallbackEvent.ToString(), volume, out voice, out _, ignoreThrottle);
+        }
+
+        private static bool PlayAbilityFrom(string folder, string abilityName, float volume, bool ignoreThrottle, bool fallbackToAbility)
+        {
             if (!string.IsNullOrEmpty(abilityName))
             {
                 if (PlayFrom(folder, AbilityClipName(abilityName), volume, out _, ignoreThrottle)) return true;
                 if (PlayFrom(folder, abilityName, volume, out _, ignoreThrottle)) return true;
             }
-            return PlayFrom(folder, nameof(UnitSfxEvent.Ability), volume, out _, ignoreThrottle);
+            return fallbackToAbility && PlayFrom(folder, nameof(UnitSfxEvent.Ability), volume, out _, ignoreThrottle);
         }
 
         /// <summary>Plays a sound directly from an audio folder by event or file name (e.g. "SFX/Operators/Medic/Panacea", "Impact").</summary>
@@ -199,7 +253,7 @@ namespace TrashTD.Audio
             return PlayRandomFromFolder(folder, eventNames, out voice, out _, volume, ignoreThrottle);
         }
 
-        public static string AbilityClipName(string abilityName) => $"{nameof(UnitSfxEvent.Ability)}_{abilityName}";
+        public static string AbilityClipName(string abilityName) => SoundNames.AbilityClip(abilityName);
 
         public static bool HasClip(OperatorData data, UnitSfxEvent sfxEvent) => GetClips(GetFolder(data), sfxEvent.ToString()) != null;
         public static bool HasClip(EnemyData data, UnitSfxEvent sfxEvent) => GetClips(GetFolder(data), sfxEvent.ToString()) != null;
@@ -257,6 +311,7 @@ namespace TrashTD.Audio
                 byEvent = new Dictionary<string, List<AudioClip>>(System.StringComparer.OrdinalIgnoreCase);
                 foreach (AudioClip clip in Resources.LoadAll<AudioClip>(folder))
                 {
+                    ClipFolders[clip] = folder;
                     string clipEvent = StripVariant(clip.name);
                     AddClipToMap(byEvent, clipEvent, clip);
 

@@ -261,7 +261,7 @@ namespace TrashTD.Combat
             }
             else
             {
-                if (!TrashTD.Audio.UnitSfx.PlayFromFolder("SFX/Operators/Medic/Panacea", "Impact"))
+                if (!TrashTD.Audio.UnitSfx.PlayFromFolder("SFX/Operators/Medic/Panacea", nameof(TrashTD.Audio.UnitSfxEvent.Impact)))
                 {
                     TrashTD.Audio.AudioManager.Instance?.PlaySfx(TrashTD.Audio.SfxId.GameplayMagicAttack, 0.65f, 1.3f);
                 }

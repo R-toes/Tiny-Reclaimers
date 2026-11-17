@@ -160,7 +160,7 @@ namespace TrashTD.Operators
                     ? new Vector3(0.12f, 0.12f, 0f)
                     : Vector3.zero;
 
-                PlayAbilitySound("ExtraHit");
+                PlayAbilitySound(Audio.SoundNames.ExtraHit);
                 FireAttackProjectile(extraTarget, visualOffset);
             }
         }
@@ -194,7 +194,7 @@ namespace TrashTD.Operators
         protected override void OnFreezeApplied(EnemyBase target)
         {
             base.OnFreezeApplied(target);
-            PlayAbilitySound("Freeze");
+            PlayAbilitySound(Audio.SoundNames.Freeze);
             bool wasActive = IsHasteActive;
             hasteTimer = FreezeHasteDuration;
             if (!wasActive)

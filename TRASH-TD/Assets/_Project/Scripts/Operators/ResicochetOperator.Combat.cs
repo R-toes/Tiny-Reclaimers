@@ -323,20 +323,15 @@ namespace TrashTD.Operators
 
         /// <summary>
         /// Calculates the volume multiplier for ricochet bounces.
-        /// Volume becomes progressively quieter per bounce (e.g. 1.0x -> 0.50x -> 0.25x -> 0.125x -> 0.0625x).
+        /// Each bounce is quieter by the "bounce:Resicochet" level in SfxVolumeSettings (0.5 by default: 1.0x -> 0.50x -> 0.25x ...).
         /// </summary>
         public static float GetBounceVolumeMultiplier(int bounceIndex)
         {
             if (bounceIndex <= 0) return 1.0f;
-            return Mathf.Clamp(Mathf.Pow(0.5f, bounceIndex), 0.05f, 1.0f);
+            return Mathf.Clamp(Mathf.Pow(SfxVolumeSettings.GetActiveBounceFalloff("Resicochet"), bounceIndex), 0.05f, 1.0f);
         }
 
-        private static readonly string[] ResicochetChargeNames = new[]
-        {
-            "Charge 1", "Charge 2", "Charge 3",
-            "Charge1", "Charge2", "Charge3",
-            "Charge"
-        };
+        private static readonly string[] ResicochetChargeNames = SoundNames.ResicochetCharge;
 
         /// <summary>
         /// Plays attack sound. Randomizes among available Attack files (Attack, Attack_2, Attack_3...)

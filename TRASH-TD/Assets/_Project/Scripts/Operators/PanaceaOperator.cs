@@ -64,7 +64,7 @@ namespace TrashTD.Operators
                 return;
             }
 
-            if (TrashTD.Audio.UnitSfx.PlayFromFolder("SFX/Operators/Medic/Panacea", "Impact"))
+            if (TrashTD.Audio.UnitSfx.PlayFromFolder("SFX/Operators/Medic/Panacea", nameof(TrashTD.Audio.UnitSfxEvent.Impact)))
             {
                 return;
             }

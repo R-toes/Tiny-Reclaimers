@@ -440,8 +440,10 @@ namespace TrashTD.Enemies
             return preferredTarget != null ? preferredTarget : fallbackTarget;
         }
 
-        // Enemy sounds sit a little under operator sounds: there are many more enemies on screen.
-        private const float EnemySfxVolume = 0.7f;
+        // Enemy sounds sit a little under operator sounds (there are many more enemies on screen): the Enemies volume
+        // group does that (70% by default, SoundVolumeGroups), so unit sounds play at full level here. A shared
+        // fallback sound isn't in that group, so it keeps the old enemy level.
+        private const float SharedFallbackVolume = 0.7f;
 
         // Melee hits land in the same moment the swing starts; an attack sound younger than this is left alone.
         private const float MinAttackSoundBeforeCut = 0.1f;
@@ -453,27 +455,49 @@ namespace TrashTD.Enemies
         /// <summary>The enemy's own Attack clip (swing, shot, cast), if it has one.</summary>
         protected void PlayAttackSound()
         {
-            UnitSfx.Play(data, UnitSfxEvent.Attack, out attackVoice, EnemySfxVolume);
-            attackVoiceClip = attackVoice != null ? attackVoice.clip : null;
-            attackVoiceStartTime = Time.unscaledTime;
+            UnitSfx.Play(data, UnitSfxEvent.Attack, out attackVoice);
+            TrackAttackVoice();
         }
 
         /// <summary>The enemy's own Attack clip, else the given shared sound (e.g. the melee hit).</summary>
         protected void PlayAttackSound(SfxId fallback)
         {
-            if (!UnitSfx.Play(data, UnitSfxEvent.Attack, out attackVoice, EnemySfxVolume))
-                attackVoice = AudioManager.Instance?.PlaySfx(fallback, EnemySfxVolume);
+            if (!UnitSfx.Play(data, UnitSfxEvent.Attack, out attackVoice))
+                attackVoice = AudioManager.Instance?.PlaySfx(fallback, SharedFallbackVolume);
+            TrackAttackVoice();
+        }
+
+        /// <summary>A named attack (SoundNames.Heavy -> Attack_Heavy), falling back to the plain Attack clip.</summary>
+        protected void PlayAttackSound(string variant)
+        {
+            UnitSfx.PlayVariant(data, SoundNames.AttackClip(variant), UnitSfxEvent.Attack, out attackVoice);
+            TrackAttackVoice();
+        }
+
+        private void TrackAttackVoice()
+        {
             attackVoiceClip = attackVoice != null ? attackVoice.clip : null;
             attackVoiceStartTime = Time.unscaledTime;
         }
 
-        /// <summary>
-        /// The enemy's own Impact clip (its projectile landing), if it has one. When it plays, the attack sound
-        /// still running is cut so the two don't overlap.
-        /// </summary>
-        protected void PlayImpactSound()
+        /// <summary>The enemy's named ability clip (SoundNames.Bind -> Ability_Bind), else its plain Ability clip.</summary>
+        protected void PlayAbilitySound(string abilityName)
         {
-            if (!UnitSfx.Play(data, UnitSfxEvent.Impact, out AudioSource impactVoice, EnemySfxVolume) || impactVoice == null) return;
+            UnitSfx.PlayAbility(data, abilityName);
+        }
+
+        /// <summary>
+        /// The enemy's own Impact clip (its projectile landing), if it has one. With a variant (SoundNames.Heavy), the
+        /// Impact_Heavy clip, else the plain Impact. When it plays, the attack sound still running is cut so the two
+        /// don't overlap.
+        /// </summary>
+        protected void PlayImpactSound(string variant = null)
+        {
+            AudioSource impactVoice;
+            bool played = string.IsNullOrEmpty(variant)
+                ? UnitSfx.Play(data, UnitSfxEvent.Impact, out impactVoice)
+                : UnitSfx.PlayVariant(data, SoundNames.ImpactClip(variant), UnitSfxEvent.Impact, out impactVoice);
+            if (!played || impactVoice == null) return;
             if (attackVoice == null) return;
 
             if (Time.unscaledTime - attackVoiceStartTime >= MinAttackSoundBeforeCut)

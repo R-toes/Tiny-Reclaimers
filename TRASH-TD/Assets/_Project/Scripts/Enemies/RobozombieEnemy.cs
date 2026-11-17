@@ -90,6 +90,7 @@ namespace TrashTD.Enemies
 
             // Flash a "BOOM!" text above the enemy.
             FloatingCombatNumber.ShowText(explosionPos, "BOOM!", flashColor);
+            PlayAbilitySound(Audio.SoundNames.Detonate);
 
             // Damage operators on the 4 adjacent tiles.
             if (OperatorManager.Instance == null || data == null)

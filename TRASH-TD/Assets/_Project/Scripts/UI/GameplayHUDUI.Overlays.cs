@@ -514,6 +514,7 @@ namespace TrashTD.UI
             }
 
             environmentBriefingPanel.SetActive(true);
+            AudioManager.Instance?.PlaySfx(SfxId.GameplayHazardBriefing);
         }
 
         private void DismissEnvironmentBriefing()

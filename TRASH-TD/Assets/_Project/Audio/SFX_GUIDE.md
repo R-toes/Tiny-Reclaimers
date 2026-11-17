@@ -1,201 +1,174 @@
 # Sound effects
 
-Drop audio files into the folder shown, with the exact file name below. Nothing else to set up: the game finds them by name. Any format Unity imports works (`.wav`, `.mp3`, `.ogg`); the extension doesn't matter.
+**The easiest way: TRASH TD > Sound Manager** (in the Unity editor). It lists every sound in the game, shows
+whether it has its own file, plays a stand-in or is silent, and lets you:
 
-All paths are under `Assets/_Project/Audio/Resources/SFX/`.
+- **Play** any file (at its in-game level).
+- **Add** a sound: drop audio files onto it (or press *Add file...*). They are copied into the right folder with the right
+  name. The first one gets the sound's name, more become variations (`_2`, `_3` ...), picked at random in the game.
+- **Replace** a file (keeps its name and volume), **Rename** it to another sound of the same unit, or **Delete** it
+  (it goes to the trash).
+- **Set volumes**: per file, per group (one stage, operator or enemy) and per category (UI, Enemies, Ambience ...).
+- Find files the game never plays (misnamed ones) under *Files the game never plays*.
+
+Changes apply straight away, even while the game runs in Play mode. Everything below is what the Sound Manager does
+for you, for reference.
+
+## Where files go
+
+All paths are under `Assets/_Project/Audio/Resources/`. Any format Unity imports works (`.wav`, `.mp3`, `.ogg`, `.aif`);
+the extension doesn't matter, the name does.
 
 ```
 SFX/
-├── UI/                                  menu and draft buttons, card animations
-├── Gameplay/                            deploy, retreat, waves, lives, victory/defeat, pause
+├── UI/                                  menu and draft buttons, card animations, deck dragging
+├── Gameplay/                            deploy, retreat, waves, lives, victory/defeat, pause, banners
 ├── Combat/                              shared attack fallbacks, stun, miss
 ├── Tiles/                               trap and hole tiles (any stage)
 ├── Stages/Stage01 … Stage06/            stage ambience loops and hazards
 ├── Operators/{Class}/{OperatorName}/    per-operator sounds
 └── Enemies/{Archetype}/{EnemyName}/     per-enemy sounds
+Music/                                   MainMenuMusic, GameplayMusic, Stages/Stage01 … Stage06
 ```
 
-## Rules
+- Folder names are the unit's in-game name with spaces and symbols removed: "IRONHOWL MK-IX" → `IRONHOWLMKIX`,
+  "Stag-ger" → `Stagger`, "Dead Eye" → `DeadEye`, "THE ERADICATOR" → `THEERADICATOR`, "O.F.O" → `OFO`,
+  "Tick-Torque" → `TickTorque`. Operators are grouped by class (Drawgoo is a **Specialist**), enemies by archetype
+  (Occulorm is a **Rusher**).
+- **Variations:** `Attack_2`, `Attack_3` ... are picked at random. The plain name counts as one of them and can be left out.
+- **Missing files are fine.** A sound without a file plays its stand-in (if it has one) or nothing.
 
-- **Variations:** add `_2`, `_3`, ... to any name (`Attack_2`, `CarHit_2`, `Ability_Dodge_2`) and one is picked at random each time. The plain name counts as one of them and can be left out.
-- **Pitch** varies slightly on every unit sound, so even a single file doesn't sound robotic. Each sound gets its own audio voice, so one pitch shift never bends another sound.
-- **Missing files are fine.** Each sound marked *fallback* below plays an existing sound until you add its own. Everything else stays silent until a file exists.
-- **Repeats are throttled.** The same unit's sound won't restart within 0.08 s, and the same shared sound within 0.05 s, so 40 rushers or 5 burning operators don't stack into noise.
-- **Ambience** files loop. Make them seamless loops, 10–30 s. They fade in and out.
-- **Attack sounds stop when the impact plays.** If a unit has an `Impact` file, its still-running `Attack` sound is cut (quick 0.04 s fade) the moment the impact plays, so a long launch or charge-up never overlaps its own explosion. Melee swings that hit instantly are left alone.
-- **Volume per file:** see "Adjusting volume" below.
-- Folder names are the unit's in-game name with spaces and symbols removed ("Qihou" → `Qihou`, "Stag-ger" → `Stagger`). Renaming a unit means renaming its folder. Operators are grouped by their in-game class (Drawgoo is a Defender).
+## How it plays
+
+- **Pitch** varies slightly on every unit sound, so even a single file doesn't sound robotic.
+- **Repeats are throttled.** The same unit's sound won't restart within 0.08 s, the same shared sound within 0.05 s.
+- **Attack sounds stop when the impact plays.** If a unit has an `Impact` file, its still-running `Attack` is cut
+  (0.04 s fade) when the impact plays, so a long launch never overlaps its own explosion. Melee swings that hit at once are
+  left alone.
+- **Ambience** and **music** loop: make them seamless. Ambience fades in and out; a retry keeps both playing.
+
+## Volume
+
+A sound's volume = **category** × **group** × **its own file level** × the player's SFX volume (Settings).
+
+| Category | Default | Covers |
+|---|---|---|
+| UI, Gameplay, Combat, Tiles | 100% | the shared folders |
+| Stage hazards | 100% | `Stages/StageNN/*` except Ambience |
+| Stage ambience | 45% | `Stages/StageNN/Ambience` |
+| Operators | 100% | every operator sound |
+| Enemies | 70% | enemy attacks, impacts and abilities (many enemies are on screen at once) |
+| Enemy deaths | 80% | enemy `Death` files and `Gameplay/EnemyDeath` |
+
+- **Groups:** one level per stage, operator and enemy (100% by default).
+- **Bounce falloff** (Progeny, Resicochet): how loud each bounce is next to the one before (50% by default, never below 5%).
+- Levels only go **down**: Unity can't play a clip louder than recorded. To make one louder, raise it in an audio editor.
+- Music plays at the player's Music volume and has no levels here.
+- The levels live in `Audio/Resources/SfxVolumeSettings.asset` (the Sound Manager edits it; the Inspector works too).
+  A level at its default has no row.
 
 ## Shared sounds
 
 ### `UI/`
 
-| File | When it plays |
-|---|---|
-| `ButtonHover` | ✓ exists. Pointer enters any button. |
-| `ButtonClick` | ✓ exists. Any button press. |
-| `ButtonBack` | ✓ exists. Back / close buttons. |
-| `ButtonConfirm` | ✓ exists. Draft card picked. |
-| `ButtonDenied` | ✓ exists. Locked stage, card still on cooldown, squad full, can't deploy on that tile. |
-| `CardShuffle` | Draft cards riffle-shuffle (per swap). *Fallback: ButtonHover.* |
-| `CardDeal` | Each draft card slides into place. *Fallback: ButtonHover.* |
-| `CardFlip` | A draft card flips face-up. *Fallback: ButtonHover.* |
-| `Reroll` | Draft reroll button. *Fallback: ButtonClick.* |
-| `CardDiscard` | A deck card is discarded (after confirming). |
-| `TutorialVoice` | Coalesce's talking blip in the tutorial, played for each typed character (pitch varies slightly). Keep it very short (≈40 ms). Until this file exists, a soft synth blip is generated in code. |
+| File | When it plays | Without a file |
+|---|---|---|
+| `ButtonHover` | The pointer moves onto a button. | – |
+| `ButtonClick` | A button is pressed. | – |
+| `ButtonBack` | Back / close buttons. | – |
+| `ButtonConfirm` | A draft card is picked; confirming in the tutorial, Intel and results. | – |
+| `ButtonDenied` | Locked stage, card on cooldown, squad full, a tile the operator can't stand on. | – |
+| `CardShuffle` | Draft cards riffle-shuffle (each swap), and the draft-odds reels spinning. | ButtonHover |
+| `CardDeal` | Each draft card slides into place. | ButtonHover |
+| `CardFlip` | A draft card flips face-up. | ButtonHover |
+| `Reroll` | Draft REROLL. | ButtonClick |
+| `CardDiscard` | A deck card is discarded (after confirming). | silent |
+| `CardPickUp` | A deck card is picked up to drag it. | silent |
+| `CardDrop` | A dragged deck card is dropped on another slot. | silent |
+| `TutorialVoice` | Coalesce's talking blip, per typed character (≈40 ms). | a generated blip |
 
 ### `Gameplay/`
 
 | File | When it plays |
 |---|---|
-| `Deploy` | ✓ exists. The default placing sound: plays on **every** deploy, together with the operator's own `Deploy` if it has one. |
-| `Retreat` | Operator recalled to the deck (not on death). |
-| `OperatorDeath` | Operator dies. Used when the operator has no own `Death`. |
-| `EnemyDeath` | ✓ exists. Enemy dies. Used when the enemy has no own `Death`. |
-| `WaveStart` | ✓ exists. A wave begins. |
+| `Deploy` | Every deploy (the operator's own `Deploy` plays on top). |
+| `Retreat` | An operator is retreated to the deck (not on death). |
+| `WaveStart` | A wave begins (the INVADING banner). |
+| `Preparation` | The PREPARATION banner, after the draft. |
+| `HazardBriefing` | The stage hazard briefing pops up. |
 | `WaveCleared` | Every enemy of a wave is dead (not the last wave). |
-| `LifeLost` | ✓ exists. An enemy reaches the exit. |
-| `Victory` | Stage cleared. |
-| `Defeat` | Out of lives. |
-| `Pause` | Pause menu opens. |
-| `Resume` | Pause menu closes. |
-| `CardUpgrade` | 3 copies merge into a higher-rarity card. |
+| `LifeLost` | An enemy reaches the exit. |
+| `Victory` / `Defeat` | Stage cleared / out of lives. |
+| `Pause` / `Resume` | The pause menu opens (Esc, the button, or the window losing focus) / closes. |
+| `CardUpgrade` | 3 copies merge into a higher-rarity card; also the draft's ODDS UP! (ButtonConfirm until it exists). |
+| `OperatorDeath` | An operator without its own `Death` dies. |
+| `EnemyDeath` | An enemy without its own `Death` dies. |
 
-### `Combat/`
-
-| File | When it plays |
-|---|---|
-| `MeleeAttack` | ✓ exists. Operator attack fallback: melee physical. |
-| `RangedPhysicalAttack` | ✓ exists. Operator attack fallback: ranged physical. |
-| `MagicAttack` | ✓ exists. Operator attack fallback: Arts. |
-| `Stun` | An operator gets stunned (falling tools, car hit). |
-| `Miss` | An attack misses: the sandstorm's miss chance, or Sand Plastic / Sand Poncho / Sand Hulk evading an operator. |
-
-### `Tiles/`
+### `Combat/`, `Tiles/`
 
 | File | When it plays |
 |---|---|
-| `TrapTick` | A trap tile damages a unit standing on it (each tick). |
-| `HoleEnter` | A ground enemy drops into a hole tile. |
-| `HoleExit` | It climbs out of the paired hole. |
+| `Combat/MeleeAttack`, `RangedPhysicalAttack`, `MagicAttack` | An operator's attack without its own `Attack`, by its damage type; also other stand-ins. |
+| `Combat/Stun` | An operator or enemy is stunned. |
+| `Combat/Miss` | An attack misses (sandstorm, evasive enemies). |
+| `Tiles/TrapTick` | Each trap tile damage tick. |
+| `Tiles/HoleEnter` / `HoleExit` | An enemy drops into / climbs out of a hole (Stage 5). |
 
 ### `Stages/`
 
 | Folder | File | When it plays |
 |---|---|---|
-| `Stage01` … `Stage06` | `Ambience` | That stage's background loop (see below). Any stage can have one. |
+| any `StageNN` | `Ambience` | The stage's background loop (variations: one is picked per stage start). |
 | `Stage02` | `ItemFall` | An item starts falling (every 10 s). |
-| `Stage02` | `ItemLandGlass` | Glass item lands (damage over time). *Fallback: Combat/MeleeAttack.* |
-| `Stage02` | `ItemLandMetal` | Metal item lands (burst damage). *Fallback: Combat/MeleeAttack.* |
-| `Stage02` | `ItemLandTools` | Tools item lands (damage + stun). *Fallback: Combat/MeleeAttack.* |
-| `Stage04` | `HeatUp` | An operator gains a heat stack. |
-| `Stage04` | `Ignite` | An operator reaches 5 stacks and catches fire. |
-| `Stage04` | `BurnTick` | Burning damage (once per second while anyone burns). |
-| `Stage04` | `Extinguish` | A burning operator is retreated. |
-| `Stage05` | `CarPass` | A car enters the boulevard (engine / horn / pass-by). |
-| `Stage05` | `CarHit` | A car runs into an enemy or operator. |
+| `Stage02` | `ItemLandGlass` / `ItemLandMetal` / `ItemLandTools` | That item lands (Combat/MeleeAttack until they exist). |
+| `Stage03` | `Gust` | A strong sandstorm gust starts. |
+| `Stage04` | `HeatBlast` | The reactor blasts heat at a wave start. |
+| `Stage04` | `HeatUp` / `Ignite` / `BurnTick` / `Extinguish` | A heat stack / catches fire / burn tick / a burning operator retreats. |
+| `Stage05` | `CarPass` / `CarHit` | A car enters / hits someone. |
 | `Stage06` | `AcidTick` | Acid rain damage tick (every 2 s). |
 
-## Operators — `Operators/{Class}/{Name}/`
+## Units
 
-| File | When it plays |
-|---|---|
-| `Deploy` | Placed on the field. Plays on top of Gameplay/Deploy, which always plays. |
-| `Attack` | The attack starts: swing, shot, launch, cast. Medics: each heal. *Fallback: Combat/ sound for its damage type.* |
-| `Impact` | The attack lands (once per volley, even on several enemies). |
-| `Ability` | The operator's special trigger (table below). |
-| `Ability_{Name}` | Operators with several triggers have named ones (table below). Each falls back to the plain `Ability`, so one `Ability` file covers them all. |
-| `Death` | Dies. *Fallback: Gameplay/OperatorDeath.* |
-
-| Folder | Attack | Impact | Ability files |
-|---|---|---|---|
-| `Guard/Qihou` | chi paw strike | strike lands | `Ability`: knockback (every 4th hit) |
-| `Guard/Echosquire` | slash | hit / life drain | |
-| `Guard/Lockburn` | claw (melee) or fireball (ranged) | hit | |
-| `Guard/Scrapper` | swing | hit | `Ability`: stun (20% chance) |
-| `Guard/Vespierce` | slash | hit | `Ability_Regen`: starts regenerating (5 s untouched) |
-| `Guard/Stagger` | slugger swing | hit | `Ability_Dodge`: dodges an attack · `Ability_Empowered`: the +50% ATK strike after a dodge |
-| `Defender/IRONHOWLMKIX` | bash | hit | `Ability`: ATK/DEF buff switches on (blocking 3+) |
-| `Defender/Drawgoo` | attack | hit | `Ability`: draws cards on death (plays after `Death`) |
-| `Defender/Mossmo` | | | `Ability`: reactive heal pulse |
-| `Defender/Mlem` | tongue lash | | `Ability_Swallow` (or plain `Ability`): the gulp when his mouth closes on the catch · `Ability_Digest` (or `Digest`): the digesting sound. It plays when digestion starts and is played again each time it ends, so a short burbling clip covers the whole digestion (4.5–12 s); it fades out when digestion ends, he retreats or dies. *No fallback: silent until the file exists.* |
-| `Defender/Thornchin` | attack | hit | `Ability_Retaliate` (direct counter-spike) · `Ability_Surrounding` (AoE spikes in adjacent/surrounding tiles). *Fallback: Ability or Combat/MeleeAttack.* |
-| `Sniper/Basurocket` | rocket launch | **explosion** | |
-| `Sniper/Deadeye` | rifle shot | bullet hit | |
-| `Sniper/Oquloct` | shotgun blast | pellets hit | `Ability`: turns camouflaged |
-| `Caster/Castiel` | beam cast | beam tick | |
-| `Caster/Nekhrost` | frost cast | frost hit | `Ability_Freeze`: freezes an enemy (and gains haste) · `Ability_ExtraHit`: every 4th attack's bonus bolt |
-| `Caster/Mechonk` | fire cast | fire burst | |
-| `Caster/Resicochet` | crystal laser fire (`Attack`, `Attack_2`, `Attack_3`...) | crystal hit | replays attack sound, quieter per bounce |
-| `Specialist/Framiliar` | attack | hit | `Ability_Transform`: plays when morphing into another operator (slot or file) |
-| `Medic/Bubblets` | shield cast | | `Ability`: bubble pop. *Fallback: Combat/MagicAttack.* |
-| `Medic/Coalesce` | heal | | `Ability`: bonus heal (20% on low-HP allies) |
-| `Medic/Panacea` | vial throw | vial shatter / heal | |
-| `Medic/Progeny` | heal (`Attack`, `Heal`, `Laser`, or `Beam`) | | replays heal sound, quieter per bounce (or `Ability_Bounce` / `Bounce` / `Ability`); `Deploy` (or `Cry`) |
-
-## Enemies — `Enemies/{Archetype}/{Name}/`
-
-| File | When it plays |
-|---|---|
-| `Attack` | Attack starts. |
-| `Impact` | Its projectile lands (ranged enemies only). |
-| `Death` | Dies. *Fallback: Gameplay/EnemyDeath.* |
-
-| Folder | Attack | Impact |
+| File | Operators | Enemies |
 |---|---|---|
-| `Grunt/SludgeGrunt` | melee hit | |
-| `Grunt/SandPlastic` | melee hit / sand throw | sand lands |
-| `Rusher/ToxicRusher` | melee hit | |
-| `Tank/PollutionTank` | heavy slam | |
-| `Tank/SandHulk` | shockwave slam | |
-| `Caster/SandPoncho` | cast | spell lands |
-| `Caster/SmogCaster` | cast | spell lands |
-| `Flyer/TalonRat` | claw swipe | |
-| `Flyer/Skyshard` | shard shot | shard blast |
-| `Flyer/AcidFlyer` | acid spit | acid splash |
+| `Deploy` | Placed on the field (on top of Gameplay/Deploy). | – |
+| `Attack` | The attack starts; Medics: each heal. Stand-in: the Combat sound for its damage type. | The attack starts. Silent without a file (Talon Rat: Combat/MeleeAttack). |
+| `Impact` | A hit lands (once per volley). | Its ranged attack lands. |
+| `Ability` | Its special trigger (below). | Its ability (below). |
+| `Death` | Dies (stand-in Gameplay/OperatorDeath). | Dies (stand-in Gameplay/EnemyDeath). |
 
-Enemy sounds play at 70% volume (80% for deaths), since many more enemies are on screen at once.
+A named ability `Ability_X` is also found as `X`, and falls back to the unit's plain `Ability` file, so one `Ability`
+file covers all of a unit's triggers (except where noted).
 
-Code: `Scripts/Audio/AudioManager.cs` (shared sounds: the `SfxPaths` table), `Scripts/Audio/UnitSfx.cs` (unit sounds).
-
-## Music — `Assets/_Project/Audio/Resources/Music/`
-
-| File | When it plays |
+| Operator | Named sounds |
 |---|---|
-| `MainMenuMusic` | ✓ exists. Main menu. |
-| `GameplayMusic` | ✓ exists. Any stage without its own track. |
-| `Stages/Stage01` … `Stages/Stage06` | That stage's own track (the sandbox plays the track of the map it shows). |
+| Qihou | `Ability`: knockback (every 4th hit) |
+| Scrapper | `Ability`: its stun |
+| Echosquire | `Ability_Dodge`: second-chance dodge |
+| Vespierce | `Ability_Regen`: starts regenerating |
+| Stag-ger | `Ability_Dodge` · `Ability_Empowered` (strike after a dodge) · `Ability_Pull` (stand-in Combat/Stun) |
+| IRONHOWL MK-IX | `Ability`: shockwave, frenzy switching on |
+| Thornchin | `Ability_Retaliate` (stand-in Combat/MeleeAttack) · `Ability_Surrounding` (upgraded AoE; falls back to Retaliate) |
+| Mlem | `Ability_Swallow` · `Ability_Digest` (repeats while digesting; no Ability fallback) |
+| Mossmo | `Ability` (or `Pulse`): reactive heal pulse (stand-in Combat/MagicAttack) · `Ability_Enrage`: an enemy turns enraged (no Ability fallback) |
+| Drawgoo | `Ability`: the death card-draw |
+| Oquloct | `Ability`: turns camouflaged |
+| Nekhrost | `Ability_Freeze` · `Ability_ExtraHit` |
+| Resicochet | `Ability`: stores a charge. `Attack` also accepts `Charge 1/2/3`. Bounces replay the attack quieter. |
+| Bubblets | `Ability`: a bubble pops (stand-in Combat/MagicAttack) |
+| Coalesce | `Ability`: bonus heal |
+| Progeny | `Deploy` also accepts `Cry`, `Attack` also `Heal` / `Laser` / `Beam`; `Ability_Bounce`: the heal bouncing on (else the heal replays, quieter) |
+| Framiliar | `Ability_Transform` (or `Transform`): morphing (stand-in Gameplay/CardUpgrade) |
 
-Music loops, so make the tracks seamless loops. A retry keeps the track playing instead of restarting it.
-
-## Stage ambience — `SFX/Stages/StageNN/Ambience`
-
-Every stage can have a background loop that plays under the music for the whole stage (planning, waves and pause). Name it `Ambience` in that stage's folder. Stages without one are silent.
-
-| Folder | Suggested ambience |
+| Enemy | Named sounds |
 |---|---|
-| `Stages/Stage01/` | Junkyard: light wind, distant clanks, flies. |
-| `Stages/Stage02/` | Street / landfill crowd: distant voices, things being tossed. |
-| `Stages/Stage03/` | Sandstorm wind and blowing grit. |
-| `Stages/Stage04/` | Factory hum, furnace roar, machinery, hissing steam. |
-| `Stages/Stage05/` | Boulevard traffic rumble, distant horns. |
-| `Stages/Stage06/` | Acid rain on metal and puddles. |
+| Hextension | `Ability_Bind`: casts its bind |
+| Gooelist | `Ability_Deflect`: deflects a non-blocker's hit ("DUEL") |
+| O.F.O | `Ability_Summon`: starts summoning |
+| Exploding Bug, Robozombie | `Ability_Detonate`: explodes on death (their `Death` plays too) |
+| Robodrone | `Ability_Reload`: reloads |
+| THE ERADICATOR | `Attack_Heavy` / `Impact_Heavy`: the heavy warhead (fall back to `Attack` / `Impact`) |
 
-- Make it a seamless loop, 10–30 s, with no obvious one-off events that repeat noticeably.
-- Keep it quiet in the mix; the game plays it at 45% of the SFX volume, with a fade in/out.
-- `Ambience_2`, `Ambience_3`, ... are allowed: one is picked at random when the stage starts.
-- The sandbox plays the ambience of the map it shows. Retrying a stage keeps the loop going.
-- A new stage only needs a `Stages/StageNN/` folder; no code changes.
-
-## Adjusting volume — `Audio/Resources/SfxVolumeSettings.asset`
-
-Unity's audio import settings have no volume, so per-file volume lives in one settings asset:
-
-1. In the Project window, select `Assets/_Project/Audio/Resources/SfxVolumeSettings`.
-2. In the Inspector, press **+** under **Clips** to add a row.
-3. Drag the audio file into **Clip** and set **Volume** (1 = as recorded, 0.5 = half).
-
-- Works for every sound effect: operators, enemies, UI, stage sounds. Not music or ambience.
-- Changes apply immediately, even while the game is running in Play mode (edits made in Play mode are kept).
-- Volume can only go down. To make a file louder than recorded, boost it in an audio editor.
-- Each variation (`Attack`, `Attack_2`, ...) is its own row.
+Code: `Scripts/Audio/SoundCatalog*.cs` (every sound, with these descriptions), `SoundNames.cs` (the named sounds),
+`AudioManager.cs` (shared sounds: `SfxPaths`), `UnitSfx.cs` (unit sounds), `SoundVolumeGroups.cs` and
+`SfxVolumeSettings.cs` (volumes), `Editor/SoundManagerWindow*.cs` (the window).

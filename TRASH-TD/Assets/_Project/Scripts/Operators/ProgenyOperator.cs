@@ -231,8 +231,8 @@ namespace TrashTD.Operators
             public bool IsSelf;
         }
 
-        private static readonly string[] ProgenyHealNames = new[] { "Attack", "Heal", "Laser", "Beam" };
-        private static readonly string[] ProgenyBounceNames = new[] { "Ability_Bounce", "Bounce", "Ability" };
+        private static readonly string[] ProgenyHealNames = SoundNames.ProgenyHeal;
+        private static readonly string[] ProgenyBounceNames = SoundNames.ProgenyBounce;
 
         protected override void OnDeployed()
         {
@@ -240,18 +240,19 @@ namespace TrashTD.Operators
             // If no Deploy.wav exists in folder, check if Cry exists for Progeny
             if (data != null && !UnitSfx.HasClip(data, UnitSfxEvent.Deploy))
             {
-                UnitSfx.PlayFromFolder(UnitSfx.GetFolder(data), "Cry");
+                foreach (string name in SoundNames.ProgenyDeploy)
+                    if (UnitSfx.PlayFromFolder(UnitSfx.GetFolder(data), name)) break;
             }
         }
 
         /// <summary>
         /// Calculates the volume multiplier for chain heal bounces.
-        /// Volume becomes progressively quieter per bounce (e.g. 1.0x -> 0.50x -> 0.25x -> 0.125x -> 0.0625x).
+        /// Each bounce is quieter by the "bounce:Progeny" level in SfxVolumeSettings (0.5 by default: 1.0x -> 0.50x -> 0.25x ...).
         /// </summary>
         public static float GetBounceVolumeMultiplier(int bounceIndex)
         {
             if (bounceIndex <= 0) return 1.0f;
-            return Mathf.Clamp(Mathf.Pow(0.5f, bounceIndex), 0.05f, 1.0f);
+            return Mathf.Clamp(Mathf.Pow(SfxVolumeSettings.GetActiveBounceFalloff("Progeny"), bounceIndex), 0.05f, 1.0f);
         }
 
         /// <summary>

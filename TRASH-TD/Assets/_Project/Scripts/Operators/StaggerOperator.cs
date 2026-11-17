@@ -327,7 +327,7 @@ namespace TrashTD.Operators
                 if (pulled)
                 {
                     MeleeSwipeVisual.Play(transform.position, destination, new Color(1f, 0.6f, 0.2f, 0.8f));
-                    PlayAbilitySound("Pull", SfxId.CombatStun);
+                    PlayAbilitySound(Audio.SoundNames.Pull, SfxId.CombatStun);
                 }
             }
         }
@@ -354,7 +354,7 @@ namespace TrashTD.Operators
                 hasDodgeAtkBuff = true;
                 Combat.DodgeAfterimageVisual.Play(gameObject);
                 FloatingCombatNumber.ShowText(transform.position, "DODGE!", new Color(0.2f, 0.85f, 1f), this);
-                PlayAbilitySound("Dodge");
+                PlayAbilitySound(Audio.SoundNames.Dodge);
 
                 if (HasDodgeHealUpgrade)
                 {
@@ -530,7 +530,7 @@ namespace TrashTD.Operators
             int attackAtk = hasDodgeAtkBuff
                 ? Mathf.RoundToInt(currentATK * 1.5f)
                 : currentATK;
-            if (hasDodgeAtkBuff) PlayAbilitySound("Empowered");
+            if (hasDodgeAtkBuff) PlayAbilitySound(Audio.SoundNames.Empowered);
 
             PlayAttackSound();
 

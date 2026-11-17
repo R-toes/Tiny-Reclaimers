@@ -229,6 +229,7 @@ namespace TrashTD.Enemies
             if (pendingSpawnQueue.Count > 0)
             {
                 isSummoning = true;
+                PlayAbilitySound(Audio.SoundNames.Summon);
                 // Spawn first minion immediately, then space remaining by subSpawnInterval
                 SpawnNextQueuedMinion();
                 subSpawnTimer = subSpawnInterval;

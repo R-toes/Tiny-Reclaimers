@@ -278,6 +278,7 @@ namespace TrashTD.Enemies
             bindDurationRemaining = BindDuration;
             chipDamageTimer = 0f;
             state = HextensionState.Binding;
+            PlayAbilitySound(Audio.SoundNames.Bind);
 
             // Oquloct breaks the bind immediately
             if (target is OquloctOperator || target.IsCamouflaged)

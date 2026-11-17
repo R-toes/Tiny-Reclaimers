@@ -66,10 +66,10 @@ namespace TrashTD.Operators
                 return;
             }
 
-            if (data != null && (UnitSfx.PlayFromFolder(UnitSfx.GetFolder(data), "Pulse") ||
-                                 UnitSfx.PlayFromFolder(UnitSfx.GetFolder(data), "HealPulse")))
+            if (data != null)
             {
-                return;
+                foreach (string name in SoundNames.MossmoPulse)
+                    if (UnitSfx.PlayFromFolder(UnitSfx.GetFolder(data), name)) return;
             }
 
             // 4. Fallback shared sound
@@ -401,7 +401,11 @@ namespace TrashTD.Operators
                             ? MossmoEnragedEffect.UpgradedAtkMultiplier
                             : MossmoEnragedEffect.DefaultAtkMultiplier);
 
+                        bool wasEnraged = enemy.GetComponent<MossmoEnragedEffect>() != null;
                         MossmoEnragedEffect.Apply(enemy, multiplier, this);
+                        // Ability_Enrage only: Mossmo's plain Ability file is its heal pulse
+                        if (!wasEnraged && enemy.GetComponent<MossmoEnragedEffect>() != null)
+                            UnitSfx.PlayAbility(data, SoundNames.Enrage, fallbackToAbility: false);
                         blockedStallTimers.Remove(enemy);
                         blockedLastHPs.Remove(enemy);
                     }

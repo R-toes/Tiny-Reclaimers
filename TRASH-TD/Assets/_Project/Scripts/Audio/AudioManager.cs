@@ -66,7 +66,15 @@ namespace TrashTD.Audio
         Stage4Extinguish,
         Stage5CarPass,
         Stage5CarHit,
-        Stage6AcidTick
+        Stage6AcidTick,
+
+        // Added with the Sound Manager (appended so existing values keep their numbers)
+        UiCardPickUp,
+        UiCardDrop,
+        GameplayPreparation,
+        GameplayHazardBriefing,
+        Stage3Gust,
+        Stage4HeatBlast
     }
 
     /// <summary>
@@ -89,7 +97,8 @@ namespace TrashTD.Audio
         // The same shared sound won't restart sooner than this (several burn/acid ticks in one frame play once).
         private const float MinSharedRepeatSeconds = 0.05f;
         private const float AmbienceFadeSpeed = 1.5f;
-        private const float DefaultAmbienceLevel = 0.45f;
+        // Ambience plays at its volume group's level (Stage ambience, 45% by default; see SoundVolumeGroups).
+        private const float DefaultAmbienceLevel = 1f;
         private const float StopFadeSeconds = 0.04f;
         // Every stage's ambience is SFX/Stages/StageNN/Ambience (see PlayStageAmbience).
         private const string StageAmbienceClipName = "Ambience";
@@ -145,8 +154,29 @@ namespace TrashTD.Audio
             { SfxId.Stage4Extinguish, "Stages/Stage04/Extinguish" },
             { SfxId.Stage5CarPass, "Stages/Stage05/CarPass" },
             { SfxId.Stage5CarHit, "Stages/Stage05/CarHit" },
-            { SfxId.Stage6AcidTick, "Stages/Stage06/AcidTick" }
+            { SfxId.Stage6AcidTick, "Stages/Stage06/AcidTick" },
+
+            { SfxId.UiCardPickUp, "UI/CardPickUp" },
+            { SfxId.UiCardDrop, "UI/CardDrop" },
+            { SfxId.GameplayPreparation, "Gameplay/Preparation" },
+            { SfxId.GameplayHazardBriefing, "Gameplay/HazardBriefing" },
+            { SfxId.Stage3Gust, "Stages/Stage03/Gust" },
+            { SfxId.Stage4HeatBlast, "Stages/Stage04/HeatBlast" }
         };
+
+        /// <summary>The Resources folder of a shared sound ("SFX/UI" for UiClick), or null for an unknown id.</summary>
+        public static string GetSharedFolder(SfxId id)
+        {
+            if (!SfxPaths.TryGetValue(id, out string path)) return null;
+            return SfxResourcesFolder + path.Substring(0, path.LastIndexOf('/'));
+        }
+
+        /// <summary>The file name of a shared sound ("ButtonClick" for UiClick), or null for an unknown id.</summary>
+        public static string GetSharedFileName(SfxId id)
+        {
+            if (!SfxPaths.TryGetValue(id, out string path)) return null;
+            return path.Substring(path.LastIndexOf('/') + 1);
+        }
 
         public static AudioManager Instance { get; private set; }
 
@@ -205,7 +235,7 @@ namespace TrashTD.Audio
             }
             voiceLevels = new float[SfxVoiceCount];
             voiceStopping = new bool[SfxVoiceCount];
-            volumeSettings = Resources.Load<SfxVolumeSettings>(SfxVolumeSettings.ResourceName);
+            volumeSettings = SfxVolumeSettings.Active;
             ambienceSource = gameObject.AddComponent<AudioSource>();
             ambienceSource.loop = true;
             ambienceSource.playOnAwake = false;
@@ -233,7 +263,7 @@ namespace TrashTD.Audio
 
             if (!ambienceSource.isPlaying) return;
 
-            float target = sfxVolume * ambienceLevel;
+            float target = sfxVolume * ambienceLevel * GetAmbienceGroupVolume();
             ambienceSource.volume = Mathf.MoveTowards(ambienceSource.volume, target, AmbienceFadeSpeed * Time.unscaledDeltaTime);
             if (ambienceLevel <= 0f && ambienceSource.volume <= 0f) ambienceSource.Stop();
         }
@@ -343,7 +373,7 @@ namespace TrashTD.Audio
 
             int index = GetFreeVoiceIndex();
             AudioSource voice = sfxVoices[index];
-            float clipVolume = volumeSettings != null ? volumeSettings.GetVolume(clip) : 1f;
+            float clipVolume = GetSettingsVolume(clip);
             voiceLevels[index] = Mathf.Clamp01(volume) * clipVolume;
             voiceStopping[index] = false;
 
@@ -353,6 +383,33 @@ namespace TrashTD.Audio
             voice.volume = sfxVolume * voiceLevels[index];
             voice.Play();
             return voice;
+        }
+
+        /// <summary>
+        /// The settings' level for a clip: its file level x its category and group levels (from the folder it was
+        /// loaded from). 1 when there is no settings asset.
+        /// </summary>
+        private float GetSettingsVolume(AudioClip clip)
+        {
+            if (volumeSettings == null) volumeSettings = SfxVolumeSettings.Active;
+            if (volumeSettings == null || clip == null) return 1f;
+
+            return volumeSettings.GetVolume(clip) * volumeSettings.GetGroupVolume(UnitSfx.GetLoadedFolder(clip), clip.name);
+        }
+
+        private float GetAmbienceGroupVolume()
+        {
+            AudioClip clip = ambienceSource != null ? ambienceSource.clip : null;
+            if (clip == null) return 1f;
+            if (volumeSettings == null) volumeSettings = SfxVolumeSettings.Active;
+            if (volumeSettings == null) return SoundVolumeGroups.GetDefault(SoundVolumeGroups.Ambience);
+
+            // Ambience is a loop, not a one-shot: the group levels apply, the per-file row too.
+            string folder = UnitSfx.GetLoadedFolder(clip);
+            float groups = folder != null
+                ? volumeSettings.GetGroupVolume(folder, clip.name)
+                : volumeSettings.GetGroupLevel(SoundVolumeGroups.Ambience);
+            return groups * volumeSettings.GetVolume(clip);
         }
 
         /// <summary>
@@ -415,7 +472,7 @@ namespace TrashTD.Audio
             if (musicSource != null) musicSource.volume = musicVolume;
             for (int i = 0; i < sfxVoices.Count; i++)
                 if (sfxVoices[i] != null && !voiceStopping[i]) sfxVoices[i].volume = sfxVolume * voiceLevels[i];
-            if (ambienceSource != null) ambienceSource.volume = sfxVolume * ambienceLevel;
+            if (ambienceSource != null) ambienceSource.volume = sfxVolume * ambienceLevel * GetAmbienceGroupVolume();
         }
 
         private int GetFreeVoiceIndex()
@@ -517,10 +574,11 @@ namespace TrashTD.Audio
             upgradeSystem = null;
         }
 
+        // Both play at the Enemy deaths group level (80% by default; see SoundVolumeGroups).
         private void HandleEnemyDied(EnemyBase enemy)
         {
-            if (enemy == null || !UnitSfx.Play(enemy.Data, UnitSfxEvent.Death, 0.8f))
-                PlaySfx(SfxId.GameplayEnemyDeath, 0.75f);
+            if (enemy == null || !UnitSfx.Play(enemy.Data, UnitSfxEvent.Death))
+                PlaySfx(SfxId.GameplayEnemyDeath);
         }
 
         // The only place the deploy sound plays: the default placing sound for every operator,

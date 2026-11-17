@@ -208,7 +208,9 @@ namespace TrashTD.Enemies
             BlastWarningVisual.Play(impact, BlastRadiusTiles * cellSize, heavy ? HeavyRocketColor : RocketBlastColor,
                 Vector2.Distance(launcher, impact) / speed);
 
-            PlayAttackSound();
+            // The heavy warhead has its own launch (Attack_Heavy), else the normal Attack
+            if (heavy) PlayAttackSound(Audio.SoundNames.Heavy);
+            else PlayAttackSound();
             CombatProjectileVisual.Fire(
                 launcher,
                 impact,
@@ -225,7 +227,7 @@ namespace TrashTD.Enemies
         public void DetonateRocket(Vector2Int centerCell, bool heavy)
         {
             if (this == null || data == null || CurrentGrid == null) return;
-            PlayImpactSound();
+            PlayImpactSound(heavy ? Audio.SoundNames.Heavy : null); // Impact_Heavy, else Impact
 
             Vector3 center = CurrentGrid.GridToWorldPosition(centerCell);
             float radius = BlastRadiusTiles * CurrentGrid.CellSize;

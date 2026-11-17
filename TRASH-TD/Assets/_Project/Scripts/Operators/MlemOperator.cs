@@ -479,7 +479,7 @@ namespace TrashTD.Operators
             if (swallowed.Count == 0) return;
 
             EnemiesSwallowed += swallowed.Count;
-            PlayAbilitySound("Swallow"); // Ability_Swallow, else the plain Ability clip
+            PlayAbilitySound(Audio.SoundNames.Swallow); // Ability_Swallow, else the plain Ability clip
             CombatFx.Sparks(mouth, new Color(1f, 0.55f, 0.45f, 1f), 8, 2.2f);
             FloatingCombatNumber.ShowText(mouth + Vector3.up * 0.3f, "GULP!", new Color(1f, 0.62f, 0.5f, 1f), this);
 
@@ -583,8 +583,13 @@ namespace TrashTD.Operators
             if (digestVoice != null && digestVoice.isPlaying && digestVoice.clip == digestClip) return;
 
             string folder = UnitSfx.GetFolder(data);
-            if (!UnitSfx.PlayFromFolder(folder, "Ability_Digest", out digestVoice, out digestClip, 1f, true) &&
-                !UnitSfx.PlayFromFolder(folder, "Digest", out digestVoice, out digestClip, 1f, true))
+            bool played = false;
+            foreach (string name in SoundNames.MlemDigest)
+            {
+                played = UnitSfx.PlayFromFolder(folder, name, out digestVoice, out digestClip, 1f, true);
+                if (played) break;
+            }
+            if (!played)
             {
                 digestSoundMissing = true;
                 digestVoice = null;

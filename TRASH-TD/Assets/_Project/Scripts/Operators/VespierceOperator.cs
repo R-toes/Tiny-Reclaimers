@@ -771,7 +771,7 @@ namespace TrashTD.Operators
             bool wasOutOfCombat = timeSinceLastAttacked >= OutOfCombatDuration;
             timeSinceLastAttacked += dt;
             if (!wasOutOfCombat && timeSinceLastAttacked >= OutOfCombatDuration && currentHP < maxHP)
-                PlayAbilitySound("Regen");
+                PlayAbilitySound(Audio.SoundNames.Regen);
             if (timeSinceLastAttacked >= OutOfCombatDuration)
             {
                 regenTimer += dt;

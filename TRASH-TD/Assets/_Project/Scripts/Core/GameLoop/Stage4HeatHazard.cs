@@ -266,6 +266,7 @@ namespace TrashTD.Core.GameLoop
             if (heatStackAdded)
             {
                 PulseReactor(ReactorWavePulse);
+                AudioManager.Instance?.PlaySfx(SfxId.Stage4HeatBlast);
                 heatFlareTimer = HeatFlareDurationSeconds;
                 emberStreamAccumulator = 0f;
                 EmitHeatFlareEmbers();

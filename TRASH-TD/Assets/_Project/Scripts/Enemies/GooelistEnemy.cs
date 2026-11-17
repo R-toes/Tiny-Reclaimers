@@ -78,6 +78,7 @@ namespace TrashTD.Enemies
             if (!CanReceiveDamageFrom(attacker))
             {
                 FloatingCombatNumber.ShowText(VisualPosition, "DUEL", Color.white, this);
+                PlayAbilitySound(Audio.SoundNames.Deflect);
                 return false;
             }
 

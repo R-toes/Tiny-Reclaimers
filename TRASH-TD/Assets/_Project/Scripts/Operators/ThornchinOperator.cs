@@ -89,8 +89,8 @@ namespace TrashTD.Operators
             set => surroundingSounds = value;
         }
 
-        private static readonly string[] RetaliateSoundNames = new[] { "Ability_Retaliate", "Retaliate", "Ability" };
-        private static readonly string[] SurroundingSoundNames = new[] { "Ability_Surrounding", "Surrounding", "Ability_Adjacent", "Adjacent", "Ability_AoE", "AoE" };
+        private static readonly string[] RetaliateSoundNames = SoundNames.ThornchinRetaliate;
+        private static readonly string[] SurroundingSoundNames = SoundNames.ThornchinSurrounding;
 
         public void PlayRetaliateSound()
         {

@@ -104,7 +104,11 @@ namespace TrashTD.Enemies
         {
             FireRound(target);
             roundsLeft--;
-            if (roundsLeft <= 0) reloadTimer = ReloadSeconds;
+            if (roundsLeft <= 0)
+            {
+                reloadTimer = ReloadSeconds;
+                PlayAbilitySound(Audio.SoundNames.Reload);
+            }
         }
 
         private void FireRound(OperatorBase target)
