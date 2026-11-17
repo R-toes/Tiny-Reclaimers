@@ -214,7 +214,7 @@ namespace TrashTD.Data
 
         /// <summary>
         /// Gets the effective range pattern for this operator at the given rarity tier,
-        /// accounting for range expansion upgrades (e.g. Mechonk at 2★+, Lockburn at 3★+, Mossmo at 5★, Progeny at 3★+).
+        /// accounting for range expansion upgrades (e.g. Mechonk at 2★+, Lockburn at 3★+, Mossmo at 5★, Progeny at 3★+, Basurocket at 4★+).
         /// </summary>
         public Vector2Int[] GetRangePatternForRarity(OperatorRarity rarity)
         {
@@ -241,6 +241,10 @@ namespace TrashTD.Data
             if (operatorName == "Thornchin")
             {
                 return TrashTD.Operators.ThornchinOperator.GetRangePatternForRarity(this, rarity);
+            }
+            if (operatorName == "Basurocket")
+            {
+                return TrashTD.Operators.BasurocketOperator.GetRangePatternForRarity(this, rarity);
             }
             return rangePattern;
         }

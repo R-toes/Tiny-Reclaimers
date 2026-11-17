@@ -297,7 +297,7 @@ namespace TrashTD.Editor
                     basuFrame0, basuPrefab);
                 basurocket.roleTags = new[] { "Long Range", "AoE", "Explosive", "DPS" };
                 basurocket.skillDescription =
-                    "Long-range explosive sniper. Fires up to 7 tiles forward, cannot attack the adjacent tile, and deals high physical area damage on impact.";
+                    "<color=#FFD700>Base (3★):</color> Long-range explosive sniper. Fires up to 7 tiles forward, cannot attack the adjacent tile, and deals high physical area damage on impact.\n<color=#FFD700>1st upgrade (4★):</color> Fires every 2.3 seconds (was 2.8) and reaches 1 tile further, up to 8 tiles forward.\n<color=#FFD700>2nd upgrade (5★):</color> After the blast, cluster bombs explode in a ring 1 tile wide around it, dealing 60% of ATK to enemies the main blast did not hit.";
                 EditorUtility.SetDirty(basurocket);
             }
 

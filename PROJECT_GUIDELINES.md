@@ -45,7 +45,7 @@ Final Damage = max(ATK - DEF, ATK * 0.05)
 - Rarities: **1★ through 5★**
 - Card draft only offers **1★, 2★, or 3★** base creatures
 - 4★ and 5★ are reached **only** via upgrading
-- **Upgraded skills** (team, 2026-11-04 to 2026-11-07): each rank above an operator's draft rarity unlocks more of its kit. Draft rarity +1 is the **1st upgrade**, +2 the **2nd upgrade** (so a 3★ operator upgrades at 4★ and 5★). Every operator except Basurocket has them (Castiel got its upgrades on 2026-11-17); see §7.11.
+- **Upgraded skills** (team, 2026-11-04 to 2026-11-07): each rank above an operator's draft rarity unlocks more of its kit. Draft rarity +1 is the **1st upgrade**, +2 the **2nd upgrade** (so a 3★ operator upgrades at 4★ and 5★). Every operator has them (Castiel and Basurocket got theirs on 2026-11-17); see §7.11.
 - **3 duplicate copies** of a creature → upgrades rarity by one tier
 - **Upgrades merge cards in the deck only.** Deployed operators are never upgraded on the field — recall an operator to return its card to the deck, where it can merge. The upgraded card keeps the longest recall cooldown among the merged copies (`RarityUpgradeSystem.TryMergeOnce`), so a recalled Guard or Specialist (cooldown 0) merges into a card that is ready at once. A recall may merge into a full deck.
 - Each round offers **3 card choices**; **no two cards share the same class**
@@ -278,6 +278,13 @@ Each asset's `skillDescription` is the authoritative description of that operato
   - **Power tiers ("terminator mode", 2026-11-08, `PompothPowerVisuals`, visual only):** the passive's current bonus against its cap (`PompothOperator.GetAttackSpeedPassiveCap`: +100%, or +300% from the 2nd upgrade at 3★) picks a tier with `GetPowerTier`: tier 0 below half the cap, tier 1 from half, tier 2 at the cap. Each tier swaps in its own idle frames (`tier0Frames` / `tier1Frames` / `tier2Frames` on the prefab, swapped with `SetFramesPreservingPhase` so the loop doesn't restart). Going up is instant; going down waits `downgradeDelay` (0.35 s) so the look doesn't flicker as enemies step in and out of range. No enemy in range drops straight to tier 0. The bullets and the next-origin diamond follow the tier: purple, then dark crimson, then red at tier 2, which also fires the solid `ProjectileStyle.PompothFullPower` round and pulses a red silhouette behind the sprite (`PompothPowerStateSprite`, `Resources/Shaders/SpriteColorFill.shader`). A Framiliar copy stays grey and never shows the tier 2 look. `OnAttackSpeedPassiveChanged` reports the enemy count, bonus and cap. Tests: `PompothPowerVisualsTests`.
   - The tutorial deals Pompoth as an unpickable extra card in two scripted drafts (§7.8).
 - **Basurocket** (Sniper): ATK 165 (nerfed from 175 on 2026-10-30; `OquloctTalentTests` checks the value). Its rocket blasts a circle of `BasurocketOperator.BlastRadiusTiles` (1.75 tiles, a bit bigger than the 1.5-tile caster splash) around where the rocket lands. It used to blast the 3×3 tiles around the target cell. The circle drawn is the area hit. The blast is yellow-orange (`AoeStyle.JunkRocket`), so it never looks like THE ERADICATOR's crimson blast.
+  - **Upgrades (2026-11-17):** 1st (4★): fires every 2.3 s (`UpgradedAttackInterval`; the asset keeps 2.8) and reaches 1 tile further, 2 to 8 tiles forward (`UpgradedRangePattern`, through `OperatorData.GetRangePatternForRarity` and `GetRangePattern`). 2nd (5★): cluster bombs.
+  - **Cluster bombs:** 0.18 s after the blast (`ClusterDelaySeconds`), every enemy in the ring between the main blast (1.75 tiles) and `ClusterRadiusTiles` (2.75 tiles, so 1 tile all around) takes 60% ATK physical (`ClusterDamageMultiplier`), once. `IsInClusterRing` is the rule, a static function.
+    - Enemies the main blast hit are never hit by the cluster, even if they have moved into the ring. So nothing takes both, and the upgrade only widens the area.
+    - The ring is measured from where the rocket landed, with the grid's `CellSize`.
+    - Visuals: a `Pulse` circle at the cluster radius shows the exact area hit, and 8 small explosions (`ClusterBombCount`) go off one after another in the middle of the ring. The explosions are decoration; the ring is the hit area.
+    - The delay is a coroutine on the operator, so a Basurocket that retreats or dies inside the 0.18 s drops its cluster. Outside play mode the cluster is applied at once.
+  - Tests: `BasurocketUpgradeTests` (skill text, unlock ranks, range pattern, ring rule). The cluster damage itself has no scene test yet.
 
 **Enemies (25):** Grunt (Sludge, Sand Plastic, Oculite Spawn, Robozombie, Spoilcupine, Tick-Torque), Rusher (Toxic, Exploding Bug, Occuworm = `Enemy_Caster_Occulorm`), Tank (Pollution, Sand Hulk, Oculoid Carrier, THE ERADICATOR, Gooelist, Junkernaut), Caster (Sand Poncho, Smog, Askalaser, Hextension, Roboflame), Air (Talon Rat = `Enemy_Flying_Melee`, Skyshard = `Enemy_Flying_Ranged`, Acid Flyer, Robodrone, O.F.O). Robodrone appears only in Stage 4 and Tick-Torque only in Stage 2. O.F.O appears only in Stage 6 (from wave 17, since 2026-11-04).
 
@@ -933,7 +940,8 @@ Added by the team between 2026-11-04 and 2026-11-07 (Chester and R-toes, one com
 - **Range that grows with rank** goes through `OperatorData.GetRangePatternForRarity(rarity)` (name checks, §3). Use it instead of `rangePattern` wherever range is drawn or tested.
 - **Card ranks come from merges or from Drawgoo / Framiliar**, never from the draft (the draft still offers only base rarity, §1.4).
 - **Confirming a draft pick never selects the card for placement** (2026-11-15). The pick goes into the deck and nothing is pending. `StageBootstrapper` used to subscribe to `CardDraftSystem.OnCardSelected`, which `SelectCard` raises on confirm, so the new card started placement (tile hints, pending card) by itself. It now only listens to `PlayerDeck.OnCardSelectedForDeployment`, raised when a deck card is clicked.
-- Basurocket has no upgrades yet: its `skillDescription` is still a single line. Castiel's are 3★ and 4★ (it is not in `InitialAssetGenerator`, so its asset is the only place its skill text lives).
+- Every operator now has upgrades. Castiel's are 3★ and 4★ (it is not in `InitialAssetGenerator`, so its asset is the only place its skill text lives); Basurocket's are 4★ and 5★ (its text is in both its asset and `InitialAssetGenerator.Operators.cs`).
+- **Write the line breaks in a `skillDescription` as the two characters `\n`** inside a double-quoted YAML string. A real line break there is folded into a space by YAML, so the three tiers run together on one line.
 
 | Operator | Draft | 1st upgrade | 2nd upgrade |
 |---|---|---|---|
@@ -949,6 +957,7 @@ Added by the team between 2026-11-04 and 2026-11-07 (Chester and R-toes, one com
 | Mossmo | 3★ | auto-heals allies in range below 50% HP; taunt range +1 tile | larger heal range; Enrage ATK bonus 25% instead of 35% |
 | Deadeye | 1★ | no attack-interval penalty against flyers; +2% ATK per hit on the same target (up to +100%, resets on switch) | the shot after a kill deals +100% (CRIT!) |
 | Pompoth | 1★ | each hit on the same enemy ignores 1% more of its DEF (up to 100%, resets on switch) | +30% attack speed per enemy in range, capped at +300% |
+| Basurocket | 3★ | fires every 2.3 s (was 2.8); range +1 tile (2 to 8 forward) | cluster bombs: 60% ATK in a ring 1 tile wide around the blast, to enemies the blast did not hit |
 | Oquloct | 2★ | entering Camouflage fires a 50% shotgun blast, heals 25% max HP over the Camouflage and gives +50% DEF for 3 s after it | range grows from the 3-tile fan to an 8-tile cone |
 | Nekhrost | 1★ | while deployed, all operators deal +50% damage to frozen enemies | 3 shards per attack at different enemies (4 on every 4th attack) |
 | Mechonk | 1★ | 2 extra tiles beside the furthest range tile | each Arts AoE hit deals damage twice |
