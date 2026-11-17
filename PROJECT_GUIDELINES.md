@@ -1124,3 +1124,13 @@ On **Stage 5 and Stage 6** the bounds art outside the grid is darkened, so the p
   - The two axes are combined as `1 - (1 - ax)(1 - ay)`, which rounds the corners, and the falloff is a smootherstep, so no band or crease shows. The texture is bilinear-filtered (the only non-point texture on the map).
 - **Cleanup:** the texture and sprite belong to the bootstrapper; `CleanupBorderDarkening` destroys them when the stage is rebuilt.
 - **No tests yet**, although `StageHasPlayableBorderDarkening` and `CreatePlayableBorderDarkeningTexture` are both static and testable.
+
+## Pooled combat visuals (2026-11-17)
+
+Projectiles (`CombatProjectileVisual`) and AoE blasts (`AoeBlastVisual`) are pooled, like damage numbers already were (`FloatingCombatNumber`). A projectile that lands, or a blast that finishes, is deactivated and pushed onto a static stack; the next `Fire` / `PlayCircle` / `PlayCells` reactivates it instead of creating a GameObject.
+- **Reset everything on reuse.** `Spawn` (projectiles) and `Create` / `AddPiece` (blasts) set every field and transform value. A new field on either class must be reset there, or the next shot inherits it. Things already handled: position, rotation, scale, `flipX`, the halo (shown or hidden per style), the object name (`OquloctProjectileVisual` for Oquloct's pellets), the trail and age counters; for blasts, only the first `activePieces` pieces are shown, their position and scale are reset, and the shockwave ring is hidden for cell blasts.
+- **Caps:** `CombatProjectileVisual.MaxPooled` 64 and `AoeBlastVisual.MaxPooled` 32; any finished beyond that are destroyed.
+- **Scene changes:** pooled objects live in the stage scene, so loading another scene destroys them. The pools skip destroyed entries, and `ResetPool` clears them on entering play mode.
+- **Tests:** `FindObjectsByType<T>()` only finds active objects, so pooled ones are never counted; the existing projectile and blast count checks are unaffected. `CombatVisualPoolTests` covers reuse and reset.
+- **Not pooled:** heal visuals (`HolyHealVisual`, Coalesce / Panacea / Progeny effects) and Vespierce's `MeleeStabVisual`: they are rare next to projectiles. Melee swipes and impact sparks already draw through `PixelParticles`, which has its own fixed buffer.
+- `WorldHealthBar` caches its `OperatorBase` instead of calling `GetComponent` in `LateUpdate` on every bar every frame.

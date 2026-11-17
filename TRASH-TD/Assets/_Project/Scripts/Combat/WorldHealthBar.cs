@@ -26,6 +26,7 @@ namespace TrashTD.Combat
         private int sortingLayerId;
         private int sortingOrder = 30;
         private EnemyBase enemy;
+        private OperatorBase owner; // cached in EnsureLines: LateUpdate runs on every bar every frame
 
         public static void UpdateFor(GameObject target, int currentHP, int maxHP)
         {
@@ -58,7 +59,8 @@ namespace TrashTD.Combat
                 }
             }
 
-            OperatorBase op = GetComponent<OperatorBase>();
+            owner = GetComponent<OperatorBase>();
+            OperatorBase op = owner;
             if (op != null)
             {
                 verticalOffset = op.BodyExtents.y + BarOffset;
@@ -98,8 +100,7 @@ namespace TrashTD.Combat
         {
             if (background == null || !background.gameObject.activeSelf) return;
 
-            OperatorBase op = GetComponent<OperatorBase>();
-            Vector3 basePos = enemy != null ? enemy.VisualPosition : (op != null ? op.VisualCenter : transform.position);
+            Vector3 basePos = enemy != null ? enemy.VisualPosition : (owner != null ? owner.VisualCenter : transform.position);
             Vector3 center = basePos + Vector3.up * verticalOffset;
             center.z = transform.position.z - 0.05f;
             background.SetPosition(0, center + Vector3.left * (BarWidth * 0.5f));

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using TrashTD.Enemies;
 using TrashTD.Operators;
@@ -38,11 +39,27 @@ namespace TrashTD.Combat
     /// (CombatFx); lobbed styles arc, but only visually, so arrival timing is the same as a straight shot.
     /// The size/trailWidth/burstOnImpact parameters are kept for existing callers; the style sets the look.
     /// Runs on scaled time.
+    /// Projectiles are pooled: one that lands is deactivated and reused by the next shot instead of being
+    /// destroyed, so busy waves don't create and destroy a GameObject per shot. Spawn resets every field.
     /// </summary>
     public sealed class CombatProjectileVisual : MonoBehaviour
     {
         private const int BodySortingOrder = 40;
         private const int HaloSortingOrder = 39;
+        private const string DefaultObjectName = "CombatProjectileVisual";
+        private const string OquloctObjectName = "OquloctProjectileVisual";
+
+        /// <summary>Most landed projectiles kept for reuse; any beyond this are destroyed.</summary>
+        public const int MaxPooled = 64;
+
+        // Inactive projectiles waiting for reuse. They live in the stage scene, so a scene change destroys them;
+        // Acquire skips those (and any a test destroyed).
+        private static readonly Stack<CombatProjectileVisual> pool = new Stack<CombatProjectileVisual>();
+
+        public static int PooledCount => pool.Count;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetPool() => pool.Clear();
 
         private Vector3 targetPosition;
         private EnemyBase targetEnemy;
@@ -198,12 +215,14 @@ namespace TrashTD.Combat
             }
 
             color.a = 1f;
-            var projectile = new GameObject(style == ProjectileStyle.Oquloct
-                ? "OquloctProjectileVisual"
-                : "CombatProjectileVisual");
-            projectile.transform.position = PixelParticles.Snap(start);
+            CombatProjectileVisual visual = Acquire(style == ProjectileStyle.Oquloct ? OquloctObjectName : DefaultObjectName);
+            GameObject projectile = visual.gameObject;
+            projectile.transform.SetPositionAndRotation(PixelParticles.Snap(start), Quaternion.identity);
+            projectile.transform.localScale = Vector3.one;
 
-            var visual = projectile.AddComponent<CombatProjectileVisual>();
+            visual.traveled = 0f;
+            visual.trailDistance = 0f;
+            visual.age = 0f;
             visual.targetPosition = target + targetOffset;
             visual.targetEnemy = targetEnemy;
             visual.targetOperator = targetOperator;
@@ -215,21 +234,27 @@ namespace TrashTD.Combat
             visual.groundPosition = start;
             visual.lastVisual = start;
 
-            visual.body = projectile.AddComponent<SpriteRenderer>();
             visual.body.sprite = customProjectileSprite != null
                 ? customProjectileSprite
                 : GetBodySprite(style, color);
+            visual.body.flipX = false;
             visual.body.sortingOrder = BodySortingOrder;
             if (customProjectileSprite != null)
                 visual.body.transform.localScale = Vector3.one * Mathf.Max(0.01f, customProjectileScale);
 
             bool hasStyledHalo = style == ProjectileStyle.ArtsOrb || style == ProjectileStyle.FireOrb ||
                                  style == ProjectileStyle.HeavyRocket || style == ProjectileStyle.Plasma;
+            visual.pulseHalo = false;
             if (hasStyledHalo || customProjectileSprite != null)
             {
-                var haloObject = new GameObject("Halo");
-                haloObject.transform.SetParent(projectile.transform, false);
-                visual.halo = haloObject.AddComponent<SpriteRenderer>();
+                if (visual.halo == null)
+                {
+                    var haloObject = new GameObject("Halo");
+                    haloObject.transform.SetParent(projectile.transform, false);
+                    visual.halo = haloObject.AddComponent<SpriteRenderer>();
+                }
+                visual.halo.gameObject.SetActive(true);
+                visual.halo.transform.localScale = Vector3.one;
                 visual.pulseHalo = hasStyledHalo;
                 visual.halo.sprite = customProjectileSprite != null
                     ? CombatFxArt.GlowDisc(8)
@@ -240,8 +265,10 @@ namespace TrashTD.Combat
                 visual.halo.sortingOrder = customProjectileSprite != null
                     ? BodySortingOrder - 1
                     : HaloSortingOrder;
-                if (customProjectileSprite != null)
-                    visual.halo.transform.localScale = Vector3.one;
+            }
+            else if (visual.halo != null)
+            {
+                visual.halo.gameObject.SetActive(false); // a reused projectile may still have one from its last shot
             }
 
             float distance = Vector2.Distance(start, visual.targetPosition);
@@ -252,6 +279,42 @@ namespace TrashTD.Combat
             if (customProjectileSprite != null && direction.sqrMagnitude > 0.0001f)
                 projectile.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
             if (muzzleFlash) PlayMuzzle(style, start, direction, color);
+        }
+
+        /// <summary>A pooled projectile, reactivated, or a new one. Spawn sets every field after this.</summary>
+        private static CombatProjectileVisual Acquire(string objectName)
+        {
+            while (pool.Count > 0)
+            {
+                CombatProjectileVisual pooled = pool.Pop();
+                if (pooled == null) continue; // destroyed with its scene, or by a test
+
+                pooled.gameObject.name = objectName;
+                pooled.gameObject.SetActive(true);
+                return pooled;
+            }
+
+            var projectile = new GameObject(objectName);
+            var visual = projectile.AddComponent<CombatProjectileVisual>();
+            visual.body = projectile.AddComponent<SpriteRenderer>();
+            return visual;
+        }
+
+        /// <summary>Returns a landed projectile to the pool, or destroys it when the pool is full.</summary>
+        private void Release()
+        {
+            onImpact = null;
+            targetEnemy = null;
+            targetOperator = null;
+
+            if (pool.Count >= MaxPooled)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            gameObject.SetActive(false);
+            pool.Push(this);
         }
 
         private static Sprite GetBodySprite(ProjectileStyle style, Color color)
@@ -433,7 +496,7 @@ namespace TrashTD.Combat
             onImpact?.Invoke();
             onImpact = null;
             PlayImpact(visual, moved.sqrMagnitude > 0.000001f ? moved.normalized : Vector2.right);
-            Destroy(gameObject);
+            Release();
         }
 
         private void AnimateBody(float deltaTime)

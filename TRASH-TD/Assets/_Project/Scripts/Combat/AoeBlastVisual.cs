@@ -23,9 +23,23 @@ namespace TrashTD.Combat
     /// a shockwave ring opening out to it. Cell blasts match grid-cell splash: each cell flashes with corner
     /// brackets, rippling out from the centre, with staggered explosions for the Explosion style.
     /// The area drawn is always the area that was hit. Runs on scaled time.
+    /// Blasts are pooled: a finished one is deactivated and reused, with its piece and shockwave objects, by
+    /// the next blast. Create resets every field.
     /// </summary>
     public sealed class AoeBlastVisual : MonoBehaviour
     {
+        /// <summary>Most finished blasts kept for reuse; any beyond this are destroyed.</summary>
+        public const int MaxPooled = 32;
+
+        // Inactive blasts waiting for reuse. They live in the stage scene, so a scene change destroys them;
+        // Create skips those (and any a test destroyed).
+        private static readonly Stack<AoeBlastVisual> pool = new Stack<AoeBlastVisual>();
+
+        public static int PooledCount => pool.Count;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetPool() => pool.Clear();
+
         private const float Lifetime = 0.45f;
         private const float HoldPortion = 0.35f;     // Full strength for this part of the life, then fade
         private const float ShockwaveDuration = 0.2f;
@@ -39,8 +53,11 @@ namespace TrashTD.Combat
             public float Delay;
         }
 
+        // Piece objects are kept when the blast is pooled; only the first activePieces belong to this blast.
         private readonly List<Piece> pieces = new List<Piece>();
-        private SpriteRenderer shockwave;
+        private int activePieces;
+        private SpriteRenderer shockwaveRenderer; // kept when pooled
+        private SpriteRenderer shockwave;         // shockwaveRenderer while this blast has a ring (circles), else null
         private Sprite[] shockwaveFrames;
         private Color blastColor;
         private float elapsed;
@@ -60,9 +77,14 @@ namespace TrashTD.Combat
             int radiusPx = Mathf.Max(3, Mathf.RoundToInt(radius * CombatFxArt.PixelsPerUnit));
             visual.AddPiece(Vector3.zero, CombatFxArt.AreaCircle(radiusPx), 0f);
 
-            var shockwaveObject = new GameObject("Shockwave");
-            shockwaveObject.transform.SetParent(visual.transform, false);
-            visual.shockwave = shockwaveObject.AddComponent<SpriteRenderer>();
+            if (visual.shockwaveRenderer == null)
+            {
+                var shockwaveObject = new GameObject("Shockwave");
+                shockwaveObject.transform.SetParent(visual.transform, false);
+                visual.shockwaveRenderer = shockwaveObject.AddComponent<SpriteRenderer>();
+            }
+            visual.shockwaveRenderer.gameObject.SetActive(true);
+            visual.shockwave = visual.shockwaveRenderer;
             visual.shockwaveFrames = CombatFxArt.ShockwaveFrames(radiusPx);
             visual.shockwave.sprite = visual.shockwaveFrames[0];
             visual.shockwave.sortingOrder = ShockwaveSortingOrder;
@@ -96,26 +118,60 @@ namespace TrashTD.Combat
             visual.ApplyAnimation();
         }
 
+        /// <summary>A pooled blast, reactivated and reset, or a new one.</summary>
         private static AoeBlastVisual Create(Vector3 center, Color color)
         {
-            var visualObject = new GameObject("AoeBlastVisual");
-            visualObject.transform.position = PixelParticles.Snap(center);
-            AoeBlastVisual visual = visualObject.AddComponent<AoeBlastVisual>();
+            AoeBlastVisual visual = null;
+            while (pool.Count > 0 && visual == null)
+                visual = pool.Pop(); // null when destroyed with its scene, or by a test
+
+            if (visual == null)
+            {
+                var visualObject = new GameObject("AoeBlastVisual");
+                visual = visualObject.AddComponent<AoeBlastVisual>();
+            }
+            else
+            {
+                visual.gameObject.SetActive(true);
+            }
+
+            visual.transform.position = PixelParticles.Snap(center);
             visual.blastColor = color;
+            visual.elapsed = 0f;
+            visual.lifetime = Lifetime;
+            visual.activePieces = 0;
+            for (int i = 0; i < visual.pieces.Count; i++)
+                visual.pieces[i].Renderer.gameObject.SetActive(false);
+            visual.shockwave = null;
+            visual.shockwaveFrames = null;
+            if (visual.shockwaveRenderer != null)
+                visual.shockwaveRenderer.gameObject.SetActive(false);
             return visual;
         }
 
         private Piece AddPiece(Vector3 localPosition, Sprite sprite, float delay)
         {
-            var pieceObject = new GameObject("BlastPiece");
-            pieceObject.transform.SetParent(transform, false);
-            pieceObject.transform.localPosition = localPosition;
+            Piece piece;
+            if (activePieces < pieces.Count)
+            {
+                piece = pieces[activePieces];
+                piece.Renderer.gameObject.SetActive(true);
+            }
+            else
+            {
+                var pieceObject = new GameObject("BlastPiece");
+                pieceObject.transform.SetParent(transform, false);
+                piece = new Piece { Renderer = pieceObject.AddComponent<SpriteRenderer>() };
+                pieces.Add(piece);
+            }
+            activePieces++;
 
-            var spriteRenderer = pieceObject.AddComponent<SpriteRenderer>();
-            spriteRenderer.sprite = sprite;
-            spriteRenderer.sortingOrder = AreaSortingOrder;
-            var piece = new Piece { Renderer = spriteRenderer, Delay = delay };
-            pieces.Add(piece);
+            Transform pieceTransform = piece.Renderer.transform;
+            pieceTransform.localPosition = localPosition;
+            pieceTransform.localScale = Vector3.one; // cell blasts scale theirs after this
+            piece.Renderer.sprite = sprite;
+            piece.Renderer.sortingOrder = AreaSortingOrder;
+            piece.Delay = delay;
             return piece;
         }
 
@@ -124,21 +180,34 @@ namespace TrashTD.Combat
             elapsed += Time.deltaTime;
             ApplyAnimation();
             if (elapsed >= lifetime)
+                Release();
+        }
+
+        /// <summary>Returns a finished blast to the pool, or destroys it when the pool is full.</summary>
+        private void Release()
+        {
+            if (pool.Count >= MaxPooled)
+            {
                 Destroy(gameObject);
+                return;
+            }
+
+            gameObject.SetActive(false);
+            pool.Push(this);
         }
 
         private void ApplyAnimation()
         {
             if (elapsed < 0f)
             {
-                for (int i = 0; i < pieces.Count; i++)
+                for (int i = 0; i < activePieces; i++)
                     pieces[i].Renderer.enabled = false;
                 if (shockwave != null) shockwave.enabled = false;
                 return;
             }
 
             // Area: flashes bright, holds at the given strength, then fades
-            for (int i = 0; i < pieces.Count; i++)
+            for (int i = 0; i < activePieces; i++)
             {
                 Piece piece = pieces[i];
                 float local = elapsed - piece.Delay;
