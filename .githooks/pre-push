@@ -1,0 +1,5 @@
+#!/bin/sh
+# Blocks a push when the repository checks fail. This also covers what pre-commit never sees: a merge, rebase,
+# cherry-pick or `git stash pop` that left conflict markers behind and was committed with the conflict still in it.
+. "$(dirname "$0")/run-checks.sh"
+run_repository_checks push

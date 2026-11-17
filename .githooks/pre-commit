@@ -1,0 +1,6 @@
+#!/bin/sh
+# Blocks a commit when the repository checks fail (merge-conflict markers, unbalanced braces, missing .meta files,
+# stage-id strings in runtime code, ...). Installed by Tools/setup_hooks.py, or automatically when the Unity project opens.
+# The same checks run in CI, but only after the push; this stops the mistake before it leaves your machine.
+. "$(dirname "$0")/run-checks.sh"
+run_repository_checks commit

@@ -26,6 +26,9 @@ traffic, acid rain).
 - **Repository checks:** `python Tools/check_project.py` (no Unity needed). It verifies that every asset has its `.meta`
   file and no GUID is used twice, that C# files have balanced braces, that no merge-conflict markers were left behind,
   and it warns about oversized files and stage-id string checks.
+- **Git hooks:** `.githooks/` runs those repository checks before every commit and every push, so a half-resolved merge
+  or stash never leaves your machine. Opening the Unity project turns them on for your clone; without Unity run
+  `python Tools/setup_hooks.py` once. Python 3 must be installed or the commit is stopped.
 - **CI:** `.github/workflows/ci.yml` runs the repository checks on every push and pull request, and the Unity EditMode
   tests too once the `UNITY_LICENSE` secret is set (see the comments in that file).
 
@@ -48,7 +51,8 @@ controls) are kept separately in `PlayerPrefs`.
 | `TRASH-TD/Assets/Resources/Stages/` | One `StageData` asset per stage (map, waves, environment) |
 | `TRASH-TD/Assets/Resources/Acts/` | One `ActData` asset per act: its stages, marker positions on its stage map, map art and zone text (see "Acts" in `PROJECT_GUIDELINES.md`) |
 | `Docs/` | The audio guide |
-| `Tools/` | Repository scripts (`check_project.py`, placeholder texture generator) |
+| `Tools/` | Repository scripts (`check_project.py`, `setup_hooks.py`, placeholder texture generator) |
+| `.githooks/` | Git hooks (pre-commit, pre-push) that run the repository checks |
 | `PROJECT_GUIDELINES.md` | **Read this first when working on the project:** design rules, implementation notes, working agreements |
 
 Large classes are split into partial files by topic (`GameplayHUDUI.TopBar.cs`, `EnemyBase.Movement.cs`, ...); the

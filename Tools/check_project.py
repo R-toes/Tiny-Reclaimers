@@ -5,7 +5,7 @@ Errors (exit code 1):
   - an asset or folder under Assets/ without its .meta file, or a .meta whose asset is gone
   - two .meta files with the same guid
   - a C# file with unbalanced braces (a quick way to catch a bad merge or edit before Unity compiles)
-  - merge-conflict markers left in a text file
+  - merge-conflict markers left in any text file of the repository (code, assets, docs, settings, scripts, CI)
   - a C# file over MAX_LINES lines
   - a runtime script comparing against a stage id string such as "STAGE_04" (stage behaviour is StageData data;
     see PROJECT_GUIDELINES.md, "Stage environments")
@@ -25,6 +25,11 @@ SCRIPTS = os.path.join(ASSETS, '_Project', 'Scripts')
 
 WARN_LINES = 1000
 MAX_LINES = 1500
+# Every kind of text file in the repository; merge-conflict markers are looked for in all of them, not only under Assets/.
+CONFLICT_SCAN_EXTENSIONS = ('.cs', '.asmdef', '.asmref', '.md', '.json', '.shader', '.cginc', '.hlsl', '.asset', '.prefab',
+                            '.unity', '.meta', '.yml', '.yaml', '.py', '.sh', '.txt', '.inputactions', '.mat', '.anim',
+                            '.controller', '.uss', '.uxml', '.gitignore', '.gitattributes')
+CONFLICT_SCAN_NAMES = ('pre-commit', 'pre-push')
 TEXT_EXTENSIONS = ('.cs', '.asmdef', '.md', '.json', '.shader', '.asset', '.prefab', '.unity', '.meta', '.yml', '.py')
 # Runtime files that may still compare against a stage id string. None do any more: stage behaviour is StageData data.
 STAGE_ID_ALLOWED = ()
@@ -188,6 +193,26 @@ def brace_balance(text):
     return depth
 
 
+def check_conflict_markers(files):
+    """Merge-conflict markers (<<<<<<<, =======, >>>>>>>) in any text file of the repository, not just under Assets/."""
+    for f in files:
+        name = os.path.basename(f)
+        if not (f.endswith(CONFLICT_SCAN_EXTENSIONS) or name in CONFLICT_SCAN_NAMES) or not os.path.isfile(f):
+            continue
+        try:
+            data = open(f, 'rb').read()
+        except OSError:
+            continue
+        if b'\0' in data[:4096]:
+            continue
+        text = data.decode('utf-8-sig', 'replace')
+        for m in re.finditer(r'^(<<<<<<< |>>>>>>> |=======\r?$)', text, re.M):
+            if f.endswith('.md') and m.group(1).startswith('======='):
+                continue  # a setext heading underline
+            errors.append('merge-conflict marker in %s (line %d)' % (rel(f), text.count('\n', 0, m.start()) + 1))
+            break
+
+
 def check_text_files(files):
     for f in files:
         if not f.endswith(TEXT_EXTENSIONS) or not os.path.isfile(f):
@@ -199,12 +224,6 @@ def check_text_files(files):
         if b'\0' in data[:4096]:
             continue
         text = data.decode('utf-8-sig', 'replace')
-
-        for m in re.finditer(r'^(<<<<<<< |>>>>>>> |=======$)', text, re.M):
-            if f.endswith('.md') and m.group(1) == '=======':
-                continue  # a setext heading underline
-            errors.append('merge-conflict marker in %s (line %d)' % (rel(f), text.count('\n', 0, m.start()) + 1))
-            break
 
         if not f.endswith('.cs'):
             continue
@@ -257,6 +276,7 @@ def main():
     files = tracked_or_all(ASSETS)
     check_metas(files)
     check_text_files(files + [os.path.join(ROOT, 'PROJECT_GUIDELINES.md'), os.path.join(ROOT, 'README.md')])
+    check_conflict_markers(tracked_or_all(ROOT))
     check_scene_names()
 
     for w in warnings:
