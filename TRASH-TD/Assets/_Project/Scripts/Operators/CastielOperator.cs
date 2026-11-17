@@ -16,6 +16,8 @@ namespace TrashTD.Operators
     /// - Base (2★): ticks every 0.375 s; damage steps up every 1.5 s: 5, 15, 30, 80, 100, 150.
     /// - 1x Upgraded (3★): ticks every 0.3 s, steps up every 1.2 s, and every step deals 20% more: 6, 18, 36, 96, 120, 180.
     /// - 2x Upgraded (4★): a second laser locks onto another enemy in range and ramps on its own.
+    /// The laser obeys what every other attack obeys: a stun or a bind breaks it (the ramp starts over),
+    /// and anything that changes the attack interval (the sandstorm) changes how often it ticks.
     /// </summary>
     public sealed class CastielOperator : CasterOperator
     {
@@ -77,11 +79,23 @@ namespace TrashTD.Operators
             ResetLock();
         }
 
-        /// <summary>The laser ticks at its own interval, so the 1st upgrade also shortens how often Castiel re-targets.</summary>
-        public override float GetAttackInterval()
+        /// <summary>
+        /// The time between laser ticks, and how often Castiel re-targets: the rank's tick interval with the
+        /// stage and buff modifiers every attack interval gets (the sandstorm changes it).
+        /// </summary>
+        public override float GetAttackInterval() =>
+            StageCombatModifiers.GetAttackInterval(TickInterval) / HarmonyAttackSpeedMultiplier;
+
+        /// <summary>Whether the lasers may run: a stunned or bound Castiel cannot attack, like any operator.</summary>
+        public bool CanSustainLasers => isDeployed && !isStunned && !isBound;
+
+        protected override void Update()
         {
-            float baseInterval = HasFirstUpgrade ? UpgradedTickInterval : (data != null ? data.attackInterval : BaseTickInterval);
-            return StageCombatModifiers.GetAttackInterval(baseInterval) / HarmonyAttackSpeedMultiplier;
+            // The base Update stops attacking while stunned or bound, but a laser already running would keep
+            // ticking by itself. Break it; the ramp starts over, as it does for Askalaser.
+            if (isDeployed && !CanSustainLasers) ResetLock();
+
+            base.Update();
         }
 
         public override void Attack(EnemyBase target)
@@ -97,6 +111,7 @@ namespace TrashTD.Operators
             // The primary beam plays the attack sound; the second one is silent so the two don't double up.
             if (primaryBeam.Laser == null) PlayAttackSound();
             EnsureLaser(primaryBeam);
+            SyncTickInterval(primaryBeam);
 
             // 2nd upgrade: a second laser on another enemy in range.
             if (HasSecondUpgrade)
@@ -235,6 +250,7 @@ namespace TrashTD.Operators
             }
 
             if (secondaryBeam.Target != null) EnsureLaser(secondaryBeam);
+            SyncTickInterval(secondaryBeam);
         }
 
         // ---------- Beams ----------
@@ -247,18 +263,24 @@ namespace TrashTD.Operators
                 transform,
                 beam.Target,
                 LaserPalette.Holy,
-                TickInterval,
+                GetAttackInterval(),
                 () => ApplyBeamTick(beam));
+        }
+
+        /// <summary>Keeps a running laser's tick rate in step with the attack interval (the sandstorm comes and goes).</summary>
+        private void SyncTickInterval(Beam beam)
+        {
+            if (beam.Laser != null) beam.Laser.SetTickInterval(GetAttackInterval());
         }
 
         private void ApplyBeamTick(Beam beam)
         {
-            if (beam.Target == null || beam.Target.IsDead) return;
+            if (beam.Target == null || beam.Target.IsDead || !CanSustainLasers) return;
 
             bool upgraded = HasFirstUpgrade;
             int damage = GetBeamDamageForStage(GetBeamStage(beam.LockDuration, upgraded), upgraded);
             beam.Target.TryTakeAttackDamage(damage, DamageType.Arts, this);
-            beam.LockDuration += TickInterval;
+            beam.LockDuration += GetAttackInterval(); // real time between ticks, so the ramp keeps its pace in seconds
 
             if (beam.Laser != null)
             {

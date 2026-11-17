@@ -97,5 +97,74 @@ namespace TrashTD.Tests
             Assert.AreEqual(0, CastielOperator.GetBeamStage(1.3f, false));
             Assert.AreEqual(1, CastielOperator.GetBeamStage(1.3f, true));
         }
+        private static CastielOperator CreateDeployedCastiel(out OperatorData data)
+        {
+            var castielObject = new GameObject("TestCastiel");
+            var castiel = castielObject.AddComponent<CastielOperator>();
+            data = ScriptableObject.CreateInstance<OperatorData>();
+            data.operatorName = "Castiel";
+            data.operatorClass = OperatorClass.Caster;
+            data.baseRarity = OperatorRarity.Star2;
+            data.baseHP = 100;
+            data.baseATK = 80;
+            data.attackInterval = CastielOperator.BaseTickInterval;
+            castiel.Initialize(data, OperatorRarity.Star2, OperatorFacing.Right);
+            castiel.Deploy(null);
+            return castiel;
+        }
+
+        [Test]
+        public void Lasers_CannotRunWhileStunnedOrBound()
+        {
+            CastielOperator castiel = CreateDeployedCastiel(out OperatorData data);
+            try
+            {
+                Assert.IsTrue(castiel.CanSustainLasers);
+
+                castiel.ApplyBind(5f);
+                Assert.IsFalse(castiel.CanSustainLasers, "A bound Castiel's laser must stop.");
+                castiel.RemoveBind();
+                Assert.IsTrue(castiel.CanSustainLasers);
+
+                castiel.ApplyStun(5f);
+                Assert.IsFalse(castiel.CanSustainLasers, "A stunned Castiel's laser must stop.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(castiel.gameObject);
+                Object.DestroyImmediate(data);
+            }
+        }
+
+        [Test]
+        public void TickInterval_FollowsTheStageAttackIntervalModifier()
+        {
+            CastielOperator castiel = CreateDeployedCastiel(out OperatorData data);
+            try
+            {
+                StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.None);
+                Assert.AreEqual(CastielOperator.BaseTickInterval, castiel.GetAttackInterval(), 0.0001f);
+
+                StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.Sandstorm);
+                Assert.AreEqual(
+                    StageCombatModifiers.GetAttackInterval(CastielOperator.BaseTickInterval),
+                    castiel.GetAttackInterval(),
+                    0.0001f,
+                    "The laser ticks at the same modified interval as any other attack.");
+                Assert.AreNotEqual(CastielOperator.BaseTickInterval, castiel.GetAttackInterval());
+
+                castiel.SetRarityForTesting(OperatorRarity.Star3);
+                Assert.AreEqual(
+                    StageCombatModifiers.GetAttackInterval(CastielOperator.UpgradedTickInterval),
+                    castiel.GetAttackInterval(),
+                    0.0001f);
+            }
+            finally
+            {
+                StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.None);
+                Object.DestroyImmediate(castiel.gameObject);
+                Object.DestroyImmediate(data);
+            }
+        }
     }
 }

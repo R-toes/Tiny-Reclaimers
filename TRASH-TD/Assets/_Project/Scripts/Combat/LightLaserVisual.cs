@@ -144,6 +144,12 @@ namespace TrashTD.Combat
             return laser;
         }
 
+        /// <summary>Changes the time between ticks of a running laser (a slow or haste on its owner).</summary>
+        public void SetTickInterval(float interval)
+        {
+            if (interval > 0f) tickInterval = interval;
+        }
+
         /// <summary>Power stage 0-5. Raising it plays the stage-up flare.</summary>
         public void SetStage(int newStage)
         {
