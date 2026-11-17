@@ -14,12 +14,12 @@ namespace TrashTD.Core.GameLoop
     ///   between a drizzle and a downpour. Drops splash on the ground, throw up droplets and sometimes hiss off fumes.
     /// - Toxic fog: pixel-art clouds (dithered edges, never scaled, snapped to the art grid, like Stage 3's dust) in
     ///   two layers, thin over the enemy lane and thick off the grid, plus a green cast over the map.
-    /// - The map's own acid pool (the Trap tiles) gets bubbles that swell and pop on top of the art.
+    /// - The map's own acid pool (the acid tiles) gets bubbles that swell and pop on top of the art.
     /// - Storm flashes: a flash from the top of the map, sometimes twice.
     /// - Downpour puddles (gameplay): during a downpour, while the acid is live (a wave, or the sandbox), acid seeps up
     ///   on random tiles, drawn in the map pool's own colours. Each puddle grows through 4 stages and shrinks back
     ///   through them (1-2-3-4-3-2-1), 6 s of wave time each; its damage follows the stage (GridCell.AcidPuddleDamage,
-    ///   dealt like Trap damage to operators and enemies; acid-tile-immune enemies don't take it).
+    ///   dealt like acid tile damage to operators and enemies; acid-tile-immune enemies don't take it).
     /// Everything is clipped to the map art and runs on scaled time, so it freezes while paused.
     /// Generated sprites belong to this instance and are destroyed with it (domain reload is off).
     /// </summary>
@@ -54,8 +54,8 @@ namespace TrashTD.Core.GameLoop
         public const float PuddleStageSeconds = 6f;              // wave time per stage
         public const float PuddleSeepSeconds = 0.8f;              // fades in before stage 1, no damage yet
         public const float PuddleDrySeconds = 0.8f;               // fades out after the last stage 1, no damage
-        /// <summary>True damage per TrapTileRules tick at stages 1-4 (stage 4 matches the map's acid pool).</summary>
-        public static readonly int[] PuddleStageDamage = { 3, 5, 8, TrapTileRules.DamagePerTick };
+        /// <summary>True damage per AcidTileRules tick at stages 1-4 (stage 4 matches the map's acid pool).</summary>
+        public static readonly int[] PuddleStageDamage = { 3, 5, 8, AcidTileRules.DamagePerTick };
         /// <summary>The stages a puddle goes through: up to the peak and back down.</summary>
         private static readonly int[] PuddleStageOrder = { 0, 1, 2, 3, 2, 1, 0 };
         private const int MaxPuddles = 3;
@@ -399,8 +399,9 @@ namespace TrashTD.Core.GameLoop
             return tile switch
             {
                 TileType.HighGround => 0.5f,
+                TileType.AcidHighGround => 0.75f, // fumes gather over acid
                 TileType.Blocked => 0.85f,
-                TileType.Trap => 0.75f, // fumes gather over the acid pool
+                TileType.AcidLowGround => 0.75f, // fumes gather over the acid pool
                 _ => 0.25f              // enemy lane, melee ground, spawns, exits, holes
             };
         }

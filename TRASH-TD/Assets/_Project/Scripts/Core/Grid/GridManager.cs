@@ -251,7 +251,8 @@ namespace TrashTD.Core.Grid
                         TileType.SpawnPoint => new Color(0.8f, 0.2f, 0.2f, 0.5f),
                         TileType.ExitPoint => new Color(0.2f, 0.2f, 0.8f, 0.5f),
                         TileType.Blocked => new Color(0.3f, 0.3f, 0.3f, 0.3f),
-                        TileType.Trap => new Color(1f, 0.2f, 0.7f, 0.6f),
+                        TileType.AcidLowGround => new Color(0.4f, 1f, 0.2f, 0.6f),
+                        TileType.AcidHighGround => new Color(0.65f, 0.3f, 1f, 0.6f),
                         _ => new Color(0.5f, 0.5f, 0.5f, 0.2f)
                     };
 

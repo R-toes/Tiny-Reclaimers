@@ -291,10 +291,10 @@ namespace TrashTD.Tests
             foreach (var trapPosition in new[] { new Vector2Int(3, 0), new Vector2Int(3, 1) })
             {
                 var trap = gridManager.GetCell(trapPosition);
-                Assert.AreEqual(TileType.Trap, trap.TileType);
+                Assert.AreEqual(TileType.AcidLowGround, trap.TileType);
                 Assert.IsTrue(trap.IsWalkable);
                 Assert.IsTrue(trap.CanDeploy(OperatorPosition.Melee));
-                Assert.IsTrue(trap.CanDeploy(OperatorPosition.Ranged));
+                Assert.IsFalse(trap.CanDeploy(OperatorPosition.Ranged), "Acid low ground is low ground: melee operators only.");
             }
 
             var blockedCell = gridManager.GetCell(6, 0);

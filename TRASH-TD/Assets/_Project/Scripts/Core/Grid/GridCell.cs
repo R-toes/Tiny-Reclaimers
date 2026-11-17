@@ -48,12 +48,7 @@ namespace TrashTD.Core.Grid
             OccupantOperator = null;
 
             // Determine walkability based on tile type
-            IsWalkable = tileType == TileType.EnemyPath
-                      || tileType == TileType.SpawnPoint
-                      || tileType == TileType.ExitPoint
-                      || tileType == TileType.LowGround
-                      || tileType == TileType.Trap
-                      || tileType == TileType.Hole;
+            IsWalkable = TileTypeRules.IsWalkable(tileType);
             IsAirPassable = tileType != TileType.Blocked;
         }
 
@@ -64,11 +59,11 @@ namespace TrashTD.Core.Grid
         /// </summary>
         public int AcidPuddleDamage { get; set; }
 
-        /// <summary>Units here take acid damage every TrapTileRules.DamageIntervalSeconds: a Trap tile, or a puddle.</summary>
-        public bool IsAcidHazard => TileType == TileType.Trap || AcidPuddleDamage > 0;
+        /// <summary>Units here take acid damage every AcidTileRules.DamageIntervalSeconds: an acid tile, or a puddle.</summary>
+        public bool IsAcidHazard => TileTypeRules.IsAcid(TileType) || AcidPuddleDamage > 0;
 
-        /// <summary>Acid damage per tick here: the Trap tile's TrapTileRules.DamagePerTick, else the puddle's.</summary>
-        public int AcidDamagePerTick => TileType == TileType.Trap ? TrapTileRules.DamagePerTick : AcidPuddleDamage;
+        /// <summary>Acid damage per tick here: an acid tile's AcidTileRules.DamagePerTick, else the puddle's.</summary>
+        public int AcidDamagePerTick => TileTypeRules.IsAcid(TileType) ? AcidTileRules.DamagePerTick : AcidPuddleDamage;
 
         /// <summary>
         /// Check if a specific operator position type is compatible with this tile (GDD 1.4.1),
@@ -79,7 +74,7 @@ namespace TrashTD.Core.Grid
             if (operatorPosition == OperatorPosition.Any)
             {
                 return TileType == TileType.LowGround || TileType == TileType.EnemyPath ||
-                       TileType == TileType.HighGround || TileType == TileType.Trap;
+                       TileType == TileType.HighGround || TileTypeRules.IsAcid(TileType);
             }
 
             return (TileType, operatorPosition) switch
@@ -87,8 +82,8 @@ namespace TrashTD.Core.Grid
                 (TileType.LowGround, OperatorPosition.Melee) => true,
                 (TileType.EnemyPath, OperatorPosition.Melee) => true,
                 (TileType.HighGround, OperatorPosition.Ranged) => true,
-                (TileType.Trap, OperatorPosition.Melee) => true,
-                (TileType.Trap, OperatorPosition.Ranged) => true,
+                (TileType.AcidLowGround, OperatorPosition.Melee) => true,
+                (TileType.AcidHighGround, OperatorPosition.Ranged) => true,
                 // High Ground sometimes allows melee — marked via separate flag if needed
                 // For now, strictly ranged-only on High Ground per GDD
                 _ => false
@@ -131,11 +126,7 @@ namespace TrashTD.Core.Grid
         public void SetTileType(TileType newType)
         {
             TileType = newType;
-            IsWalkable = newType == TileType.EnemyPath
-                      || newType == TileType.SpawnPoint
-                      || newType == TileType.ExitPoint
-                      || newType == TileType.LowGround
-                      || newType == TileType.Trap;
+            IsWalkable = TileTypeRules.IsWalkable(newType);
             IsAirPassable = newType != TileType.Blocked;
         }
     }

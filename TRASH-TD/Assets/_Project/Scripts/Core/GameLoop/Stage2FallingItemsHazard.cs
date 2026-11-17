@@ -511,7 +511,7 @@ namespace TrashTD.Core.GameLoop
                     GridCell cell = gridManager.GetCell(x, y);
                     if (cell != null && (cell.CanDeploy(OperatorPosition.Melee) || cell.CanDeploy(OperatorPosition.Ranged) ||
                                          cell.TileType == TileType.LowGround || cell.TileType == TileType.HighGround ||
-                                         cell.TileType == TileType.EnemyPath || cell.TileType == TileType.Trap))
+                                         cell.TileType == TileType.EnemyPath || TileTypeRules.IsAcid(cell.TileType)))
                     {
                         deployableCells.Add(cell);
                     }

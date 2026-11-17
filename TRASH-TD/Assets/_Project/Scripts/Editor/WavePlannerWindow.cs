@@ -124,7 +124,7 @@ namespace TrashTD.Editor
 
             if (stage == null)
             {
-                EditorGUILayout.HelpBox("No StageData assets found. Create one or run TRASH TD > Generate Sample Data Assets.", MessageType.Info);
+                EditorGUILayout.HelpBox("No StageData assets found. Create one with Assets > Create > TRASH TD > Stage Data.", MessageType.Info);
                 return;
             }
 

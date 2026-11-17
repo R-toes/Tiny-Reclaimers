@@ -32,9 +32,9 @@ namespace TrashTD.Operators
             if (deployedCell != null && deployedCell.IsAcidHazard)
             {
                 trapDamageTimer += Time.deltaTime;
-                while (trapDamageTimer >= TrapTileRules.DamageIntervalSeconds && isDeployed)
+                while (trapDamageTimer >= AcidTileRules.DamageIntervalSeconds && isDeployed)
                 {
-                    trapDamageTimer -= TrapTileRules.DamageIntervalSeconds;
+                    trapDamageTimer -= AcidTileRules.DamageIntervalSeconds;
                     TrashTD.Combat.AcidDamageFlash.Flash(gameObject);
                     AudioManager.Instance?.PlaySfx(SfxId.TileTrapTick, 0.6f);
                     TakeTrueDamage(deployedCell.AcidDamagePerTick);

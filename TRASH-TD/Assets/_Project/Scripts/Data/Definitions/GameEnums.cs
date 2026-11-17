@@ -81,14 +81,39 @@ namespace TrashTD.Data
         EnemyPath,      // Legacy alias for a ground enemy lane; use LowGround for new stages
         SpawnPoint,     // Enemy entry point
         ExitPoint,      // Objective — enemies reaching here cost life points
-        Trap,           // Walkable tile that damages units occupying it over time
-        Hole            // Hole/ladder tile: ground enemies enter, stay inside, and teleport to the paired hole
+        AcidLowGround,  // Low ground with acid: walkable, melee operators only like LowGround, acid damage to units on it (was called Trap; same saved value)
+        Hole,           // Hole/ladder tile: ground enemies enter, stay inside, and teleport to the paired hole
+        AcidHighGround  // High ground with acid on it: ranged operators deploy here and take acid damage; enemies cannot walk on it
     }
 
-    public static class TrapTileRules
+    /// <summary>Acid tiles (AcidLowGround, AcidHighGround) hurt every unit standing on them: true damage every interval.</summary>
+    public static class AcidTileRules
     {
         public const int DamagePerTick = 10;
         public const float DamageIntervalSeconds = 1f;
+    }
+
+    /// <summary>Questions about tile types that more than one tile answers "yes" to.</summary>
+    public static class TileTypeRules
+    {
+        /// <summary>Acid low ground and acid high ground.</summary>
+        public static bool IsAcid(TileType type)
+        {
+            return type == TileType.AcidLowGround || type == TileType.AcidHighGround;
+        }
+
+        /// <summary>High ground, plain or with acid: ranged operators deploy here and enemies cannot walk on it.</summary>
+        public static bool IsHighGround(TileType type)
+        {
+            return type == TileType.HighGround || type == TileType.AcidHighGround;
+        }
+
+        /// <summary>Ground enemies can walk on it.</summary>
+        public static bool IsWalkable(TileType type)
+        {
+            return type == TileType.EnemyPath || type == TileType.SpawnPoint || type == TileType.ExitPoint ||
+                   type == TileType.LowGround || type == TileType.AcidLowGround || type == TileType.Hole;
+        }
     }
 
     /// <summary>

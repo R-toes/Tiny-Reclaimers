@@ -38,30 +38,6 @@ namespace TrashTD.Editor
             return settings;
         }
 
-        [MenuItem("TRASH TD/Rebalance All Stage Waves")]
-        public static void RebalanceAllStagesMenu()
-        {
-            var stages = new List<StageData>();
-            foreach (string guid in AssetDatabase.FindAssets("t:StageData"))
-            {
-                var stage = AssetDatabase.LoadAssetAtPath<StageData>(AssetDatabase.GUIDToAssetPath(guid));
-                if (stage != null && stage.stageId != "SANDBOX" && !stage.comingSoon) stages.Add(stage);
-            }
-
-            if (!EditorUtility.DisplayDialog(
-                    "Rebalance all stage waves",
-                    $"Rebuild the Easy/Normal/Hard waves of {stages.Count} stage(s) from the shared difficulty curve?\n\n" +
-                    "Wave counts, enemy rosters and spawn points are kept; enemy counts, timing and introductions are replaced. " +
-                    "Undo with Ctrl+Z.",
-                    "Rebalance", "Cancel"))
-            {
-                return;
-            }
-
-            foreach (StageData stage in stages) RebalanceStage(stage);
-            Debug.Log($"<color=green>TRASH TD: Rebalanced waves for {stages.Count} stage(s).</color>");
-        }
-
         /// <summary>Rebalances all difficulties of one stage. Returns false if the stage has no usable roster.</summary>
         public static bool RebalanceStage(StageData stage)
         {
