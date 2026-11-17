@@ -336,8 +336,7 @@ namespace TrashTD.UI
         public static bool ShouldFillPreviewHeight(StageData stage)
         {
             if (stage == null) return false;
-            return stage.stageId == "STAGE_05" || stage.stageId == "STAGE_06" ||
-                   stage.HasTraffic || stage.environment == StageEnvironment.AcidRain;
+            return stage.HasTraffic || stage.environment == StageEnvironment.AcidRain;
         }
 
         /// <summary>

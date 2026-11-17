@@ -227,6 +227,13 @@ namespace TrashTD.UI
                         foreach (Vector2Int cell in upgradedRange)
                             if (cell != Vector2Int.zero && !hitCells.Contains(cell)) upgradeCells.Add(cell);
                 }
+                else if (op.operatorName == "Basurocket")
+                {
+                    Vector2Int[] upgradedRange = TrashTD.Operators.BasurocketOperator.GetRangePatternForRarity(op, OperatorRarity.Star4);
+                    if (upgradedRange != null)
+                        foreach (Vector2Int cell in upgradedRange)
+                            if (cell != Vector2Int.zero && !hitCells.Contains(cell)) upgradeCells.Add(cell);
+                }
                 else if (op.operatorName == "Thornchin")
                 {
                     // 1st upgrade (3★): adjacent 4 tiles (cross)
@@ -262,6 +269,8 @@ namespace TrashTD.UI
                                     ? displayedRangeCount + " TILES AT 3\u2605, CROSS"
                                     : op.operatorName == "Oquloct"
                                         ? displayedRangeCount + " TILES AT 4\u2605, CONE"
+                                    : op.operatorName == "Basurocket"
+                                        ? displayedRangeCount + " TILES AT 4\u2605, FACING RIGHT"
                                     : op.operatorName == "Thornchin"
                                         ? "8 TILES AT 4\u2605, SURROUNDING"
                                     : hitCells.Count + " TILES, FACING RIGHT";
@@ -279,7 +288,7 @@ namespace TrashTD.UI
                 else if (upgradeCells.Count > 0)
                 {
                     string bonusLabel = (op.operatorName == "Lockburn" || op.operatorName == "Progeny") ? "3\u2605 BONUS"
-                        : op.operatorName == "Oquloct" ? "4\u2605 BONUS"
+                        : (op.operatorName == "Oquloct" || op.operatorName == "Basurocket") ? "4\u2605 BONUS"
                         : op.operatorName == "Mossmo" ? "5\u2605 BONUS"
                         : "2\u2605 BONUS";
                     x = AddLegend(x, RangeUpgradeColor, bonusLabel);

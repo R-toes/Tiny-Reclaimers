@@ -1118,11 +1118,11 @@ The six stages we have are **Act 1**. More acts will follow, each with more stag
 ## Darkened scenery outside the playable area (2026-11-17)
 
 On **Stage 5 and Stage 6** the bounds art outside the grid is darkened, so the playable field stands out from the extended scenery (`StageBootstrapper.MapArt.cs`).
-- **Which stages:** `StageHasPlayableBorderDarkening`: the stage has a `boundsVisualSprite` and its environment is `Traffic` or `AcidRain`. The function also compares the stage id to `STAGE_05` / `STAGE_06`, which the environment check already covers; a new stage should get it through data, not another id check (see "Stage environments").
+- **Which stages:** `StageHasPlayableBorderDarkening`: the stage has a `boundsVisualSprite` and its environment is `Traffic` or `AcidRain`. It does not compare stage ids (an id check here broke the project's own rule and CI): a new stage gets it through its environment data (see "Stage environments").
 - **What it draws:** one generated black texture the size of the bounds sprite, drawn at the bounds art's position as `PlayableBorderDarkeningOverlay`: Ground sorting layer, order 3, so above the map art and the upper backgrounds (order 2) and below units.
 - **The gradient** (`CreatePlayableBorderDarkeningTexture`, a pure static function): up to 65% black (`PlayableBorderDarkeningMaxAlpha`). On each side it runs from clear **1.5 tiles inside** the grid edge to full strength **1.5 tiles outside** it (`BorderGradientInnerDistance` / `OuterDistance`), so the outer ring of playable tiles is lightly shaded too. On short maps the vertical inner distance is capped at 35% of `gridHeight - 1`, so the middle rows stay clear.
   - The two axes are combined as `1 - (1 - ax)(1 - ay)`, which rounds the corners, and the falloff is a smootherstep, so no band or crease shows. The texture is bilinear-filtered (the only non-point texture on the map).
-- **Cleanup:** the texture and sprite belong to the bootstrapper; `CleanupBorderDarkening` destroys them when the stage is rebuilt.
+- **Cleanup:** the texture and sprite belong to the bootstrapper; `CleanupBorderDarkening` destroys them in the bootstrapper's `OnDestroy` (the map art is built once per bootstrapper).
 - **No tests yet**, although `StageHasPlayableBorderDarkening` and `CreatePlayableBorderDarkeningTexture` are both static and testable.
 
 ## Pooled combat visuals (2026-11-17)

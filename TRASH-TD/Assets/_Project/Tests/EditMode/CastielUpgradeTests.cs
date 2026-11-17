@@ -2,6 +2,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using TrashTD.Combat;
+using TrashTD.Core.Grid;
 using TrashTD.Data;
 using TrashTD.Operators;
 
@@ -97,6 +98,7 @@ namespace TrashTD.Tests
             Assert.AreEqual(0, CastielOperator.GetBeamStage(1.3f, false));
             Assert.AreEqual(1, CastielOperator.GetBeamStage(1.3f, true));
         }
+
         private static CastielOperator CreateDeployedCastiel(out OperatorData data)
         {
             var castielObject = new GameObject("TestCastiel");
@@ -104,12 +106,15 @@ namespace TrashTD.Tests
             data = ScriptableObject.CreateInstance<OperatorData>();
             data.operatorName = "Castiel";
             data.operatorClass = OperatorClass.Caster;
+            data.position = OperatorPosition.Ranged;
             data.baseRarity = OperatorRarity.Star2;
             data.baseHP = 100;
             data.baseATK = 80;
             data.attackInterval = CastielOperator.BaseTickInterval;
             castiel.Initialize(data, OperatorRarity.Star2, OperatorFacing.Right);
-            castiel.Deploy(null);
+            // Deploy reads the cell, so it needs a real one: a ranged tile, as a Caster needs
+            var cell = new GridCell(0, 0, TileType.HighGround, Vector3.zero);
+            Assert.IsTrue(castiel.Deploy(cell), "Castiel should deploy on a High Ground cell.");
             return castiel;
         }
 
