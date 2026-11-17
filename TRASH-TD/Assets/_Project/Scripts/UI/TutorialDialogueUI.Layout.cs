@@ -23,7 +23,7 @@ namespace TrashTD.UI
                 Anchor(bubble, new Vector2(0f, 0f), new Vector2(40f + size + 22f, 24f), new Vector2(CompactBubbleWidth, CompactBubbleHeight));
                 tail.anchorMin = tail.anchorMax = new Vector2(0f, 0f);
                 tail.anchoredPosition = new Vector2(0f, size * 0.5f);
-                Anchor(skipRect, new Vector2(1f, 1f), new Vector2(-CompactSkipRight, -CompactSkipTop), new Vector2(SkipWidth, SkipHeight));
+                Anchor(skipRect, new Vector2(1f, 1f), new Vector2(-CompactSkipRight, -CompactSkipTop), skipSize);
                 slideSign = -1f;
                 slideDistance = 40f + size + 22f + CompactBubbleWidth + 40f;
                 return;
@@ -39,7 +39,7 @@ namespace TrashTD.UI
             tail.anchoredPosition = new Vector2(0f, TailY);
             Anchor(skipRect, new Vector2(1f, 1f),
                 map ? new Vector2(-StageMapSkipRight, -StageMapSkipTop) : new Vector2(-GameplaySkipRight, -GameplaySkipTop),
-                new Vector2(SkipWidth, SkipHeight));
+                skipSize);
             Anchor(taskStripRect, new Vector2(1f, 0f), new Vector2(-right, map ? StageMapTaskBottom : GameplayTaskBottom), new Vector2(TaskStripWidth, TaskStripHeight));
             taskStripHome = taskStripRect.anchoredPosition;
             slideSign = 1f;

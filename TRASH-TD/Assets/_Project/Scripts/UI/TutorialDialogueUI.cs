@@ -78,8 +78,9 @@ namespace TrashTD.UI
         private const float StageMapRight = 60f;
         private const float StageMapTaskBottom = 130f;
         // SKIP TUTORIAL: a hazard-yellow button parked where nothing else lives in each layout (top-right corner offsets)
-        private const float SkipWidth = 240f;
+        private const float SkipMinWidth = 240f; // Widens to fit the label (the pixel font's glyphs are wide)
         private const float SkipHeight = 48f;
+        private const float SkipPaddingX = 22f;  // Between the label and each side of the button
         // Gameplay: under the surveillance feed's date and mission clock (y ~108-168), above the operator details
         // panel (y ~278 at 16:9), over the tutorial map's empty right-hand columns
         private const float GameplaySkipRight = 40f;
@@ -124,6 +125,7 @@ namespace TrashTD.UI
         private Text taskText;
         private Vector2 taskStripHome;
         private Button skipButton;
+        private Vector2 skipSize; // Measured from the label in BuildSkip
         private RectTransform choiceRow;
         private Button primaryChoice;
         private Button secondaryChoice;

@@ -224,7 +224,9 @@ namespace TrashTD.UI
             AddCornerBrackets(plate.rectTransform, 12f, 3f, HazardYellow, -5f);
             Text label = CreateText(plate.rectTransform, "Label", "SKIP TUTORIAL  ▶▶", 16, TextAnchor.MiddleCenter, Color.white);
             label.fontStyle = FontStyle.Bold;
-            Stretch(label.rectTransform);
+            Stretch(label.rectTransform, SkipPaddingX, SkipPaddingX);
+            // The button fits its label, text and ▶▶ included, whatever the font's glyph widths
+            skipSize = new Vector2(Mathf.Max(SkipMinWidth, Mathf.Ceil(label.preferredWidth) + SkipPaddingX * 2f), SkipHeight);
             skipButton.targetGraphic = label; // The tint below colours the label (white text x tint)
             ColorBlock colors = skipButton.colors;
             colors.normalColor = HazardYellow;
@@ -233,7 +235,7 @@ namespace TrashTD.UI
             colors.pressedColor = new Color(0.78f, 0.62f, 0.12f, 1f);
             colors.fadeDuration = 0.08f;
             skipButton.colors = colors;
-            plate.rectTransform.sizeDelta = new Vector2(SkipWidth, SkipHeight);
+            plate.rectTransform.sizeDelta = skipSize;
 
             // Confirm prompt, centred, above everything else on this canvas
             Image shade = CreateImage(root, "SkipConfirm", new Color(0f, 0f, 0f, 0.6f));
