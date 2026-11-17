@@ -142,7 +142,7 @@ namespace TrashTD.Editor
                             exitPoints.Add(new Vector2Int(x, y));
                             break;
                         case 'T':
-                            stage.tileLayout[index] = TileType.Trap;
+                            stage.tileLayout[index] = TileType.AcidLowGround;
                             break;
                         case 'B':
                             stage.tileLayout[index] = TileType.Blocked;

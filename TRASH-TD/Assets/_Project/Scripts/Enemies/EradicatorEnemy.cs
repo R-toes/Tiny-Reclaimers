@@ -149,7 +149,7 @@ namespace TrashTD.Enemies
         private static bool IsGroundOperator(OperatorBase op)
         {
             return op != null && op.IsDeployed && op.CurrentHP > 0 && op.DeployedCell != null &&
-                   op.DeployedCell.TileType != TileType.HighGround;
+                   !TileTypeRules.IsHighGround(op.DeployedCell.TileType);
         }
 
         private void MeleeAttack(OperatorBase target)

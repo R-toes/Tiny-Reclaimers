@@ -278,6 +278,7 @@ namespace TrashTD.Core.GameLoop
             return tile switch
             {
                 TileType.HighGround => 0.6f,
+                TileType.AcidHighGround => 0.6f,
                 TileType.Blocked => 0.85f,
                 _ => 0.3f // Enemy lane, melee ground, spawns, exits, traps, holes
             };

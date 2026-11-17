@@ -447,6 +447,7 @@ namespace TrashTD.UI
                     {
                         TileType.LowGround => new Color(0.10f, 0.24f, 0.15f, 1f),
                         TileType.HighGround => new Color(0.06f, 0.15f, 0.10f, 1f),
+                        TileType.AcidHighGround => new Color(0.06f, 0.15f, 0.10f, 1f),
                         _ => new Color(0.03f, 0.07f, 0.05f, 1f)
                     };
 

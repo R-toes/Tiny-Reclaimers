@@ -90,7 +90,7 @@ namespace TrashTD.Core.GameLoop
         }
 
         /// <summary>
-        /// Bubbles for the acid pool painted in the map art (the Trap tiles). The art itself is left alone; the
+        /// Bubbles for the acid pool painted in the map art (the acid tiles). The art itself is left alone; the
         /// barrels and sign in the middle are midground art drawn over these, so bubbles never show on top of them.
         /// </summary>
         private void CreatePoolBubbles()
@@ -100,7 +100,7 @@ namespace TrashTD.Core.GameLoop
                 for (int y = 0; y < stageData.gridHeight; y++)
                 {
                     GridCell cell = gridManager.GetCell(x, y);
-                    if (cell != null && cell.TileType == TileType.Trap) poolCentres.Add(cell.WorldPosition);
+                    if (cell != null && TileTypeRules.IsAcid(cell.TileType)) poolCentres.Add(cell.WorldPosition);
                 }
             }
 

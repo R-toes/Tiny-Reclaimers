@@ -57,8 +57,8 @@ namespace TrashTD.Tests
             int damage = Combat.DamageCalculator.CalculateDamage(3, def: 999, res: 999, DamageType.True);
             Assert.AreEqual(3, damage, "True damage must ignore both DEF and RES completely.");
 
-            int trapDamage = Combat.DamageCalculator.CalculateDamage(TrapTileRules.DamagePerTick, def: 50, res: 50, DamageType.True);
-            Assert.AreEqual(TrapTileRules.DamagePerTick, trapDamage, "Acid/trap damage with True damage type must deal full unmitigated damage.");
+            int trapDamage = Combat.DamageCalculator.CalculateDamage(AcidTileRules.DamagePerTick, def: 50, res: 50, DamageType.True);
+            Assert.AreEqual(AcidTileRules.DamagePerTick, trapDamage, "Acid/trap damage with True damage type must deal full unmitigated damage.");
         }
 
         [Test]

@@ -146,7 +146,7 @@ namespace TrashTD.UI
             lastFramiliarMenuDeckCount = currentDeckCount;
             activeFramiliarMatchingCards.Clear();
 
-            bool isHighGround = cell != null && cell.TileType == TileType.HighGround;
+            bool isHighGround = cell != null && TileTypeRules.IsHighGround(cell.TileType);
             bool isLowGround = cell != null && (cell.TileType == TileType.LowGround || cell.TileType == TileType.EnemyPath);
 
             if (framiliarSubtitleText != null)

@@ -532,9 +532,9 @@ namespace TrashTD.Enemies
             }
 
             trapDamageTimer += deltaTime;
-            while (trapDamageTimer >= TrapTileRules.DamageIntervalSeconds && !isDead)
+            while (trapDamageTimer >= AcidTileRules.DamageIntervalSeconds && !isDead)
             {
-                trapDamageTimer -= TrapTileRules.DamageIntervalSeconds;
+                trapDamageTimer -= AcidTileRules.DamageIntervalSeconds;
                 AcidDamageFlash.Flash(gameObject);
                 AudioManager.Instance?.PlaySfx(SfxId.TileTrapTick, 0.6f);
                 TakeTrueDamage(cell.AcidDamagePerTick);
