@@ -233,8 +233,7 @@ namespace TrashTD.Core.GameLoop
         public static bool StageHasPlayableBorderDarkening(StageData stage)
         {
             if (stage == null || stage.boundsVisualSprite == null) return false;
-            return stage.stageId == "STAGE_02" || stage.stageId == "STAGE_05" || stage.stageId == "STAGE_06" ||
-                   stage.environment == StageEnvironment.FallingItems ||
+            return stage.environment == StageEnvironment.FallingItems ||
                    stage.environment == StageEnvironment.Traffic || stage.environment == StageEnvironment.AcidRain;
         }
 

@@ -49,23 +49,12 @@ namespace TrashTD.Editor
             stage.visualTileOffset = Vector2.zero;
 
             // The scenery around the map: the 608x384 expanded art holds the 352x256 map 4 tiles in from the left and 2 tiles from the bottom
-            var boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 2/level 2 expanded.png");
-            if (boundsSprites == null || boundsSprites.Length == 0)
-                boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 2/Level 2 expanded.png");
-            if (boundsSprites == null || boundsSprites.Length == 0)
-                boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 2/level 2 extended.png");
-            if (boundsSprites == null || boundsSprites.Length == 0)
-                boundsSprites = AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 2/Level 2 extended.png");
-
-            if (boundsSprites != null)
+            foreach (var obj in AssetDatabase.LoadAllAssetsAtPath("Assets/_Project/Art/Levels/Level 2/level 2 expanded.png"))
             {
-                foreach (var obj in boundsSprites)
+                if (obj is Sprite s)
                 {
-                    if (obj is Sprite s)
-                    {
-                        stage.boundsVisualSprite = s;
-                        break;
-                    }
+                    stage.boundsVisualSprite = s;
+                    break;
                 }
             }
             stage.boundsTileOffset = new Vector2(-4f, -2f);
