@@ -121,7 +121,7 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void BurningOperator_TakesTwoTrueDamageEveryTick()
+        public void BurningOperator_TakesTheBurnTrueDamageEveryTick()
         {
             StageCombatModifiers.ConfigureForEnvironment(StageEnvironment.FactoryHeat);
 
@@ -147,7 +147,8 @@ namespace TrashTD.Tests
                 .GetMethod("ApplyBurningDamage", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(hazard, null);
 
-            Assert.AreEqual(startingHP - 2, op.CurrentHP);
+            // True damage ignores the operator's DEF (100 here), so a tick is exactly the burn damage (5 since 2026-11-13)
+            Assert.AreEqual(startingHP - Stage4HeatHazard.BurnDamagePerTick, op.CurrentHP);
         }
 
         [Test]
