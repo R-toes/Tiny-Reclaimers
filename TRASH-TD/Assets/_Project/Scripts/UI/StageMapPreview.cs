@@ -311,8 +311,8 @@ namespace TrashTD.UI
         }
 
         /// <summary>
-        /// Calculates the tile scale for the stage preview monitor. Stage 5 and Stage 6 are scaled to fill
-        /// the monitor height so no black void shows on top and bottom, matching Stage 1 (Blackwater Facilities).
+        /// Calculates the tile scale for the stage preview monitor. Stages with wide bounds artwork (Stages 2, 5 and 6)
+        /// are scaled to fill the monitor height so no black void shows on top and bottom, matching Stage 1 (Blackwater Facilities).
         /// </summary>
         public static float CalculateTileScale(StageData stage, Vector2 boundsSize, Vector2 displaySize)
         {
@@ -336,7 +336,13 @@ namespace TrashTD.UI
         public static bool ShouldFillPreviewHeight(StageData stage)
         {
             if (stage == null) return false;
+<<<<<<< Updated upstream
             return stage.HasTraffic || stage.environment == StageEnvironment.AcidRain;
+=======
+            return stage.stageId == "STAGE_02" || stage.stageId == "STAGE_05" || stage.stageId == "STAGE_06" ||
+                   stage.environment == StageEnvironment.FallingItems ||
+                   stage.HasTraffic || stage.environment == StageEnvironment.AcidRain;
+>>>>>>> Stashed changes
         }
 
         /// <summary>

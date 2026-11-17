@@ -227,13 +227,19 @@ namespace TrashTD.Core.GameLoop
         private Sprite borderDarkeningSprite;
 
         /// <summary>
-        /// Only Stage 5 (Traffic) and Stage 6 (Acid Rain) have extended scenery that is darkened outside the
+        /// Stage 2 (Falling Items), Stage 5 (Traffic) and Stage 6 (Acid Rain) have extended scenery that is darkened outside the
         /// playable grid with a smooth 2D gradient across all borders (left, right, bottom, top).
         /// </summary>
         public static bool StageHasPlayableBorderDarkening(StageData stage)
         {
             if (stage == null || stage.boundsVisualSprite == null) return false;
+<<<<<<< Updated upstream
             return stage.environment == StageEnvironment.Traffic || stage.environment == StageEnvironment.AcidRain;
+=======
+            return stage.stageId == "STAGE_02" || stage.stageId == "STAGE_05" || stage.stageId == "STAGE_06" ||
+                   stage.environment == StageEnvironment.FallingItems ||
+                   stage.environment == StageEnvironment.Traffic || stage.environment == StageEnvironment.AcidRain;
+>>>>>>> Stashed changes
         }
 
         private void CreatePlayableBorderDarkeningOverlay(Transform parent, Vector3 boundsBottomLeft, float cellSize)
