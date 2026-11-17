@@ -225,7 +225,7 @@ namespace TrashTD.UI
             }
 
             Vector2 boundsSize = boundsMax - boundsMin;
-            tileScale = Mathf.Min(builtForSize.x / boundsSize.x, builtForSize.y / boundsSize.y);
+            tileScale = CalculateTileScale(stage, boundsSize, builtForSize);
             artPixel = tileScale / pixelsPerTile;
 
             var contentGo = new GameObject("PreviewContent", typeof(RectTransform));
@@ -308,6 +308,36 @@ namespace TrashTD.UI
             }
 
             BuildBootOverlay();
+        }
+
+        /// <summary>
+        /// Calculates the tile scale for the stage preview monitor. Stage 5 and Stage 6 are scaled to fill
+        /// the monitor height so no black void shows on top and bottom, matching Stage 1 (Blackwater Facilities).
+        /// </summary>
+        public static float CalculateTileScale(StageData stage, Vector2 boundsSize, Vector2 displaySize)
+        {
+            if (boundsSize.x <= 0f || boundsSize.y <= 0f || displaySize.x <= 0f || displaySize.y <= 0f)
+                return 1f;
+
+            bool fillHeight = ShouldFillPreviewHeight(stage);
+            if (fillHeight)
+            {
+                float scaleByHeight = displaySize.y / boundsSize.y;
+                float gridWidth = stage != null ? Mathf.Max(1, stage.gridWidth) : boundsSize.x;
+                if (gridWidth * scaleByHeight <= displaySize.x)
+                {
+                    return scaleByHeight;
+                }
+            }
+
+            return Mathf.Min(displaySize.x / boundsSize.x, displaySize.y / boundsSize.y);
+        }
+
+        public static bool ShouldFillPreviewHeight(StageData stage)
+        {
+            if (stage == null) return false;
+            return stage.stageId == "STAGE_05" || stage.stageId == "STAGE_06" ||
+                   stage.HasTraffic || stage.environment == StageEnvironment.AcidRain;
         }
 
         /// <summary>
