@@ -37,7 +37,7 @@ namespace TrashTD.Core.GameLoop
     /// - Bubblets: pops the bubble shield
     /// - Mossmo: gets cooldown (3s) and triggers reactive heal
     /// - Stag-ger: can still roll dodge (20%)
-    /// - Proxyshot: still can activate camo
+    /// - Oquloct: still can activate camo
     /// </summary>
     public class Stage2FallingItemsHazard : MonoBehaviour
     {

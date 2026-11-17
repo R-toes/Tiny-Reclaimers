@@ -185,16 +185,16 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void Proxyshot_TakesFallingItemDamage_ActivatesCamouflage()
+        public void Oquloct_TakesFallingItemDamage_ActivatesCamouflage()
         {
-            var proxishot = CreateTestOperator<ProxishotOperator>("Proxishot", 100, 50);
-            Assert.IsFalse(proxishot.IsCamouflaged);
+            var oquloct = CreateTestOperator<OquloctOperator>("Oquloct", 100, 50);
+            Assert.IsFalse(oquloct.IsCamouflaged);
 
             // Hit with direct true damage item
-            hazard.ApplyEffectToOperator(proxishot, Stage2ItemSet.DirectTrueDamage);
+            hazard.ApplyEffectToOperator(oquloct, Stage2ItemSet.DirectTrueDamage);
 
-            Assert.AreEqual(100 - Stage2FallingItemsHazard.DirectTrueDamageAmount, proxishot.CurrentHP);
-            Assert.IsTrue(proxishot.IsCamouflaged, "Proxyshot should activate camouflage when damaged by falling item.");
+            Assert.AreEqual(100 - Stage2FallingItemsHazard.DirectTrueDamageAmount, oquloct.CurrentHP);
+            Assert.IsTrue(oquloct.IsCamouflaged, "Oquloct should activate camouflage when damaged by falling item.");
         }
 
         [Test]

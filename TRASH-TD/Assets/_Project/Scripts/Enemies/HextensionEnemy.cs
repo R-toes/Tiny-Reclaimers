@@ -28,7 +28,7 @@ namespace TrashTD.Enemies
     ///   - Operator cannot attack, block, or use abilities while bound (blocked enemies released).
     ///   - Deals chip Arts damage over time.
     ///   - Tethered by a visual line connecting Hextension and the target operator.
-    ///   - Interaction with Proxyshot: bind stops immediately if used against Proxyshot or if target becomes camouflaged.
+    ///   - Interaction with Oquloct: bind stops immediately if used against Oquloct or if target becomes camouflaged.
     ///   - Interaction with Bubblets: bind continues when Bubblets' bubble shield absorbs damage.
     ///   - After the 15s bind finishes (or breaks), Hextension permanently transitions to normal caster behavior.
     /// </summary>
@@ -279,8 +279,8 @@ namespace TrashTD.Enemies
             chipDamageTimer = 0f;
             state = HextensionState.Binding;
 
-            // Proxyshot breaks the bind immediately
-            if (target is ProxishotOperator || target.IsCamouflaged)
+            // Oquloct breaks the bind immediately
+            if (target is OquloctOperator || target.IsCamouflaged)
             {
                 FloatingCombatNumber.ShowText(target.transform.position, "BIND BROKEN!", new Color(0.6f, 0.9f, 1f));
                 StopBindAndTransition();
@@ -378,7 +378,7 @@ namespace TrashTD.Enemies
         {
             if (IsDead) return;
 
-            if (boundTarget == null || !boundTarget.IsDeployed || boundTarget.CurrentHP <= 0 || boundTarget is ProxishotOperator || boundTarget.IsCamouflaged)
+            if (boundTarget == null || !boundTarget.IsDeployed || boundTarget.CurrentHP <= 0 || boundTarget is OquloctOperator || boundTarget.IsCamouflaged)
             {
                 StopBindAndTransition();
                 return;

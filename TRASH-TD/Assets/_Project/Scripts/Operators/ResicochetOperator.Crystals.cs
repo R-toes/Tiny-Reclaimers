@@ -70,7 +70,7 @@ namespace TrashTD.Operators
             }
         }
 
-        #region Shadeslice-Style Crystal Aura & Outline Effect
+        #region Vespierce-Style Crystal Aura & Outline Effect
 
         private static Material s_CrystalAuraMaterial;
         public static Material GetCrystalAuraMaterial()
@@ -107,7 +107,7 @@ namespace TrashTD.Operators
             int baseOrder = Mathf.Max(5, opSpriteRenderer.sortingOrder);
             opSpriteRenderer.sortingOrder = baseOrder;
 
-            // Shadeslice outer & inner aura layers (strictly behind body sprite: -2, -1)
+            // Vespierce outer & inner aura layers (strictly behind body sprite: -2, -1)
             crystalAuraOuter = CreateAuraLayer("CrystalAuraOuter", baseOrder - 2, Charge1ProjectileColor);
             crystalAuraInner = CreateAuraLayer("CrystalAuraInner", baseOrder - 1, Charge1ProjectileColor);
 

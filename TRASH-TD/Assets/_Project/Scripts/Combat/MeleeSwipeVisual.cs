@@ -6,7 +6,7 @@ namespace TrashTD.Combat
     public enum MeleeStyle
     {
         Slash,      // Blade arc sweeping across the target (Guards, Specialists, Stag-ger)
-        FlameSlash, // Ignisaur: double arc trailing fire, a small fireball on the hit and a spray of embers
+        FlameSlash, // Lockburn: double arc trailing fire, a small fireball on the hit and a spray of embers
         ScrapSlash, // Scrapper: double arc, an impact ring, a shower of falling sparks and junk knocked loose
         Claw,       // Three raking claw marks (enemy melee, Talon Rat)
         Bash,       // Blunt blow: impact ring, sparks and dust (Defenders, tank enemies)
@@ -61,7 +61,7 @@ namespace TrashTD.Combat
             }
         }
 
-        /// <summary>Shadeslice's thrust, drawn by <see cref="MeleeStabVisual"/> (its original line-and-glow look).</summary>
+        /// <summary>Vespierce's thrust, drawn by <see cref="MeleeStabVisual"/> (its original line-and-glow look).</summary>
         public static void PlayStab(Vector3 attackerPosition, Vector3 targetPosition, Color color)
         {
             MeleeStabVisual.Play(attackerPosition, targetPosition, color);
@@ -93,7 +93,7 @@ namespace TrashTD.Combat
             else if (style == MeleeStyle.ScrapSlash) PlayScrapExtras(target, forward, size);
         }
 
-        /// <summary>Ignisaur: fire licking up off the blade along the arc, a small fireball on the hit and a spray of embers.</summary>
+        /// <summary>Lockburn: fire licking up off the blade along the arc, a small fireball on the hit and a spray of embers.</summary>
         private static void PlayFlameExtras(Vector2 target, Vector2 forward, float radius, float size, bool clockwise)
         {
             const int flames = 14;
@@ -328,7 +328,7 @@ namespace TrashTD.Combat
 
         /// <summary>
         /// The colour at full brightness (and at least moderate saturation unless it is a grey), lightened:
-        /// a visible cutting edge even for near-black colours such as Shadeslice's.
+        /// a visible cutting edge even for near-black colours such as Vespierce's.
         /// </summary>
         private static Color Edge(Color color)
         {

@@ -27,7 +27,7 @@ namespace TrashTD.Audio
     /// Per-unit sound effects, found by convention so adding a sound only means dropping a file in place:
     ///   Assets/_Project/Audio/Resources/SFX/Operators/{Class}/{OperatorName}/{Event}.wav
     ///   Assets/_Project/Audio/Resources/SFX/Enemies/{Archetype}/{EnemyName}/{Event}.wav
-    /// {OperatorName}/{EnemyName} is the unit's display name with spaces and symbols removed ("Chi Paw" -> ChiPaw);
+    /// {OperatorName}/{EnemyName} is the unit's display name with spaces and symbols removed ("IRONHOWL MK-IX" -> IRONHOWLMKIX);
     /// {Event} is a UnitSfxEvent name. Variants (Attack_2, Attack_3, ...) are picked at random. Any audio format
     /// Unity imports works. Missing files are fine: callers fall back to the shared generic sounds.
     /// See Assets/_Project/Audio/SFX_GUIDE.md.
@@ -214,7 +214,7 @@ namespace TrashTD.Audio
             return clips == null ? null : clips[Random.Range(0, clips.Count)];
         }
 
-        /// <summary>"Chi Paw" -> "ChiPaw", "Stag-ger" -> "Stagger".</summary>
+        /// <summary>"IRONHOWL MK-IX" -> "IRONHOWLMKIX", "Stag-ger" -> "Stagger".</summary>
         public static string ToFolderName(string displayName)
         {
             if (string.IsNullOrEmpty(displayName)) return "Unnamed";

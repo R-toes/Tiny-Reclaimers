@@ -24,8 +24,8 @@ namespace TrashTD.Editor
             ArtFolder,
         };
         private const string OperatorDataFolder = "Assets/_Project/Data/Operators";
-        private const string BulkheadSkillDescription = "<color=#FFD700>Base (1★):</color> When blocking 3 or more enemies, increases ATK and DEF by 20%.\n<color=#FFD700>1st upgrade (2★):</color> Every 8 enemy hits, releases a gray shockwave that stuns all enemies Bulkhead is currently blocking for 1.5 seconds.\n<color=#FFD700>2nd upgrade (3★):</color> Block count increases to 6.";
-        private const string ChillpathSkillDescription = "<color=#FFD700>Base (1★):</color> Applies chill to slow and freeze enemies. Freezing an enemy grants 25% faster attacks for 3.5 seconds. Every 4th attack fires 1 extra shard at another enemy in range, or the same enemy if alone.\n<color=#FFD700>1st upgrade (2★):</color> While Chillpath is deployed, all operators deal 50% more damage to frozen enemies.\n<color=#FFD700>2nd upgrade (3★):</color> Fires 3 shards per attack at different enemies when possible, repeating targets if fewer than 3 are in range. The every-4th-attack bonus adds 1 more shard, for 4 total. Her freeze haste remains.";
+        private const string IronhowlSkillDescription = "<color=#FFD700>Base (1★):</color> When blocking 3 or more enemies, increases ATK and DEF by 20%.\n<color=#FFD700>1st upgrade (2★):</color> Every 8 enemy hits, releases a gray shockwave that stuns all enemies IRONHOWL MK-IX is currently blocking for 1.5 seconds.\n<color=#FFD700>2nd upgrade (3★):</color> Block count increases to 6.";
+        private const string NekhrostSkillDescription = "<color=#FFD700>Base (1★):</color> Applies chill to slow and freeze enemies. Freezing an enemy grants 25% faster attacks for 3.5 seconds. Every 4th attack fires 1 extra shard at another enemy in range, or the same enemy if alone.\n<color=#FFD700>1st upgrade (2★):</color> While Nekhrost is deployed, all operators deal 50% more damage to frozen enemies.\n<color=#FFD700>2nd upgrade (3★):</color> Fires 3 shards per attack at different enemies when possible, repeating targets if fewer than 3 are in range. The every-4th-attack bonus adds 1 more shard, for 4 total. Her freeze haste remains.";
         private const string DeadeyeSkillDescription = "<color=#FFD700>Base (1★):</color> Deals 20% more damage to flying enemies, but his attack interval is 20% longer while an aerial target is in range.\n<color=#FFD700>1st upgrade (2★):</color> Removes the attack interval penalty while keeping the flying-enemy damage bonus. Each landed hit against the same target adds 2% of ATK as damage, starting on the first hit and capped at +100%; switching targets resets the bonus.\n<color=#FFD700>2nd upgrade (3★):</color> After killing an enemy, his next shot deals an additional 100% damage.";
         private const string PompothSkillDescription = "<color=#FFD700>Base (1★):</color> Rapid-fire sniper with lower per-shot damage but equal total DPS. Gains +10% attack speed per enemy in range, capped at +100%.\n<color=#FFD700>1st upgrade (2★):</color> Each landed hit against the same enemy ignores 1% of its DEF, stacking to 100%; switching targets resets this bonus.\n<color=#FFD700>2nd upgrade (3★):</color> Increases the attack-speed passive to +30% per enemy, capped at +300%.";
         private const string BubbletsSkillDescription = "<color=#FFD700>Base (3★):</color> Grants an allied operator in range a bubble shield that negates 1 instance of damage. When popped, the bubble heals the operator and deals Arts damage equal to 30% of Bubblets' ATK to enemies on that tile and surrounding tiles.\n<color=#FFD700>1st upgrade (4★):</color> Arts damage increases to 50%. Allies in range gain +10 RES and +40 DEF.\n<color=#FFD700>2nd upgrade (5★):</color> Gives bubble shield to an additional operator. Bubblets can now attack enemies like a caster.";
@@ -41,7 +41,7 @@ namespace TrashTD.Editor
 
         // The project's assets are the source of truth, not this generator. Operator, enemy and stage balance is tuned by hand
         // (the inspector, the Wave Planner, code), and the numbers built in here are an older first draft: several operators
-        // already differ (Bulkhead HP, Pompoth ATK, ...), and some operators and Stage 4 are not generated at all. So nothing
+        // already differ (IRONHOWL MK-IX HP, Pompoth ATK, ...), and some operators and Stage 4 are not generated at all. So nothing
         // here may reset an existing asset without a per-run confirmation, and never in batch mode. It is a bootstrap tool for
         // an empty project, and it creates missing assets freely (AutoEnsureStages).
         private static bool overwriteApproved;
@@ -109,8 +109,8 @@ namespace TrashTD.Editor
             AssetDatabase.Refresh();
 
             GenerateOperators();
-            ConfigureChillpathAttackAnimation();
-            ConfigureShadesliceAttackAnimation();
+            ConfigureNekhrostAttackAnimation();
+            ConfigureVespierceAttackAnimation();
             GenerateEnemies();
             GenerateStage();
             GenerateStage2();
@@ -143,24 +143,24 @@ namespace TrashTD.Editor
             bootstrapper.operatorPool = new System.Collections.Generic.List<OperatorData>
             {
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Scrapper.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_QiFu.asset"),
+                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Qihou.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Echosquire.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Specialist_Drawgoo.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Shadeslice.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Defender_Bulkhead.asset"),
+                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Vespierce.asset"),
+                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Defender_Ironhowl.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Defender_Mossmo.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Deadeye.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Pompoth.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Proxishot.asset"),
+                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Oquloct.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Basurocket.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Caster_Pyrolite.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Caster_Chillpath.asset"),
+                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Caster_Mechonk.asset"),
+                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Caster_Nekhrost.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Medic_Coalesce.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Medic_Bubblets.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Medic_Progeny.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Stagger.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Defender_Thornchin.asset"),
-                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Ignisaur.asset"),
+                AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Guard_Lockburn.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Caster_Resicochet.asset"),
                 AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Specialist_Framiliar.asset")
             };
@@ -217,7 +217,7 @@ namespace TrashTD.Editor
         }
 
         // Resolves a bare art filename to its path in the Art folder or one of its category subfolders. Operator and
-        // enemy art lives in a folder per unit (Art/Operators/Chillpath/...), so if the direct lookups miss, the Art
+        // enemy art lives in a folder per unit (Art/Operators/Nekhrost/...), so if the direct lookups miss, the Art
         // folder is searched recursively for the file name.
         private static string ResolveArtPath(string filename)
         {
@@ -277,18 +277,18 @@ namespace TrashTD.Editor
             return frames;
         }
 
-        private static void ConfigureChillpathAttackAnimation()
+        private static void ConfigureNekhrostAttackAnimation()
         {
-            Sprite[] idleFrames = LoadSpriteFrames("Chillpath-Sheet.png", "Chillpath-Sheet", 8);
-            Sprite[] attackFrames = LoadSpriteFrames("Chillpath Attack Sheet.png", "Chillpath Attack Sheet", ChillpathSpriteAnimation.AttackFrameCount);
+            Sprite[] idleFrames = LoadSpriteFrames("Nekhrost-Sheet.png", "Nekhrost-Sheet", 8);
+            Sprite[] attackFrames = LoadSpriteFrames("Nekhrost Attack Sheet.png", "Nekhrost Attack Sheet", NekhrostSpriteAnimation.AttackFrameCount);
             if (System.Array.Exists(idleFrames, frame => frame == null) ||
                 System.Array.Exists(attackFrames, frame => frame == null))
                 return;
 
-            string path = $"{OperatorPrefabFolder}/Prefab_OP_Chillpath.prefab";
+            string path = $"{OperatorPrefabFolder}/Prefab_OP_Nekhrost.prefab";
             if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
             {
-                Debug.LogError($"InitialAssetGenerator: Missing Chillpath prefab at {path}.");
+                Debug.LogError($"InitialAssetGenerator: Missing Nekhrost prefab at {path}.");
                 return;
             }
 
@@ -298,7 +298,7 @@ namespace TrashTD.Editor
                 SpriteRenderer spriteRenderer = prefabContents.GetComponent<SpriteRenderer>();
                 if (spriteRenderer == null)
                 {
-                    Debug.LogError($"InitialAssetGenerator: Chillpath prefab at {path} requires a SpriteRenderer.");
+                    Debug.LogError($"InitialAssetGenerator: Nekhrost prefab at {path} requires a SpriteRenderer.");
                     return;
                 }
 
@@ -306,9 +306,9 @@ namespace TrashTD.Editor
                 if (oldAnimation != null)
                     Object.DestroyImmediate(oldAnimation);
 
-                ChillpathSpriteAnimation animation = prefabContents.GetComponent<ChillpathSpriteAnimation>();
+                NekhrostSpriteAnimation animation = prefabContents.GetComponent<NekhrostSpriteAnimation>();
                 if (animation == null)
-                    animation = prefabContents.AddComponent<ChillpathSpriteAnimation>();
+                    animation = prefabContents.AddComponent<NekhrostSpriteAnimation>();
 
                 Transform muzzle = prefabContents.transform.Find("Muzzle");
                 if (muzzle == null)
@@ -329,21 +329,21 @@ namespace TrashTD.Editor
             }
         }
 
-        private static void ConfigureShadesliceAttackAnimation()
+        private static void ConfigureVespierceAttackAnimation()
         {
-            Sprite[] idleFrames = LoadSpriteFrames("Shadeslice-Sheet.png", "Shadeslice-Sheet", 8);
+            Sprite[] idleFrames = LoadSpriteFrames("Vespierce-Sheet.png", "Vespierce-Sheet", 8);
             Sprite[] attackFrames = LoadSpriteFrames(
-                "Shadeslice Attack Sheet.png",
-                "Shadeslice Attack Sheet",
-                ShadesliceSpriteAnimation.AttackFrameCount);
+                "Vespierce Attack Sheet.png",
+                "Vespierce Attack Sheet",
+                VespierceSpriteAnimation.AttackFrameCount);
             if (System.Array.Exists(idleFrames, frame => frame == null) ||
                 System.Array.Exists(attackFrames, frame => frame == null))
                 return;
 
-            string path = $"{OperatorPrefabFolder}/Prefab_OP_Shadeslice.prefab";
+            string path = $"{OperatorPrefabFolder}/Prefab_OP_Vespierce.prefab";
             if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null)
             {
-                Debug.LogError($"InitialAssetGenerator: Missing Shadeslice prefab at {path}.");
+                Debug.LogError($"InitialAssetGenerator: Missing Vespierce prefab at {path}.");
                 return;
             }
 
@@ -353,7 +353,7 @@ namespace TrashTD.Editor
                 SpriteRenderer spriteRenderer = prefabContents.GetComponent<SpriteRenderer>();
                 if (spriteRenderer == null)
                 {
-                    Debug.LogError($"InitialAssetGenerator: Shadeslice prefab at {path} requires a SpriteRenderer.");
+                    Debug.LogError($"InitialAssetGenerator: Vespierce prefab at {path} requires a SpriteRenderer.");
                     return;
                 }
 
@@ -361,9 +361,9 @@ namespace TrashTD.Editor
                 if (oldAnimation != null)
                     Object.DestroyImmediate(oldAnimation);
 
-                ShadesliceSpriteAnimation animation = prefabContents.GetComponent<ShadesliceSpriteAnimation>();
+                VespierceSpriteAnimation animation = prefabContents.GetComponent<VespierceSpriteAnimation>();
                 if (animation == null)
-                    animation = prefabContents.AddComponent<ShadesliceSpriteAnimation>();
+                    animation = prefabContents.AddComponent<VespierceSpriteAnimation>();
 
                 animation.Configure(idleFrames, attackFrames);
                 spriteRenderer.sprite = idleFrames[0];
@@ -391,14 +391,14 @@ namespace TrashTD.Editor
             sr.sortingOrder = 5;
 
             // Add corresponding class component
-            if (prefabName == "Prefab_OP_Bulkhead") go.AddComponent<BulkheadOperator>();
+            if (prefabName == "Prefab_OP_Ironhowl") go.AddComponent<IronhowlOperator>();
             else if (prefabName == "Prefab_OP_Deadeye") go.AddComponent<DeadeyeOperator>();
             else if (prefabName == "Prefab_OP_Pompoth") go.AddComponent<PompothOperator>();
-            else if (prefabName == "Prefab_OP_Pyrolite") go.AddComponent<PyroliteOperator>();
-            else if (prefabName == "Prefab_OP_Chillpath") go.AddComponent<ChillpathOperator>();
+            else if (prefabName == "Prefab_OP_Mechonk") go.AddComponent<MechonkOperator>();
+            else if (prefabName == "Prefab_OP_Nekhrost") go.AddComponent<NekhrostOperator>();
             else if (prefabName == "Prefab_OP_Coalesce") go.AddComponent<CoalesceOperator>();
             else if (prefabName == "Prefab_OP_Scrapper") go.AddComponent<ScrapperOperator>();
-            else if (prefabName == "Prefab_OP_Proxishot") go.AddComponent<ProxishotOperator>();
+            else if (prefabName == "Prefab_OP_Oquloct") go.AddComponent<OquloctOperator>();
             else
             {
                 switch (opClass)

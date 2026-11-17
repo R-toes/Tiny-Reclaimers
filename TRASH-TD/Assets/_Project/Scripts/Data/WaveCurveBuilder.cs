@@ -71,7 +71,7 @@ namespace TrashTD.Data
         /// How hard an enemy is to beat, in HP-equivalents: its HP, scaled up for DEF/RES (against a typical
         /// squad's damage), for speed (less time inside operator range), for flight (only ranged operators
         /// and Casters can hit it) and for ATK (hard hitters break blockers and outpace healers). Basic enemies
-        /// are scaled down: they come in crowds that area damage (Caster splash, Basurocket, Proxishot,
+        /// are scaled down: they come in crowds that area damage (Caster splash, Basurocket, Oquloct,
         /// Stag-ger, Bubblets) and multi-blocking Defenders cut through, and Medics heal through their chip damage.
         /// </summary>
         public static float GetThreat(EnemyData enemy, WaveCurveSettings settings)

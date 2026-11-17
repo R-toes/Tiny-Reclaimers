@@ -3,7 +3,7 @@ using UnityEngine;
 namespace TrashTD.Combat
 {
     /// <summary>
-    /// Shadeslice's thrust: a crimson line with a dark glow that extends from the attacker through the target
+    /// Vespierce's thrust: a crimson line with a dark glow that extends from the attacker through the target
     /// and fades out. Played through <see cref="MeleeSwipeVisual.PlayStab"/>.
     /// </summary>
     public sealed class MeleeStabVisual : MonoBehaviour

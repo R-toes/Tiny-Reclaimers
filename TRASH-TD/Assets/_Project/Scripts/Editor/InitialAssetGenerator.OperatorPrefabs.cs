@@ -183,9 +183,9 @@ namespace TrashTD.Editor
             animation.Configure(idleFrames, attackFrames);
         }
 
-        private static GameObject CreateQiFuPrefab(Sprite[] frames, Sprite[] attackFrames)
+        private static GameObject CreateQihouPrefab(Sprite[] frames, Sprite[] attackFrames)
         {
-            const string prefabName = "Prefab_OP_QiFu";
+            const string prefabName = "Prefab_OP_Qihou";
             string path = $"{OperatorPrefabFolder}/{prefabName}.prefab";
             var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (existing != null)
@@ -193,9 +193,9 @@ namespace TrashTD.Editor
                 var existingAnim = existing.GetComponent<OperatorSpriteAnimation>();
                 if (existingAnim != null) existingAnim.enabled = false;
 
-                var existingQiFuAnim = existing.GetComponent<QiFuSpriteAnimation>();
-                if (existingQiFuAnim == null) existingQiFuAnim = existing.AddComponent<QiFuSpriteAnimation>();
-                existingQiFuAnim.Configure(frames, attackFrames);
+                var existingQihouAnim = existing.GetComponent<QihouSpriteAnimation>();
+                if (existingQihouAnim == null) existingQihouAnim = existing.AddComponent<QihouSpriteAnimation>();
+                existingQihouAnim.Configure(frames, attackFrames);
 
                 var existingSr = existing.GetComponent<SpriteRenderer>();
                 if (existingSr != null) existingSr.sprite = frames[0];
@@ -207,8 +207,8 @@ namespace TrashTD.Editor
             var spriteRenderer = go.AddComponent<SpriteRenderer>();
             spriteRenderer.sprite = frames[0];
             spriteRenderer.sortingOrder = 5;
-            go.AddComponent<QiFuOperator>();
-            var animation = go.AddComponent<QiFuSpriteAnimation>();
+            go.AddComponent<QihouOperator>();
+            var animation = go.AddComponent<QihouSpriteAnimation>();
             animation.Configure(frames, attackFrames);
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
@@ -356,15 +356,15 @@ namespace TrashTD.Editor
             return prefab;
         }
 
-        private static GameObject CreateIgnisaurPrefab(Sprite[] frames)
+        private static GameObject CreateLockburnPrefab(Sprite[] frames)
         {
-            const string prefabName = "Prefab_OP_Guard_Ignisaur";
+            const string prefabName = "Prefab_OP_Guard_Lockburn";
             string path = $"{OperatorPrefabFolder}/{prefabName}.prefab";
             var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (existing != null)
             {
-                // The shipped prefab uses IgnisaurSpriteAnimation (idle + throw + swipe); only a bare prefab gets the generic idle loop.
-                if (existing.GetComponent<IgnisaurSpriteAnimation>() == null)
+                // The shipped prefab uses LockburnSpriteAnimation (idle + throw + swipe); only a bare prefab gets the generic idle loop.
+                if (existing.GetComponent<LockburnSpriteAnimation>() == null)
                 {
                     var existingAnim = existing.GetComponent<OperatorSpriteAnimation>();
                     if (existingAnim == null)
@@ -378,9 +378,9 @@ namespace TrashTD.Editor
                 {
                     existingSr.sprite = frames[0];
                 }
-                if (existing.GetComponent<IgnisaurOperator>() == null)
+                if (existing.GetComponent<LockburnOperator>() == null)
                 {
-                    existing.AddComponent<IgnisaurOperator>();
+                    existing.AddComponent<LockburnOperator>();
                 }
                 EditorUtility.SetDirty(existing);
                 return existing;
@@ -390,7 +390,7 @@ namespace TrashTD.Editor
             var spriteRenderer = go.AddComponent<SpriteRenderer>();
             spriteRenderer.sprite = frames != null && frames.Length > 0 ? frames[0] : null;
             spriteRenderer.sortingOrder = 5;
-            go.AddComponent<IgnisaurOperator>();
+            go.AddComponent<LockburnOperator>();
             var animation = go.AddComponent<OperatorSpriteAnimation>();
             animation.Configure(frames);
 

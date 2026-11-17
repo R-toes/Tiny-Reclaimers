@@ -67,7 +67,7 @@ namespace TrashTD.Data
         [Tooltip("Air enemies can only be hit by ranged operators and Casters, and can't be blocked.")]
         [Min(1f)] public float airThreatMultiplier = 1.5f;
 
-        [Tooltip("Basic (core) enemies come in crowds: Caster splash, Basurocket, Proxishot, Stag-ger and Bubblets hit several at once, Defenders block 3-4, and Medics heal through their chip damage. Each one counts for this much of its raw threat.")]
+        [Tooltip("Basic (core) enemies come in crowds: Caster splash, Basurocket, Oquloct, Stag-ger and Bubblets hit several at once, Defenders block 3-4, and Medics heal through their chip damage. Each one counts for this much of its raw threat.")]
         [Range(0.2f, 1f)] public float crowdThreatMultiplier = 0.7f;
 
         [Tooltip("ATK of a basic enemy. Harder hitters break blockers and outpace healers.")]

@@ -39,7 +39,7 @@ namespace TrashTD.Enemies
     ///   - Ticks every 0.5 seconds.
     ///   - Damage ramps every 1.5 seconds: 5 -> 15 -> 30 -> 50 -> 70 -> 90.
     ///   - At 70 and 90 damage, it takes 5% of its Max HP per tick.
-    ///   - Continuously attacks the operator until it dies, becomes camouflaged (Proxyshot), or leaves range.
+    ///   - Continuously attacks the operator until it dies, becomes camouflaged (Oquloct), or leaves range.
     ///   - Prioritizes target with lowest DEF.
     ///   - When lock breaks: switches to another target in range (ramp resets to 5) or transitions back to State 1.
     /// </summary>
@@ -636,7 +636,7 @@ namespace TrashTD.Enemies
                 }
             }
 
-            // Check if target died, retreated, or activated Camouflage (e.g. Proxyshot)
+            // Check if target died, retreated, or activated Camouflage (e.g. Oquloct)
             if (lockedTarget == null || !lockedTarget.IsDeployed || lockedTarget.CurrentHP <= 0 ||
                 !lockedTarget.CanBeTargetedByEnemy(this) || lockedTarget.IsCamouflaged)
             {

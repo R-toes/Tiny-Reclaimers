@@ -121,9 +121,9 @@ namespace TrashTD.Enemies
                     JunkernautAuraVisual.NotifyProtectedHit(this);
                 }
 
-                if (isFrozen && ChillpathOperator.IsFrozenDamageBonusActive)
+                if (isFrozen && NekhrostOperator.IsFrozenDamageBonusActive)
                 {
-                    damage = Mathf.Max(1, Mathf.RoundToInt(damage * ChillpathOperator.FrozenEnemyDamageMultiplier));
+                    damage = Mathf.Max(1, Mathf.RoundToInt(damage * NekhrostOperator.FrozenEnemyDamageMultiplier));
                 }
             }
 

@@ -212,19 +212,19 @@ namespace TrashTD.Systems
                    (opData.operatorName == "Thornchin" && !(opComp is ThornchinOperator)) ||
                    (opData.operatorName == "Mlem" && !(opComp is MlemOperator)) ||
                    (opData.operatorName == "Scrapper" && !(opComp is ScrapperOperator)) ||
-                   (opData.operatorName == "Bulkhead" && !(opComp is BulkheadOperator)) ||
-                   (opData.operatorName == "Pyrolite" && !(opComp is PyroliteOperator)) ||
+                   (opData.operatorName == "IRONHOWL MK-IX" && !(opComp is IronhowlOperator)) ||
+                   (opData.operatorName == "Mechonk" && !(opComp is MechonkOperator)) ||
                    (opData.operatorName == "Pompoth" && !(opComp is PompothOperator)) ||
                    (opData.operatorName == "Deadeye" && !(opComp is DeadeyeOperator)) ||
-                   (opData.operatorName == "Chillpath" && !(opComp is ChillpathOperator)) ||
+                   (opData.operatorName == "Nekhrost" && !(opComp is NekhrostOperator)) ||
                    (opData.operatorName == "Coalesce" && !(opComp is CoalesceOperator)) ||
-                   ((opData.operatorName == "Proxishot" || opData.operatorName == "Proxyshot") && !(opComp is ProxishotOperator)) ||
-                   (opData.operatorName == "Ignisaur" && !(opComp is IgnisaurOperator)) ||
-                   (opData.operatorName == "Shadeslice" && !(opComp is ShadesliceOperator)) ||
+                   (opData.operatorName == "Oquloct" && !(opComp is OquloctOperator)) ||
+                   (opData.operatorName == "Lockburn" && !(opComp is LockburnOperator)) ||
+                   (opData.operatorName == "Vespierce" && !(opComp is VespierceOperator)) ||
                    (opData.operatorName == "Resicochet" && !(opComp is ResicochetOperator)) ||
                    (opData.operatorName == "Castiel" && !(opComp is CastielOperator)) ||
                    (opData.operatorName == "Echosquire" && !(opComp is EchosquireOperator)) ||
-                   (opData.operatorName == "QiFu" && !(opComp is QiFuOperator)) ||
+                   (opData.operatorName == "Qihou" && !(opComp is QihouOperator)) ||
                    (opData.operatorName == "Framiliar" && !(opComp is FramiliarOperator)) ||
                    (opData.operatorName == "Panacea" && !(opComp is PanaceaOperator));
         }
@@ -267,13 +267,13 @@ namespace TrashTD.Systems
             {
                 return obj.AddComponent<ScrapperOperator>();
             }
-            if (opData != null && opData.operatorName == "Bulkhead")
+            if (opData != null && opData.operatorName == "IRONHOWL MK-IX")
             {
-                return obj.AddComponent<BulkheadOperator>();
+                return obj.AddComponent<IronhowlOperator>();
             }
-            if (opData != null && opData.operatorName == "Pyrolite")
+            if (opData != null && opData.operatorName == "Mechonk")
             {
-                return obj.AddComponent<PyroliteOperator>();
+                return obj.AddComponent<MechonkOperator>();
             }
             if (opData != null && opData.operatorName == "Pompoth")
             {
@@ -283,25 +283,25 @@ namespace TrashTD.Systems
             {
                 return obj.AddComponent<DeadeyeOperator>();
             }
-            if (opData != null && opData.operatorName == "Chillpath")
+            if (opData != null && opData.operatorName == "Nekhrost")
             {
-                return obj.AddComponent<ChillpathOperator>();
+                return obj.AddComponent<NekhrostOperator>();
             }
             if (opData != null && opData.operatorName == "Coalesce")
             {
                 return obj.AddComponent<CoalesceOperator>();
             }
-            if (opData != null && (opData.operatorName == "Proxishot" || opData.operatorName == "Proxyshot"))
+            if (opData != null && opData.operatorName == "Oquloct")
             {
-                return obj.AddComponent<ProxishotOperator>();
+                return obj.AddComponent<OquloctOperator>();
             }
-            if (opData != null && opData.operatorName == "Ignisaur")
+            if (opData != null && opData.operatorName == "Lockburn")
             {
-                return obj.AddComponent<IgnisaurOperator>();
+                return obj.AddComponent<LockburnOperator>();
             }
-            if (opData != null && opData.operatorName == "Shadeslice")
+            if (opData != null && opData.operatorName == "Vespierce")
             {
-                return obj.AddComponent<ShadesliceOperator>();
+                return obj.AddComponent<VespierceOperator>();
             }
             if (opData != null && opData.operatorName == "Resicochet")
             {
@@ -315,9 +315,9 @@ namespace TrashTD.Systems
             {
                 return obj.AddComponent<EchosquireOperator>();
             }
-            if (opData != null && opData.operatorName == "QiFu")
+            if (opData != null && opData.operatorName == "Qihou")
             {
-                return obj.AddComponent<QiFuOperator>();
+                return obj.AddComponent<QihouOperator>();
             }
             if (opData != null && opData.operatorName == "Framiliar")
             {

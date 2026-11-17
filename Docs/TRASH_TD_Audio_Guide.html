@@ -167,10 +167,10 @@ Death       dies</pre>
   <div class="card">
     <h4>Operator extra abilities</h4>
     <div class="path">only in these operators' folders</div>
-<pre>Guard/Shadeslice   Ability_Regen
+<pre>Guard/Vespierce   Ability_Regen
 Guard/Stagger      Ability_Dodge
                    Ability_Empowered
-Caster/Chillpath   Ability_Freeze
+Caster/Nekhrost   Ability_Freeze
                    Ability_ExtraHit
 Specialist/Framiliar Ability_Transform</pre>
     <div class="ex">Example: <code>SFX/Operators/Guard/Stagger/Ability_Dodge.wav</code>. Each falls back to that operator's plain <code>Ability</code>.</div>
@@ -198,13 +198,13 @@ Stages/Stage06</pre>
   <div class="card wide">
     <h4>All operator and enemy folders</h4>
     <div class="path">SFX/Operators/… and SFX/Enemies/… (all already exist)</div>
-<pre>Operators/Guard/ChiPaw          Operators/Sniper/Basurocket       Enemies/Grunt/SludgeGrunt
+<pre>Operators/Guard/Qihou          Operators/Sniper/Basurocket       Enemies/Grunt/SludgeGrunt
 Operators/Guard/Echosquire      Operators/Sniper/Deadeye          Enemies/Grunt/SandPlastic
-Operators/Guard/Ignisaur        Operators/Sniper/Proxishot        Enemies/Rusher/ToxicRusher
+Operators/Guard/Lockburn        Operators/Sniper/Oquloct        Enemies/Rusher/ToxicRusher
 Operators/Guard/Scrapper        Operators/Caster/Castiel          Enemies/Tank/PollutionTank
-Operators/Guard/Shadeslice      Operators/Caster/Chillpath        Enemies/Tank/SandHulk
-Operators/Guard/Stagger         Operators/Caster/Pyrolite         Enemies/Caster/SandPoncho
-Operators/Defender/Bulkhead     Operators/Caster/Resicochet       Enemies/Caster/SmogCaster
+Operators/Guard/Vespierce      Operators/Caster/Nekhrost        Enemies/Tank/SandHulk
+Operators/Guard/Stagger         Operators/Caster/Mechonk         Enemies/Caster/SandPoncho
+Operators/Defender/IRONHOWLMKIX     Operators/Caster/Resicochet       Enemies/Caster/SmogCaster
 Operators/Defender/Drawgoo      Operators/Specialist/Framiliar    Enemies/Flyer/TalonRat
 Operators/Defender/Mossmo       Operators/Medic/Bubblets          Enemies/Flyer/Skyshard
 Operators/Defender/Thornchin    Operators/Medic/Coalesce          Enemies/Flyer/AcidFlyer
@@ -304,7 +304,7 @@ Ability_Dodge.wav   Ability_Dodge_2.wav</pre>
     <tr><td><b>Attack stops on impact</b></td><td>If a unit has an <code>Impact</code> file, its still-running <code>Attack</code> sound is cut (a quick 0.04 s fade) the moment the impact plays, so a long launch or charge-up never overlaps its own explosion. Melee swings that hit instantly are left alone. Long attack sounds are fine.</td></tr>
     <tr><td><b>Volume per file</b></td><td>Set in <code>SfxVolumeSettings</code>; see section 9.</td></tr>
     <tr><td><b>Loops</b></td><td>Music and the <code>Ambience</code> files loop. Make them seamless (no silence at the start or end). Ambience fades in and out automatically.</td></tr>
-    <tr><td><b>Unit folder names</b></td><td>The unit's in-game name with spaces and symbols removed: "Chi Paw" → <code>ChiPaw</code>, "Stag-ger" → <code>Stagger</code>. If a unit is renamed, its folder must be renamed too.</td></tr>
+    <tr><td><b>Unit folder names</b></td><td>The unit's in-game name with spaces and symbols removed: "Qihou" → <code>Qihou</code>, "Stag-ger" → <code>Stagger</code>. If a unit is renamed, its folder must be renamed too.</td></tr>
     <tr><td><b>Unit class</b></td><td>Operators are grouped by their in-game class, not their asset name: Drawgoo lives in <code>Defender/</code>.</td></tr>
   </tbody>
 </table>
@@ -451,22 +451,22 @@ Ability_Dodge.wav   Ability_Dodge_2.wav</pre>
 <table>
   <thead><tr><th style="width:21%">Folder</th><th style="width:21%">Attack</th><th style="width:16%">Impact</th><th>Ability files</th></tr></thead>
   <tbody>
-    <tr><td><code>Guard/ChiPaw</code></td><td>chi paw strike</td><td>strike lands</td><td><code>Ability</code>: knockback (every 4th hit)</td></tr>
+    <tr><td><code>Guard/Qihou</code></td><td>chi paw strike</td><td>strike lands</td><td><code>Ability</code>: knockback (every 4th hit)</td></tr>
     <tr><td><code>Guard/Echosquire</code></td><td>slash</td><td>hit / life drain</td><td>—</td></tr>
-    <tr><td><code>Guard/Ignisaur</code></td><td>claw (melee) or fireball (ranged)</td><td>hit</td><td>—</td></tr>
+    <tr><td><code>Guard/Lockburn</code></td><td>claw (melee) or fireball (ranged)</td><td>hit</td><td>—</td></tr>
     <tr><td><code>Guard/Scrapper</code></td><td>swing</td><td>hit</td><td><code>Ability</code>: stuns an enemy (20% chance)</td></tr>
-    <tr><td><code>Guard/Shadeslice</code></td><td>slash</td><td>hit</td><td><code>Ability_Regen</code>: starts regenerating after 5 s untouched</td></tr>
+    <tr><td><code>Guard/Vespierce</code></td><td>slash</td><td>hit</td><td><code>Ability_Regen</code>: starts regenerating after 5 s untouched</td></tr>
     <tr><td><code>Guard/Stagger</code></td><td>slugger swing</td><td>hit</td><td><code>Ability_Dodge</code>: dodges an attack<br><code>Ability_Empowered</code>: the +50% ATK strike after a dodge</td></tr>
-    <tr><td><code>Defender/Bulkhead</code></td><td>bash</td><td>hit</td><td><code>Ability</code>: ATK/DEF buff switches on (blocking 3+)</td></tr>
+    <tr><td><code>Defender/IRONHOWLMKIX</code></td><td>bash</td><td>hit</td><td><code>Ability</code>: ATK/DEF buff switches on (blocking 3+)</td></tr>
     <tr><td><code>Defender/Drawgoo</code></td><td>attack</td><td>hit</td><td><code>Ability</code>: draws cards when it dies (plays after <code>Death</code>)</td></tr>
     <tr><td><code>Defender/Mossmo</code></td><td colspan="2"><i>doesn't attack</i></td><td><code>Ability</code>: reactive heal pulse</td></tr>
     <tr><td><code>Defender/Thornchin</code></td><td>attack</td><td>hit</td><td><code>Ability_Retaliate</code> (direct counter) · <code>Ability_Surrounding</code> (AoE spikes) <span class="tag">fallback: Ability or Combat/MeleeAttack</span></td></tr>
     <tr><td><code>Sniper/Basurocket</code></td><td>rocket launch</td><td><b>explosion</b></td><td>—</td></tr>
     <tr><td><code>Sniper/Deadeye</code></td><td>rifle shot</td><td>bullet hit</td><td>—</td></tr>
-    <tr><td><code>Sniper/Proxishot</code></td><td>shotgun blast</td><td>pellets hit</td><td><code>Ability</code>: turns camouflaged</td></tr>
+    <tr><td><code>Sniper/Oquloct</code></td><td>shotgun blast</td><td>pellets hit</td><td><code>Ability</code>: turns camouflaged</td></tr>
     <tr><td><code>Caster/Castiel</code></td><td>beam cast</td><td>beam tick</td><td>—</td></tr>
-    <tr><td><code>Caster/Chillpath</code></td><td>frost cast</td><td>frost hit</td><td><code>Ability_Freeze</code>: freezes an enemy (and gains haste)<br><code>Ability_ExtraHit</code>: every 4th attack's bonus bolt</td></tr>
-    <tr><td><code>Caster/Pyrolite</code></td><td>fire cast</td><td>fire burst</td><td>—</td></tr>
+    <tr><td><code>Caster/Nekhrost</code></td><td>frost cast</td><td>frost hit</td><td><code>Ability_Freeze</code>: freezes an enemy (and gains haste)<br><code>Ability_ExtraHit</code>: every 4th attack's bonus bolt</td></tr>
+    <tr><td><code>Caster/Mechonk</code></td><td>fire cast</td><td>fire burst</td><td>—</td></tr>
     <tr><td><code>Caster/Resicochet</code></td><td>crystal laser fire (<code>Attack</code>, <code>Attack_2</code>, <code>Attack_3</code>...)</td><td>crystal hit</td><td>replays attack sound, quieter per bounce</td></tr>
     <tr><td><code>Specialist/Framiliar</code></td><td>attack</td><td>hit</td><td><code>Ability_Transform</code>: plays when morphing into another operator (Inspector slot or file)</td></tr>
     <tr><td><code>Medic/Bubblets</code></td><td>shield cast</td><td>—</td><td><code>Ability</code>: bubble pop <span class="tag">fallback: Combat/MagicAttack</span></td></tr>

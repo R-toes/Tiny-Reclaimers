@@ -220,7 +220,7 @@ namespace TrashTD.Tests
             // Spawn Ally at tile x=8, y=5 (same tile as Enemy A)
             var opObj = new GameObject("TestAlly");
             opObj.transform.position = gridManager.GridToWorldPosition(8, 5);
-            var op = opObj.AddComponent<BulkheadOperator>();
+            var op = opObj.AddComponent<IronhowlOperator>();
             var opData = ScriptableObject.CreateInstance<OperatorData>();
             opData.baseHP = 500;
             opData.baseDEF = 50;
@@ -432,7 +432,7 @@ namespace TrashTD.Tests
             // Deploy a defender at (3, 3)
             var opObj = new GameObject("Defender");
             opObj.transform.position = gridManager.GridToWorldPosition(3, 3);
-            var op = opObj.AddComponent<BulkheadOperator>();
+            var op = opObj.AddComponent<IronhowlOperator>();
             var opData = ScriptableObject.CreateInstance<OperatorData>();
             opData.baseHP = 1000;
             opData.baseATK = 100;
@@ -509,7 +509,7 @@ namespace TrashTD.Tests
             // Deploy an operator with 500 HP at (4, 4)
             var opObj = new GameObject("Defender");
             opObj.transform.position = gridManager.GridToWorldPosition(4, 4);
-            var op = opObj.AddComponent<BulkheadOperator>();
+            var op = opObj.AddComponent<IronhowlOperator>();
             var opData = ScriptableObject.CreateInstance<OperatorData>();
             opData.baseHP = 500;
             opData.baseDEF = 50;

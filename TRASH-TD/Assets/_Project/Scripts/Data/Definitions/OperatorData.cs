@@ -182,10 +182,10 @@ namespace TrashTD.Data
         }
 
         [Header("Talent Activation Range")]
-        [Tooltip("Optional talent activation range pattern. If unset and operator has bonusWhenIsolated or is Shadeslice, defaults to the diamond pattern.")]
+        [Tooltip("Optional talent activation range pattern. If unset and operator has bonusWhenIsolated or is Vespierce, defaults to the diamond pattern.")]
         public Vector2Int[] talentRangePattern;
 
-        public static readonly Vector2Int[] ShadesliceTalentPattern = new Vector2Int[]
+        public static readonly Vector2Int[] VespierceTalentPattern = new Vector2Int[]
         {
             new Vector2Int(0, 1),
             new Vector2Int(0, -1),
@@ -206,25 +206,25 @@ namespace TrashTD.Data
             if (talentRangePattern != null && talentRangePattern.Length > 0)
                 return talentRangePattern;
 
-            if (bonusWhenIsolated || operatorName == "Shadeslice")
-                return ShadesliceTalentPattern;
+            if (bonusWhenIsolated || operatorName == "Vespierce")
+                return VespierceTalentPattern;
 
             return null;
         }
 
         /// <summary>
         /// Gets the effective range pattern for this operator at the given rarity tier,
-        /// accounting for range expansion upgrades (e.g. Pyrolite at 2★+, Ignisaur at 3★+, Mossmo at 5★, Progeny at 3★+).
+        /// accounting for range expansion upgrades (e.g. Mechonk at 2★+, Lockburn at 3★+, Mossmo at 5★, Progeny at 3★+).
         /// </summary>
         public Vector2Int[] GetRangePatternForRarity(OperatorRarity rarity)
         {
-            if (operatorName == "Pyrolite")
+            if (operatorName == "Mechonk")
             {
-                return TrashTD.Operators.PyroliteOperator.GetRangePatternForRarity(this, rarity);
+                return TrashTD.Operators.MechonkOperator.GetRangePatternForRarity(this, rarity);
             }
-            if (operatorName == "Ignisaur")
+            if (operatorName == "Lockburn")
             {
-                return TrashTD.Operators.IgnisaurOperator.GetRangePatternForRarity(this, rarity);
+                return TrashTD.Operators.LockburnOperator.GetRangePatternForRarity(this, rarity);
             }
             if (operatorName == "Mossmo")
             {
@@ -234,9 +234,9 @@ namespace TrashTD.Data
             {
                 return TrashTD.Operators.ProgenyOperator.GetRangePatternForRarity(this, rarity);
             }
-            if (operatorName == "Proxishot" || operatorName == "Proxyshot")
+            if (operatorName == "Oquloct")
             {
-                return TrashTD.Operators.ProxishotOperator.GetRangePatternForRarity(this, rarity);
+                return TrashTD.Operators.OquloctOperator.GetRangePatternForRarity(this, rarity);
             }
             if (operatorName == "Thornchin")
             {

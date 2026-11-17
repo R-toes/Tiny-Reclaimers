@@ -192,16 +192,16 @@ namespace TrashTD.UI
             {
                 OperatorData op = entry.Operator;
                 if (op.rangePattern != null) foreach (Vector2Int cell in op.rangePattern) if (cell != Vector2Int.zero) hitCells.Add(cell);
-                if (op.operatorName == "Pyrolite")
+                if (op.operatorName == "Mechonk")
                 {
-                    Vector2Int[] upgradedRange = TrashTD.Operators.PyroliteOperator.GetRangePatternForRarity(op, OperatorRarity.Star2);
+                    Vector2Int[] upgradedRange = TrashTD.Operators.MechonkOperator.GetRangePatternForRarity(op, OperatorRarity.Star2);
                     if (upgradedRange != null)
                         foreach (Vector2Int cell in upgradedRange)
                             if (cell != Vector2Int.zero && !hitCells.Contains(cell)) upgradeCells.Add(cell);
                 }
-                else if (op.operatorName == "Ignisaur")
+                else if (op.operatorName == "Lockburn")
                 {
-                    Vector2Int[] upgradedRange = TrashTD.Operators.IgnisaurOperator.GetRangePatternForRarity(op, OperatorRarity.Star3);
+                    Vector2Int[] upgradedRange = TrashTD.Operators.LockburnOperator.GetRangePatternForRarity(op, OperatorRarity.Star3);
                     if (upgradedRange != null)
                         foreach (Vector2Int cell in upgradedRange)
                             if (cell != Vector2Int.zero && !hitCells.Contains(cell)) upgradeCells.Add(cell);
@@ -220,9 +220,9 @@ namespace TrashTD.UI
                         foreach (Vector2Int cell in upgradedRange)
                             if (cell != Vector2Int.zero && !hitCells.Contains(cell)) upgradeCells.Add(cell);
                 }
-                else if (op.operatorName == "Proxishot" || op.operatorName == "Proxyshot")
+                else if (op.operatorName == "Oquloct")
                 {
-                    Vector2Int[] upgradedRange = TrashTD.Operators.ProxishotOperator.GetRangePatternForRarity(op, OperatorRarity.Star4);
+                    Vector2Int[] upgradedRange = TrashTD.Operators.OquloctOperator.GetRangePatternForRarity(op, OperatorRarity.Star4);
                     if (upgradedRange != null)
                         foreach (Vector2Int cell in upgradedRange)
                             if (cell != Vector2Int.zero && !hitCells.Contains(cell)) upgradeCells.Add(cell);
@@ -252,15 +252,15 @@ namespace TrashTD.UI
                 int displayedRangeCount = hitCells.Count + upgradeCells.Count + upgrade2Cells.Count;
                 rangeReadout.text = displayedRangeCount == 0
                     ? (hitsSelf ? "OWN TILE" : "NO ATTACK")
-                    : op.operatorName == "Pyrolite"
+                    : op.operatorName == "Mechonk"
                         ? displayedRangeCount + " TILES AT 2\u2605, FACING RIGHT"
-                        : op.operatorName == "Ignisaur"
+                        : op.operatorName == "Lockburn"
                             ? displayedRangeCount + " TILES AT 3\u2605, FACING RIGHT"
                             : op.operatorName == "Mossmo"
                                 ? displayedRangeCount + " TILES AT 5\u2605, SURROUNDING"
                                 : op.operatorName == "Progeny"
                                     ? displayedRangeCount + " TILES AT 3\u2605, CROSS"
-                                    : op.operatorName == "Proxishot" || op.operatorName == "Proxyshot"
+                                    : op.operatorName == "Oquloct"
                                         ? displayedRangeCount + " TILES AT 4\u2605, CONE"
                                     : op.operatorName == "Thornchin"
                                         ? "8 TILES AT 4\u2605, SURROUNDING"
@@ -278,8 +278,8 @@ namespace TrashTD.UI
                 }
                 else if (upgradeCells.Count > 0)
                 {
-                    string bonusLabel = (op.operatorName == "Ignisaur" || op.operatorName == "Progeny") ? "3\u2605 BONUS"
-                        : (op.operatorName == "Proxishot" || op.operatorName == "Proxyshot") ? "4\u2605 BONUS"
+                    string bonusLabel = (op.operatorName == "Lockburn" || op.operatorName == "Progeny") ? "3\u2605 BONUS"
+                        : op.operatorName == "Oquloct" ? "4\u2605 BONUS"
                         : op.operatorName == "Mossmo" ? "5\u2605 BONUS"
                         : "2\u2605 BONUS";
                     x = AddLegend(x, RangeUpgradeColor, bonusLabel);

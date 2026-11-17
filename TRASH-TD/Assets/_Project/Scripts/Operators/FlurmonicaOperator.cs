@@ -11,7 +11,7 @@ namespace TrashTD.Operators
 {
     /// <summary>
     /// Flurmonica — 2-Star Specialist (buffer). Doesn't attack or block.
-    /// Range: Chillpath's 2x3 block ahead plus the tile on each side (8 tiles, not its own).
+    /// Range: Nekhrost's 2x3 block ahead plus the tile on each side (8 tiles, not its own).
     /// Every attack interval (2 s) it plays Harmony on one ally in range: 1 stack of <see cref="HarmonyBuff"/>
     /// (4% per stack, max 3, each stack lasting 8 s on its own timer). The bonus depends on the ally's class:
     /// Guard RES, Defender DEF, Sniper/Medic attack speed, Caster Arts damage, Specialist max HP.

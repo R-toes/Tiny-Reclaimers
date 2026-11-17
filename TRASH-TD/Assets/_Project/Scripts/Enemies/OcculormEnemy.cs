@@ -11,7 +11,7 @@ namespace TrashTD.Enemies
     /// Occuworm (Occulorm) — Enemy Rusher archetype.
     /// Characteristics:
     /// - Aggressive, high-durability rusher with high ATK (around 65) and 0.5s attack interval.
-    /// - Leaping ability: Detects deployed ground operators in the 3 tiles in front of it (like Proxishot's range pattern)
+    /// - Leaping ability: Detects deployed ground operators in the 3 tiles in front of it (like Oquloct's range pattern)
     ///   and leaps/pounces onto them to strike and engage.
     /// - Immune to acid pools and acid rain.
     /// - Lifesteal: heals itself for 20% of the damage dealt when attacking operators.

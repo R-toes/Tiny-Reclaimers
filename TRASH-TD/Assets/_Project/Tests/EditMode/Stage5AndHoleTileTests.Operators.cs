@@ -12,7 +12,7 @@ using TrashTD.UI;
 
 namespace TrashTD.Tests
 {
-    // Operator tests: stats, true damage, Bulkhead, Drawgoo and Mossmo.
+    // Operator tests: stats, true damage, IRONHOWL MK-IX, Drawgoo and Mossmo.
     public partial class Stage5AndHoleTileTests
     {
         [Test]
@@ -66,7 +66,7 @@ namespace TrashTD.Tests
         {
             // Operator with high DEF (50 DEF)
             var opObj = new GameObject("DefenderOp");
-            var op = opObj.AddComponent<BulkheadOperator>();
+            var op = opObj.AddComponent<IronhowlOperator>();
             var opData = ScriptableObject.CreateInstance<OperatorData>();
             opData.baseHP = 100;
             opData.baseDEF = 50;
@@ -103,23 +103,23 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void Bulkhead_Block4_And_FrenzyIncreasesAtkAndDef()
+        public void Ironhowl_Block4_And_FrenzyIncreasesAtkAndDef()
         {
-            var bulkheadData = UnityEditor.AssetDatabase.LoadAssetAtPath<OperatorData>("Assets/_Project/Data/Operators/OP_Defender_Bulkhead.asset");
-            if (bulkheadData != null)
+            var ironhowlData = UnityEditor.AssetDatabase.LoadAssetAtPath<OperatorData>("Assets/_Project/Data/Operators/OP_Defender_Ironhowl.asset");
+            if (ironhowlData != null)
             {
-                Assert.AreEqual(4, bulkheadData.blockCount, "Bulkhead block count must be 4 in asset.");
-                Assert.IsTrue(bulkheadData.skillDescription.Contains("blocking 3 or more enemies"), "Bulkhead skill description should mention 3 or more enemies.");
-                StringAssert.Contains("1st upgrade (2\u2605)", bulkheadData.skillDescription);
-                StringAssert.Contains("Every 8 enemy hits", bulkheadData.skillDescription);
-                StringAssert.Contains("2nd upgrade (3\u2605)", bulkheadData.skillDescription);
-                StringAssert.Contains("Block count increases to 6", bulkheadData.skillDescription);
+                Assert.AreEqual(4, ironhowlData.blockCount, "IRONHOWL MK-IX block count must be 4 in asset.");
+                Assert.IsTrue(ironhowlData.skillDescription.Contains("blocking 3 or more enemies"), "IRONHOWL MK-IX skill description should mention 3 or more enemies.");
+                StringAssert.Contains("1st upgrade (2\u2605)", ironhowlData.skillDescription);
+                StringAssert.Contains("Every 8 enemy hits", ironhowlData.skillDescription);
+                StringAssert.Contains("2nd upgrade (3\u2605)", ironhowlData.skillDescription);
+                StringAssert.Contains("Block count increases to 6", ironhowlData.skillDescription);
             }
 
-            var opObj = new GameObject("BulkheadTest");
-            var op = opObj.AddComponent<BulkheadOperator>();
+            var opObj = new GameObject("IronhowlTest");
+            var op = opObj.AddComponent<IronhowlOperator>();
             var data = ScriptableObject.CreateInstance<OperatorData>();
-            data.operatorName = "Bulkhead";
+            data.operatorName = "IRONHOWL MK-IX";
             data.baseHP = 200;
             data.baseATK = 50;
             data.baseDEF = 40;
@@ -127,7 +127,7 @@ namespace TrashTD.Tests
             data.operatorClass = OperatorClass.Defender;
             op.Initialize(data, OperatorRarity.Star1);
 
-            Assert.AreEqual(4, op.GetBlockCount(), "Bulkhead block capacity must be 4.");
+            Assert.AreEqual(4, op.GetBlockCount(), "IRONHOWL MK-IX block capacity must be 4.");
 
             // Before blocking 3: ATK is 50, DEF is 40
             Assert.AreEqual(50, op.CurrentATK);
@@ -181,12 +181,12 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void Bulkhead_SecondUpgrade_IncreasesBlockCountToSix()
+        public void Ironhowl_SecondUpgrade_IncreasesBlockCountToSix()
         {
-            var opObj = new GameObject("BulkheadUpgradeTest");
-            var op = opObj.AddComponent<BulkheadOperator>();
+            var opObj = new GameObject("IronhowlUpgradeTest");
+            var op = opObj.AddComponent<IronhowlOperator>();
             var data = ScriptableObject.CreateInstance<OperatorData>();
-            data.operatorName = "Bulkhead";
+            data.operatorName = "IRONHOWL MK-IX";
             data.baseHP = 200;
             data.baseATK = 50;
             data.baseDEF = 40;
@@ -194,10 +194,10 @@ namespace TrashTD.Tests
             data.operatorClass = OperatorClass.Defender;
 
             op.Initialize(data, OperatorRarity.Star2);
-            Assert.AreEqual(4, op.GetBlockCount(), "Bulkhead should retain its base block count before the second upgrade.");
+            Assert.AreEqual(4, op.GetBlockCount(), "IRONHOWL MK-IX should retain its base block count before the second upgrade.");
 
             op.Initialize(data, OperatorRarity.Star3);
-            Assert.AreEqual(6, op.GetBlockCount(), "Bulkhead's second upgrade should add two block slots.");
+            Assert.AreEqual(6, op.GetBlockCount(), "IRONHOWL MK-IX's second upgrade should add two block slots.");
             op.ApplyStun(1f);
             Assert.AreEqual(0, op.GetBlockCount(), "A stunned operator must still have no block capacity.");
 
@@ -206,12 +206,12 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void Bulkhead_FirstUpgrade_ShockwaveStunsOnlyCurrentBlockedEnemiesEveryEightEnemyHits()
+        public void Ironhowl_FirstUpgrade_ShockwaveStunsOnlyCurrentBlockedEnemiesEveryEightEnemyHits()
         {
-            var opObj = new GameObject("BulkheadShockwaveTest");
-            var op = opObj.AddComponent<BulkheadOperator>();
+            var opObj = new GameObject("IronhowlShockwaveTest");
+            var op = opObj.AddComponent<IronhowlOperator>();
             var data = ScriptableObject.CreateInstance<OperatorData>();
-            data.operatorName = "Bulkhead";
+            data.operatorName = "IRONHOWL MK-IX";
             data.baseHP = 1000;
             data.baseATK = 50;
             data.baseDEF = 0;
@@ -245,9 +245,9 @@ namespace TrashTD.Tests
             op.TakeDamage(10, DamageType.Physical, enemy);
             Assert.IsTrue(enemy.IsStunned, "The eighth enemy hit should stun the first blocked enemy.");
             Assert.IsTrue(blockedTwo.IsStunned, "The shockwave should stun every enemy currently blocked.");
-            Assert.IsFalse(unblocked.IsStunned, "The shockwave should not stun enemies Bulkhead is not blocking.");
+            Assert.IsFalse(unblocked.IsStunned, "The shockwave should not stun enemies IRONHOWL MK-IX is not blocking.");
             Assert.AreEqual(0, op.HitsSinceShockwave, "The hit counter should reset after the shockwave.");
-            Assert.AreEqual(1.5f, BulkheadOperator.ShockwaveStunDuration, "The shockwave should stun for 1.5 seconds.");
+            Assert.AreEqual(1.5f, IronhowlOperator.ShockwaveStunDuration, "The shockwave should stun for 1.5 seconds.");
 
             var visual = GameObject.Find("AoeBlastVisual");
             if (visual != null) Object.DestroyImmediate(visual);
@@ -258,36 +258,36 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void Bulkhead_Prefab_Has8AnimationFrames()
+        public void Ironhowl_Prefab_Has8AnimationFrames()
         {
-            var bulkheadPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Operators/Prefab_OP_Bulkhead.prefab");
-            if (bulkheadPrefab != null)
+            var ironhowlPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Operators/Prefab_OP_Ironhowl.prefab");
+            if (ironhowlPrefab != null)
             {
-                var anim = bulkheadPrefab.GetComponent<BulkheadSpriteAnimation>();
-                Assert.IsNotNull(anim, "Bulkhead prefab must have BulkheadSpriteAnimation component.");
-                Assert.IsNotNull(anim.Frames, "Bulkhead animation frames must not be null.");
-                Assert.AreEqual(8, anim.Frames.Length, "Bulkhead animation must have 8 frames.");
-                Assert.IsNotNull(anim.AttackFrames, "Bulkhead attack frames must not be null.");
-                Assert.AreEqual(10, anim.AttackFrames.Length, "Bulkhead attack animation must have 10 frames.");
-                Assert.IsTrue(anim.HasAttackAnimation, "Bulkhead attack animation must be available.");
-                Assert.AreEqual(0.125f, anim.FrameDuration, 0.001f, "Bulkhead animation frame duration should be 0.125s (8 FPS).");
+                var anim = ironhowlPrefab.GetComponent<IronhowlSpriteAnimation>();
+                Assert.IsNotNull(anim, "IRONHOWL MK-IX prefab must have IronhowlSpriteAnimation component.");
+                Assert.IsNotNull(anim.Frames, "IRONHOWL MK-IX animation frames must not be null.");
+                Assert.AreEqual(8, anim.Frames.Length, "IRONHOWL MK-IX animation must have 8 frames.");
+                Assert.IsNotNull(anim.AttackFrames, "IRONHOWL MK-IX attack frames must not be null.");
+                Assert.AreEqual(10, anim.AttackFrames.Length, "IRONHOWL MK-IX attack animation must have 10 frames.");
+                Assert.IsTrue(anim.HasAttackAnimation, "IRONHOWL MK-IX attack animation must be available.");
+                Assert.AreEqual(0.125f, anim.FrameDuration, 0.001f, "IRONHOWL MK-IX animation frame duration should be 0.125s (8 FPS).");
                 for (int i = 0; i < anim.Frames.Length; i++)
                 {
-                    Assert.IsNotNull(anim.Frames[i], $"Bulkhead frame {i} must be assigned.");
+                    Assert.IsNotNull(anim.Frames[i], $"IRONHOWL MK-IX frame {i} must be assigned.");
                 }
                 for (int i = 0; i < anim.AttackFrames.Length; i++)
                 {
-                    Assert.IsNotNull(anim.AttackFrames[i], $"Bulkhead attack frame {i} must be assigned.");
+                    Assert.IsNotNull(anim.AttackFrames[i], $"IRONHOWL MK-IX attack frame {i} must be assigned.");
                 }
             }
         }
 
         [Test]
-        public void BulkheadSpriteAnimation_Cycles8Frames()
+        public void IronhowlSpriteAnimation_Cycles8Frames()
         {
-            var animObj = new GameObject("TestBulkheadAnim");
+            var animObj = new GameObject("TestIronhowlAnim");
             var sr = animObj.AddComponent<SpriteRenderer>();
-            var anim = animObj.AddComponent<BulkheadSpriteAnimation>();
+            var anim = animObj.AddComponent<IronhowlSpriteAnimation>();
 
             var sprites = new Sprite[8];
             for (int i = 0; i < 8; i++)
@@ -295,10 +295,10 @@ namespace TrashTD.Tests
                 sprites[i] = Sprite.Create(new Texture2D(32, 32), new Rect(0, 0, 32, 32), Vector2.one * 0.5f);
             }
 
-            var framesField = typeof(BulkheadSpriteAnimation).GetField("frames",
+            var framesField = typeof(IronhowlSpriteAnimation).GetField("frames",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             framesField.SetValue(anim, sprites);
-            var attackFramesField = typeof(BulkheadSpriteAnimation).GetField("attackFrames",
+            var attackFramesField = typeof(IronhowlSpriteAnimation).GetField("attackFrames",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             attackFramesField.SetValue(anim, sprites);
 
@@ -309,8 +309,8 @@ namespace TrashTD.Tests
             Assert.AreEqual(0.125f, anim.FrameDuration, 0.001f);
 
             anim.Strike();
-            Assert.AreSame(sprites[BulkheadSpriteAnimation.StrikeFrame], sr.sprite,
-                "Bulkhead's attack frame must display as soon as its attack is triggered.");
+            Assert.AreSame(sprites[IronhowlSpriteAnimation.StrikeFrame], sr.sprite,
+                "IRONHOWL MK-IX's attack frame must display as soon as its attack is triggered.");
 
             Object.DestroyImmediate(animObj);
             for (int i = 0; i < 8; i++)

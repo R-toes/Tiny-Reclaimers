@@ -269,7 +269,7 @@ namespace TrashTD.Core.GameLoop
 
             foreach (TutorialStep step in script.steps)
             {
-                // Conditions pick between variants: first visit or replay, how the lives are holding up, Chi Paw's fate
+                // Conditions pick between variants: first visit or replay, how the lives are holding up, Qihou's fate
                 if (step == null || !StepApplies(step)) continue;
                 yield return RunStep(step);
                 ClearPointers();

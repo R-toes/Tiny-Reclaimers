@@ -27,7 +27,7 @@ namespace TrashTD.Combat
         Plasma,   // Robodrone's energy bolt: glowing core with a flickering halo, ember trail, spark burst
         ThornchinSpike,
         SpoilcupineSpike,
-        Proxishot,
+        Oquloct,
         PompothFullPower
     }
 
@@ -140,7 +140,7 @@ namespace TrashTD.Combat
             if (pelletCount <= 0 || range <= 0f || direction.sqrMagnitude <= Mathf.Epsilon) return;
             if (customProjectileSprite == null)
             {
-                Debug.LogError("Proxishot shotgun attack has no custom projectile sprite; skipping the shot instead of showing the default pellet.");
+                Debug.LogError("Oquloct shotgun attack has no custom projectile sprite; skipping the shot instead of showing the default pellet.");
                 return;
             }
 
@@ -162,14 +162,14 @@ namespace TrashTD.Combat
                 Action pelletImpact = i == pelletCount - 1 ? onImpact : null;
                 if (aimTarget != null)
                 {
-                    Spawn(start, aimTarget.VisualPosition, color, speed, ProjectileStyle.Proxishot, pelletImpact,
+                    Spawn(start, aimTarget.VisualPosition, color, speed, ProjectileStyle.Oquloct, pelletImpact,
                         aimTarget, perpendicular * lateralOffset, false, customProjectileSprite, customGlowColor,
                         customProjectileScale);
                 }
                 else
                 {
                     Vector3 pelletTarget = start + direction * range + perpendicular * lateralOffset;
-                    Spawn(start, pelletTarget, color, speed, ProjectileStyle.Proxishot, pelletImpact, muzzleFlash: false,
+                    Spawn(start, pelletTarget, color, speed, ProjectileStyle.Oquloct, pelletImpact, muzzleFlash: false,
                         customProjectileSprite: customProjectileSprite, customGlowColor: customGlowColor,
                         customProjectileScale: customProjectileScale);
                 }
@@ -191,15 +191,15 @@ namespace TrashTD.Combat
             float customProjectileScale = 1f,
             OperatorBase targetOperator = null)
         {
-            if (style == ProjectileStyle.Proxishot && customProjectileSprite == null)
+            if (style == ProjectileStyle.Oquloct && customProjectileSprite == null)
             {
-                Debug.LogError("Proxishot projectile spawn was attempted without its custom sprite.");
+                Debug.LogError("Oquloct projectile spawn was attempted without its custom sprite.");
                 return;
             }
 
             color.a = 1f;
-            var projectile = new GameObject(style == ProjectileStyle.Proxishot
-                ? "ProxishotProjectileVisual"
+            var projectile = new GameObject(style == ProjectileStyle.Oquloct
+                ? "OquloctProjectileVisual"
                 : "CombatProjectileVisual");
             projectile.transform.position = PixelParticles.Snap(start);
 
@@ -471,7 +471,7 @@ namespace TrashTD.Combat
                 ProjectileStyle.HeavyRocket => 2f,
                 ProjectileStyle.Bolt => 2f,
                 ProjectileStyle.Pellet => 2f,
-                ProjectileStyle.Proxishot => 1f,
+                ProjectileStyle.Oquloct => 1f,
                 ProjectileStyle.Heal => 6f,
                 ProjectileStyle.Bubble => 3f,
                 ProjectileStyle.Sludge => 5f,
@@ -522,7 +522,7 @@ namespace TrashTD.Combat
                     });
                     break;
 
-                case ProjectileStyle.Proxishot:
+                case ProjectileStyle.Oquloct:
                     PixelParticles.Emit(new PixelParticle
                     {
                         Position = position,
@@ -749,7 +749,7 @@ namespace TrashTD.Combat
                 case ProjectileStyle.Pellet:
                     CombatFx.Sparks(position, color, 2, 1.8f, 0.12f, direction: direction, coneDegrees: 120f);
                     break;
-                case ProjectileStyle.Proxishot:
+                case ProjectileStyle.Oquloct:
                     CombatFx.Sparks(position, new Color(0.55f, 0.9f, 0.28f), 3, 1.8f, 0.12f, direction: direction, coneDegrees: 120f);
                     break;
                 case ProjectileStyle.Pea:

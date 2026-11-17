@@ -64,38 +64,38 @@ namespace TrashTD.Editor
                 EditorUtility.SetDirty(echosquire);
             }
 
-            var qiFuFrames = new Sprite[8];
-            bool hasAllQiFuFrames = true;
-            for (int i = 0; i < qiFuFrames.Length; i++)
+            var qihouFrames = new Sprite[8];
+            bool hasAllQihouFrames = true;
+            for (int i = 0; i < qihouFrames.Length; i++)
             {
-                qiFuFrames[i] = LoadSprite("Qi_Fu_Sheet.png", $"Qi_Fu_Sheet_{i}");
-                hasAllQiFuFrames &= qiFuFrames[i] != null;
+                qihouFrames[i] = LoadSprite("Qihou_Sheet.png", $"Qihou_Sheet_{i}");
+                hasAllQihouFrames &= qihouFrames[i] != null;
             }
 
-            if (!hasAllQiFuFrames)
+            if (!hasAllQihouFrames)
             {
-                Debug.LogError("Qi_Fu_Sheet.png must contain the imported Qi_Fu_Sheet_0 through Qi_Fu_Sheet_7 sprites.");
+                Debug.LogError("Qihou_Sheet.png must contain the imported Qihou_Sheet_0 through Qihou_Sheet_7 sprites.");
             }
             else
             {
-                var qiFuAttackFrames = new Sprite[QiFuSpriteAnimation.AttackFrameCount];
-                bool hasAllQiFuAttackFrames = true;
-                for (int i = 0; i < qiFuAttackFrames.Length; i++)
+                var qihouAttackFrames = new Sprite[QihouSpriteAnimation.AttackFrameCount];
+                bool hasAllQihouAttackFrames = true;
+                for (int i = 0; i < qihouAttackFrames.Length; i++)
                 {
-                    qiFuAttackFrames[i] = LoadSprite("Qi Fu Attack Sheet.png", $"Qi Fu Attack Sheet_{i}");
-                    hasAllQiFuAttackFrames &= qiFuAttackFrames[i] != null;
+                    qihouAttackFrames[i] = LoadSprite("Qihou Attack Sheet.png", $"Qihou Attack Sheet_{i}");
+                    hasAllQihouAttackFrames &= qihouAttackFrames[i] != null;
                 }
 
-                if (!hasAllQiFuAttackFrames)
+                if (!hasAllQihouAttackFrames)
                 {
-                    Debug.LogError("Qi Fu Attack Sheet.png must contain the imported Qi Fu Attack Sheet_0 through Qi Fu Attack Sheet_10 sprites.");
+                    Debug.LogError("Qihou Attack Sheet.png must contain the imported Qihou Attack Sheet_0 through Qihou Attack Sheet_10 sprites.");
                 }
                 else
                 {
-                    var qiFuPrefab = CreateQiFuPrefab(qiFuFrames, qiFuAttackFrames);
-                    var qiFu = CreateOperator(
-                        "OP_Guard_QiFu",
-                        "Chi Paw",
+                    var qihouPrefab = CreateQihouPrefab(qihouFrames, qihouAttackFrames);
+                    var qihou = CreateOperator(
+                        "OP_Guard_Qihou",
+                        "Qihou",
                         OperatorClass.Guard,
                         OperatorPosition.Melee,
                         OperatorRarity.Star1,
@@ -107,12 +107,12 @@ namespace TrashTD.Editor
                         range: 1,
                         interval: 1.1f,
                         new[] { new Vector2Int(1, 0) },
-                        qiFuFrames[0],
-                        qiFuPrefab);
-                    qiFu.damageType = DamageType.Physical;
-                    qiFu.roleTags = new[] { "Chi", "Knockback" };
-                    qiFu.skillDescription = "<color=#FFD700>Base (1★):</color> After every 4 landed hits, channels a green Chi Paw to push the struck enemy back 1 tile.\n<color=#FFD700>1st upgrade (2★):</color> triggers after every 3 landed hits.\n<color=#FFD700>2nd upgrade (3★):</color> triggers after every 2 landed hits and pushes the enemy back 2 tiles.";
-                    EditorUtility.SetDirty(qiFu);
+                        qihouFrames[0],
+                        qihouPrefab);
+                    qihou.damageType = DamageType.Physical;
+                    qihou.roleTags = new[] { "Chi", "Knockback" };
+                    qihou.skillDescription = "<color=#FFD700>Base (1★):</color> After every 4 landed hits, channels a green Qihou to push the struck enemy back 1 tile.\n<color=#FFD700>1st upgrade (2★):</color> triggers after every 3 landed hits.\n<color=#FFD700>2nd upgrade (3★):</color> triggers after every 2 landed hits and pushes the enemy back 2 tiles.";
+                    EditorUtility.SetDirty(qihou);
                 }
             }
 
@@ -154,21 +154,21 @@ namespace TrashTD.Editor
                 EditorUtility.SetDirty(stagger);
             }
 
-            // 1e. Guard (Ignisaur)
-            // Idle loop: 8 frames (Ignisaur-Sheet_0 .. _7)
-            var ignisaurFramesList = new System.Collections.Generic.List<Sprite>();
-            for (int ignisaurIndex = 0; ignisaurIndex < 8; ignisaurIndex++)
+            // 1e. Guard (Lockburn)
+            // Idle loop: 8 frames (Lockburn-Sheet_0 .. _7)
+            var lockburnFramesList = new System.Collections.Generic.List<Sprite>();
+            for (int lockburnIndex = 0; lockburnIndex < 8; lockburnIndex++)
             {
-                var ignisaurSprite = LoadSprite("Ignisaur-Sheet.png", $"Ignisaur-Sheet_{ignisaurIndex}") ?? LoadSprite("Ignisaur-Sheet.png", $"Ignisaur_{ignisaurIndex}");
-                if (ignisaurSprite != null) ignisaurFramesList.Add(ignisaurSprite);
+                var lockburnSprite = LoadSprite("Lockburn-Sheet.png", $"Lockburn-Sheet_{lockburnIndex}") ?? LoadSprite("Lockburn-Sheet.png", $"Lockburn_{lockburnIndex}");
+                if (lockburnSprite != null) lockburnFramesList.Add(lockburnSprite);
             }
-            if (ignisaurFramesList.Count == 8)
+            if (lockburnFramesList.Count == 8)
             {
-                var ignisaurFrames = ignisaurFramesList.ToArray();
-                var ignisaurPrefab = CreateIgnisaurPrefab(ignisaurFrames);
-                var ignisaur = CreateOperator(
-                    "OP_Guard_Ignisaur",
-                    "Ignisaur",
+                var lockburnFrames = lockburnFramesList.ToArray();
+                var lockburnPrefab = CreateLockburnPrefab(lockburnFrames);
+                var lockburn = CreateOperator(
+                    "OP_Guard_Lockburn",
+                    "Lockburn",
                     OperatorClass.Guard,
                     OperatorPosition.Melee,
                     OperatorRarity.Star2,
@@ -186,24 +186,24 @@ namespace TrashTD.Editor
                         new Vector2Int(1, -1),
                         new Vector2Int(2, 0)
                     },
-                    ignisaurFrames[0],
-                    ignisaurPrefab);
-                ignisaur.damageType = DamageType.Arts;
-                ignisaur.roleTags = new[] { "Arts", "Melee", "Anti-Air" };
-                ignisaur.skillDescription =
+                    lockburnFrames[0],
+                    lockburnPrefab);
+                lockburn.damageType = DamageType.Arts;
+                lockburn.roleTags = new[] { "Arts", "Melee", "Anti-Air" };
+                lockburn.skillDescription =
                     "<color=#FFD700>Base (2★):</color> Reduces attack interval when not blocking, and increases ATK by 25% when blocking. Deals Physical damage with a melee slash to enemies on his tile, and Arts damage with ranged attacks to all forward tiles in range.\n<color=#FFD700>1st upgrade (3★):</color> Extends attack range by 1.\n<color=#FFD700>2nd upgrade (4★):</color> Both buffs are now applied and deals physical/arts damage based on target's DEF/RES.";
-                EditorUtility.SetDirty(ignisaur);
+                EditorUtility.SetDirty(lockburn);
             }
 
-            // 2. Defender (Bulkhead)
+            // 2. Defender (IRONHOWL MK-IX)
             var defenderSprite = LoadSprite("tex_op_defender.png");
-            var defenderPrefab = CreateOrGetOperatorPrefab("Prefab_OP_Bulkhead", defenderSprite, OperatorClass.Defender);
-            var bulkhead = CreateOperator("OP_Defender_Bulkhead", "Bulkhead", OperatorClass.Defender, OperatorPosition.Melee, OperatorRarity.Star1,
+            var defenderPrefab = CreateOrGetOperatorPrefab("Prefab_OP_Ironhowl", defenderSprite, OperatorClass.Defender);
+            var ironhowl = CreateOperator("OP_Defender_Ironhowl", "IRONHOWL MK-IX", OperatorClass.Defender, OperatorPosition.Melee, OperatorRarity.Star1,
                 hp: 280, atk: 35, def: 45, res: 10, blockCount: 4, range: 1, interval: 1.4f,
                 new[] { new Vector2Int(0, 0), new Vector2Int(1, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(0, -1) },
                 defenderSprite, defenderPrefab);
-            bulkhead.skillDescription = BulkheadSkillDescription;
-            EditorUtility.SetDirty(bulkhead);
+            ironhowl.skillDescription = IronhowlSkillDescription;
+            EditorUtility.SetDirty(ironhowl);
 
             // 2b. Defender (Mossmo)
             var mossmoFrameOne = LoadSprite("Mossmo-Sheet.png", "Mossmo-Sheet_0");
@@ -301,19 +301,19 @@ namespace TrashTD.Editor
                 EditorUtility.SetDirty(basurocket);
             }
 
-            // 3c. Sniper (Proxyshot / Proxishot)
-            var proxishot = AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Proxishot.asset");
-            if (proxishot != null)
+            // 3c. Sniper (Oquloct / Oquloct)
+            var oquloct = AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Sniper_Oquloct.asset");
+            if (oquloct != null)
             {
-                proxishot.attackInterval = 2.3f;
-                proxishot.skillDescription = "<color=#FFD700>Base (2★):</color> Octo-Scatter ignores enemy and stage miss mechanics. When attacked by an enemy, gains Camouflage for 5 seconds and cannot be targeted.\n<color=#FFD700>1st upgrade (3★):</color> On entering Camouflage, immediately fires a shotgun attack at enemies in range for 50% damage without ending Camouflage. Heals 25% of max HP over its duration. When Camouflage ends, gains +50% DEF for 3 seconds.\n<color=#FFD700>2nd upgrade (4★):</color> Range expands from the original 3-tile fan to a cone of 8 tiles, adding 5 tiles in the next forward column.";
-                EditorUtility.SetDirty(proxishot);
+                oquloct.attackInterval = 2.3f;
+                oquloct.skillDescription = "<color=#FFD700>Base (2★):</color> Octo-Scatter ignores enemy and stage miss mechanics. When attacked by an enemy, gains Camouflage for 5 seconds and cannot be targeted.\n<color=#FFD700>1st upgrade (3★):</color> On entering Camouflage, immediately fires a shotgun attack at enemies in range for 50% damage without ending Camouflage. Heals 25% of max HP over its duration. When Camouflage ends, gains +50% DEF for 3 seconds.\n<color=#FFD700>2nd upgrade (4★):</color> Range expands from the original 3-tile fan to a cone of 8 tiles, adding 5 tiles in the next forward column.";
+                EditorUtility.SetDirty(oquloct);
             }
 
-            // 4. Caster (Pyrolite)
-            var casterSprite = LoadSprite("Pyrolite-Sheet.png", "Pyrolite-Sheet_0") ?? LoadSprite("tex_op_caster.png");
-            var casterPrefab = CreateOrGetOperatorPrefab("Prefab_OP_Pyrolite", casterSprite, OperatorClass.Caster);
-            var caster = CreateOperator("OP_Caster_Pyrolite", "Pyrolite", OperatorClass.Caster, OperatorPosition.Ranged, OperatorRarity.Star1,
+            // 4. Caster (Mechonk)
+            var casterSprite = LoadSprite("Mechonk-Sheet.png", "Mechonk-Sheet_0") ?? LoadSprite("tex_op_caster.png");
+            var casterPrefab = CreateOrGetOperatorPrefab("Prefab_OP_Mechonk", casterSprite, OperatorClass.Caster);
+            var caster = CreateOperator("OP_Caster_Mechonk", "Mechonk", OperatorClass.Caster, OperatorPosition.Ranged, OperatorRarity.Star1,
                 hp: 95, atk: 80, def: 10, res: 20, blockCount: 0, range: 2, interval: 1.6f,
                 new[]
                 {
@@ -326,15 +326,15 @@ namespace TrashTD.Editor
             caster.skillDescription = "<color=#FFD700>Base (1★):</color> Gains 3% ATK per enemy in range (up to 5 stacks) and deals AoE Arts damage.\n<color=#FFD700>1st upgrade (2★):</color> adds two tiles beside the furthest tile of his range.\n<color=#FFD700>2nd upgrade (3★):</color> each Arts AoE hit deals damage twice.";
             EditorUtility.SetDirty(caster);
 
-            var chillpath = AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Caster_Chillpath.asset");
-            if (chillpath == null)
+            var nekhrost = AssetDatabase.LoadAssetAtPath<OperatorData>($"{OperatorDataFolder}/OP_Caster_Nekhrost.asset");
+            if (nekhrost == null)
             {
-                Debug.LogError("OP_Caster_Chillpath.asset was not found; Chillpath's skill description could not be generated.");
+                Debug.LogError("OP_Caster_Nekhrost.asset was not found; Nekhrost's skill description could not be generated.");
             }
             else
             {
-                chillpath.skillDescription = ChillpathSkillDescription;
-                EditorUtility.SetDirty(chillpath);
+                nekhrost.skillDescription = NekhrostSkillDescription;
+                EditorUtility.SetDirty(nekhrost);
             }
 
             // 4b. Caster (Resicochet)

@@ -55,7 +55,7 @@ namespace TrashTD.UI
 
         /// <summary>
         /// The operator's idle loop as gameplay plays it: a prefab animation with assigned frames
-        /// (Bulkhead, Deadeye, ...), otherwise the sheet sliced the way <see cref="OperatorSpriteAnimation"/> does.
+        /// (IRONHOWL MK-IX, Deadeye, ...), otherwise the sheet sliced the way <see cref="OperatorSpriteAnimation"/> does.
         /// </summary>
         public static Sprite[] GetOperatorFrames(OperatorData data, out float frameDuration)
         {

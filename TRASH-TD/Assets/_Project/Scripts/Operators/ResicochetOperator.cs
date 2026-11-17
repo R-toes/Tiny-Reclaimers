@@ -19,7 +19,7 @@ namespace TrashTD.Operators
     /// - Each projectile bounces to surrounding tiles of the hit target (up to 4 targets total),
     ///   reducing damage by 25% on each bounce.
     /// - Sprite row changes dynamically with charge count (Row 1: 1 charge, Row 2: 2 charges, Row 3: 3 charges).
-    /// - Floating crystals have an outline aura effect matching Shadeslice's isolation talent,
+    /// - Floating crystals have an outline aura effect matching Vespierce's isolation talent,
     ///   scaling, pulsing, and bobbing with the crystals frame-by-frame and matching charge color (Orange -> Green -> Blue).
     /// </summary>
     public partial class ResicochetOperator : CasterOperator, IOperatorSpriteFrames
@@ -172,7 +172,7 @@ namespace TrashTD.Operators
         private Coroutine burstCoroutine;
         private OperatorSpriteAnimation spriteAnim;
 
-        // Shadeslice-style crystal aura & outline renderers
+        // Vespierce-style crystal aura & outline renderers
         private SpriteRenderer opSpriteRenderer;
         private SpriteRenderer crystalAuraOuter;
         private SpriteRenderer crystalAuraInner;

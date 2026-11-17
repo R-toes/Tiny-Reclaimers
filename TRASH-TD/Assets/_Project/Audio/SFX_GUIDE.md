@@ -24,7 +24,7 @@ SFX/
 - **Ambience** files loop. Make them seamless loops, 10–30 s. They fade in and out.
 - **Attack sounds stop when the impact plays.** If a unit has an `Impact` file, its still-running `Attack` sound is cut (quick 0.04 s fade) the moment the impact plays, so a long launch or charge-up never overlaps its own explosion. Melee swings that hit instantly are left alone.
 - **Volume per file:** see "Adjusting volume" below.
-- Folder names are the unit's in-game name with spaces and symbols removed ("Chi Paw" → `ChiPaw`, "Stag-ger" → `Stagger`). Renaming a unit means renaming its folder. Operators are grouped by their in-game class (Drawgoo is a Defender).
+- Folder names are the unit's in-game name with spaces and symbols removed ("Qihou" → `Qihou`, "Stag-ger" → `Stagger`). Renaming a unit means renaming its folder. Operators are grouped by their in-game class (Drawgoo is a Defender).
 
 ## Shared sounds
 
@@ -109,23 +109,23 @@ SFX/
 
 | Folder | Attack | Impact | Ability files |
 |---|---|---|---|
-| `Guard/ChiPaw` | chi paw strike | strike lands | `Ability`: knockback (every 4th hit) |
+| `Guard/Qihou` | chi paw strike | strike lands | `Ability`: knockback (every 4th hit) |
 | `Guard/Echosquire` | slash | hit / life drain | |
-| `Guard/Ignisaur` | claw (melee) or fireball (ranged) | hit | |
+| `Guard/Lockburn` | claw (melee) or fireball (ranged) | hit | |
 | `Guard/Scrapper` | swing | hit | `Ability`: stun (20% chance) |
-| `Guard/Shadeslice` | slash | hit | `Ability_Regen`: starts regenerating (5 s untouched) |
+| `Guard/Vespierce` | slash | hit | `Ability_Regen`: starts regenerating (5 s untouched) |
 | `Guard/Stagger` | slugger swing | hit | `Ability_Dodge`: dodges an attack · `Ability_Empowered`: the +50% ATK strike after a dodge |
-| `Defender/Bulkhead` | bash | hit | `Ability`: ATK/DEF buff switches on (blocking 3+) |
+| `Defender/IRONHOWLMKIX` | bash | hit | `Ability`: ATK/DEF buff switches on (blocking 3+) |
 | `Defender/Drawgoo` | attack | hit | `Ability`: draws cards on death (plays after `Death`) |
 | `Defender/Mossmo` | | | `Ability`: reactive heal pulse |
 | `Defender/Mlem` | tongue lash | | `Ability_Swallow` (or plain `Ability`): the gulp when his mouth closes on the catch · `Ability_Digest` (or `Digest`): the digesting sound. It plays when digestion starts and is played again each time it ends, so a short burbling clip covers the whole digestion (4.5–12 s); it fades out when digestion ends, he retreats or dies. *No fallback: silent until the file exists.* |
 | `Defender/Thornchin` | attack | hit | `Ability_Retaliate` (direct counter-spike) · `Ability_Surrounding` (AoE spikes in adjacent/surrounding tiles). *Fallback: Ability or Combat/MeleeAttack.* |
 | `Sniper/Basurocket` | rocket launch | **explosion** | |
 | `Sniper/Deadeye` | rifle shot | bullet hit | |
-| `Sniper/Proxishot` | shotgun blast | pellets hit | `Ability`: turns camouflaged |
+| `Sniper/Oquloct` | shotgun blast | pellets hit | `Ability`: turns camouflaged |
 | `Caster/Castiel` | beam cast | beam tick | |
-| `Caster/Chillpath` | frost cast | frost hit | `Ability_Freeze`: freezes an enemy (and gains haste) · `Ability_ExtraHit`: every 4th attack's bonus bolt |
-| `Caster/Pyrolite` | fire cast | fire burst | |
+| `Caster/Nekhrost` | frost cast | frost hit | `Ability_Freeze`: freezes an enemy (and gains haste) · `Ability_ExtraHit`: every 4th attack's bonus bolt |
+| `Caster/Mechonk` | fire cast | fire burst | |
 | `Caster/Resicochet` | crystal laser fire (`Attack`, `Attack_2`, `Attack_3`...) | crystal hit | replays attack sound, quieter per bounce |
 | `Specialist/Framiliar` | attack | hit | `Ability_Transform`: plays when morphing into another operator (slot or file) |
 | `Medic/Bubblets` | shield cast | | `Ability`: bubble pop. *Fallback: Combat/MagicAttack.* |
