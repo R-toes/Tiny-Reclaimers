@@ -1184,3 +1184,13 @@ Projectiles (`CombatProjectileVisual`) and AoE blasts (`AoeBlastVisual`) are poo
 - **Tests:** `FindObjectsByType<T>()` only finds active objects, so pooled ones are never counted; the existing projectile and blast count checks are unaffected. `CombatVisualPoolTests` covers reuse and reset.
 - **Not pooled:** heal visuals (`HolyHealVisual`, Coalesce / Panacea / Progeny effects) and Vespierce's `MeleeStabVisual`: they are rare next to projectiles. Melee swipes and impact sparks already draw through `PixelParticles`, which has its own fixed buffer.
 - `WorldHealthBar` caches its `OperatorBase` instead of calling `GetComponent` in `LateUpdate` on every bar every frame.
+
+## Operator death animation (2026-11-18)
+
+A dying operator crumbles into jumbled pixels (`SpriteDisintegration`, `Scripts/Combat`, started at the top of `OperatorBase.Die`). It is built entirely in code, with no art or animation assets.
+- **Gameplay is not delayed.** The effect copies the current frame onto its own object, and `Die` still retreats and destroys the operator at once. The tile is free immediately, so a new operator can stand there while the old one crumbles.
+- **How it looks:** over 1.1 s (`Duration`), in steps of 1/15 s, nearby solid pixels swap places and 2x2 chunks leave the sprite, roughly from the top down with randomness (`ReleaseRandomness`). Each chunk becomes a falling `PixelParticles` dot in that chunk's colour. It uses scaled time, so it follows game speed and freezes while paused.
+- **Reading the sprite:** most unit textures are not CPU-readable, so the frame is read through a render texture, in sRGB so the colours match. If that fails the effect is skipped with a warning, and the operator still dies normally. It also does nothing outside play mode, so EditMode tests are unaffected.
+- **Framiliar copies** have their grey baked into the pixels, because their grey material is destroyed with the operator.
+- **Limits:** only the operator's main sprite crumbles; separate parts such as Resicochet's crystals vanish at once. Echosquire's Second Chance returns before `OperatorBase.Die`, so a revive does not play it.
+- **No tests yet** for the effect itself.

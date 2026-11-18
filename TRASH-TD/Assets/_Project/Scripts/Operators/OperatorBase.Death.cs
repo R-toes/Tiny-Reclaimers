@@ -17,12 +17,15 @@ namespace TrashTD.Operators
         /// </summary>
         protected virtual void Die()
         {
+            SpriteRenderer body = spriteRenderer != null ? spriteRenderer : GetComponentInChildren<SpriteRenderer>();
+            SpriteDisintegration.Play(body, IsCopiedFromFramiliar);
+
             if (!UnitSfx.Play(data, UnitSfxEvent.Death))
                 AudioManager.Instance?.PlaySfx(SfxId.GameplayOperatorDeath);
             Retreat();
             TrashTD.Systems.OperatorManager.Instance?.HandleOperatorDeath(this);
             OnDeath();
-            // TODO: Death animation, respawn cooldown timer
+            // TODO: respawn cooldown timer
             Destroy(gameObject);
         }
 
