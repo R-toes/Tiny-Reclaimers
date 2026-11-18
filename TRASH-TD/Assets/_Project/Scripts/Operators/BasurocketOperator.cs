@@ -16,9 +16,8 @@ namespace TrashTD.Operators
     /// Upgrades:
     /// - Base (3★): fires every 2.8 s, 2 to 7 tiles forward; the blast deals 100% ATK.
     /// - 1x Upgraded (4★): fires every 2.3 s and reaches 1 tile further (2 to 8 tiles).
-    /// - 2x Upgraded (5★): after the blast, cluster bombs go off one by one on and around the impact, each with
-    ///   its own blast circle. A bomb deals 100% ATK, and each enemy takes at most one bomb, so an enemy caught by
-    ///   the main blast and a bomb is hit twice.
+    /// - 2x Upgraded (5★): after the blast, cluster bombs go off together on and around the impact, each with
+    ///   its own blast circle. A bomb deals 30% of the main blast's damage, and each enemy takes at most one bomb.
     /// </summary>
     public sealed class BasurocketOperator : SniperOperator
     {
@@ -35,9 +34,10 @@ namespace TrashTD.Operators
 
         /// <summary>How far from the impact a cluster bomb reaches: bombs land on the rim of the main blast.</summary>
         public const float ClusterRadiusTiles = BlastRadiusTiles + ClusterBombRadiusTiles;
-        public const float ClusterDamageMultiplier = 1f;
+
+        /// <summary>A bomb's share of the damage the main blast deals to the same enemy.</summary>
+        public const float ClusterDamageMultiplier = 0.3f;
         public const float ClusterDelaySeconds = 0.18f;
-        public const float ClusterBombIntervalSeconds = 0.06f;
 
         /// <summary>One bomb on the impact, the rest evenly around the rim of the main blast.</summary>
         public const int ClusterBombCount = 8;
@@ -76,8 +76,8 @@ namespace TrashTD.Operators
         }
 
         /// <summary>
-        /// Where the cluster bombs land, in the order they go off: the impact first, then around the rim of the
-        /// main blast. Together their circles cover the whole main blast.
+        /// Where the cluster bombs land: one on the impact, the rest around the rim of the main blast.
+        /// Together their circles cover the whole main blast.
         /// </summary>
         public static Vector3[] GetClusterBombPositions(Vector3 center, float cellSize, float startAngleDegrees)
         {
@@ -93,6 +93,14 @@ namespace TrashTD.Operators
             }
             return positions;
         }
+
+        /// <summary>What the main blast deals to an enemy with this DEF.</summary>
+        public static int GetBlastDamage(int atk, int def) =>
+            DamageCalculator.CalculateDamage(Mathf.RoundToInt(atk * BlastDamageMultiplier), def);
+
+        /// <summary>What a cluster bomb deals to the same enemy: a share of the main blast's damage, at least 1.</summary>
+        public static int GetClusterBombDamage(int atk, int def) =>
+            Mathf.Max(1, Mathf.RoundToInt(GetBlastDamage(atk, def) * ClusterDamageMultiplier));
 
         public override void Attack(EnemyBase target)
         {
@@ -139,8 +147,7 @@ namespace TrashTD.Operators
                 if (blastTarget == null || blastTarget.IsDead || !uniqueTargets.Add(blastTarget))
                     continue;
 
-                int damage = Mathf.RoundToInt(currentATK * BlastDamageMultiplier);
-                damage = DamageCalculator.CalculateDamage(damage, blastTarget.CurrentDEF);
+                int damage = GetBlastDamage(currentATK, blastTarget.CurrentDEF);
                 blastTarget.TryTakeAttackDamage(damage, DamageType.Physical, this);
             }
 
@@ -165,24 +172,20 @@ namespace TrashTD.Operators
         private IEnumerator ClusterRoutine(Vector3[] bombs, float bombRadius)
         {
             yield return new WaitForSeconds(ClusterDelaySeconds);
+            if (!isDeployed) yield break;
 
+            PlayImpactSound(); // one sound for the whole cluster
             var hitByBomb = new HashSet<EnemyBase>();
             for (int i = 0; i < bombs.Length; i++)
             {
-                if (!isDeployed) yield break;
-
-                if (i == 0) PlayImpactSound(); // one sound for the whole cluster
                 PlayClusterBombVisuals(bombs[i], bombRadius);
                 ApplyClusterBomb(bombs[i], bombRadius, hitByBomb);
-
-                if (i < bombs.Length - 1)
-                    yield return new WaitForSeconds(ClusterBombIntervalSeconds);
             }
         }
 
         /// <summary>
-        /// One bomb hits every enemy in its circle for normal damage. Enemies the main blast hit can be hit again,
-        /// but each enemy takes only one bomb per cluster, so overlapping circles do not stack.
+        /// One bomb hits every enemy in its circle. Enemies the main blast hit can be hit again, but each enemy
+        /// takes only one bomb per cluster, so overlapping circles do not stack.
         /// </summary>
         private void ApplyClusterBomb(Vector3 position, float bombRadius, HashSet<EnemyBase> hitByBomb)
         {
@@ -196,8 +199,7 @@ namespace TrashTD.Operators
                 if (enemy == null || enemy.IsDead || !hitByBomb.Add(enemy))
                     continue;
 
-                int damage = Mathf.RoundToInt(currentATK * ClusterDamageMultiplier);
-                damage = DamageCalculator.CalculateDamage(damage, enemy.CurrentDEF);
+                int damage = GetClusterBombDamage(currentATK, enemy.CurrentDEF);
                 enemy.TryTakeAttackDamage(damage, DamageType.Physical, this);
             }
         }
@@ -220,7 +222,7 @@ namespace TrashTD.Operators
             }
 
             if (HasSecondUpgrade)
-                effects.Add(new StatEffect("5★ UPGRADE", $"{ClusterBombCount} cluster bombs: {ClusterDamageMultiplier * 100f:0}% ATK each", "ATK"));
+                effects.Add(new StatEffect("5★ UPGRADE", $"{ClusterBombCount} cluster bombs: {ClusterDamageMultiplier * 100f:0}% blast damage each", "ATK"));
         }
     }
 }

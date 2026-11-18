@@ -28,7 +28,7 @@ namespace TrashTD.Tests
             StringAssert.Contains("every 2.3 seconds", data.skillDescription);
             StringAssert.Contains("2nd upgrade (5★)", data.skillDescription);
             StringAssert.Contains("cluster bombs", data.skillDescription);
-            StringAssert.Contains("100% of ATK", data.skillDescription);
+            StringAssert.Contains("30% of the main blast's damage", data.skillDescription);
         }
 
         [Test]
@@ -85,20 +85,29 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void ClusterBombs_DealNormalDamage()
+        public void ClusterBombs_DealThirtyPercentOfTheMainBlastDamage()
         {
-            Assert.AreEqual(1f, BasurocketOperator.ClusterDamageMultiplier, 0.0001f);
+            Assert.AreEqual(0.3f, BasurocketOperator.ClusterDamageMultiplier, 0.0001f);
+
+            Assert.AreEqual(200, BasurocketOperator.GetBlastDamage(200, 0));
+            Assert.AreEqual(60, BasurocketOperator.GetClusterBombDamage(200, 0));
+
+            Assert.AreEqual(150, BasurocketOperator.GetBlastDamage(200, 50));
+            Assert.AreEqual(45, BasurocketOperator.GetClusterBombDamage(200, 50), "DEF is applied before the 30%.");
+
+            Assert.AreEqual(10, BasurocketOperator.GetBlastDamage(200, 1000), "The main blast's 5% damage floor.");
+            Assert.AreEqual(3, BasurocketOperator.GetClusterBombDamage(200, 1000));
         }
 
         [Test]
-        public void ClusterBombs_StartOnTheImpactAndLandOnTheRimOfTheMainBlast()
+        public void ClusterBombs_LandOnTheImpactAndOnTheRimOfTheMainBlast()
         {
             const float cellSize = 1.5f;
             Vector3 center = new Vector3(2f, -1f, 0f);
             Vector3[] bombs = BasurocketOperator.GetClusterBombPositions(center, cellSize, 30f);
 
             Assert.AreEqual(BasurocketOperator.ClusterBombCount, bombs.Length);
-            Assert.AreEqual(center, bombs[0], "The first bomb lands on the impact.");
+            Assert.AreEqual(center, bombs[0], "One bomb lands on the impact.");
 
             float rim = BasurocketOperator.BlastRadiusTiles * cellSize;
             float reach = BasurocketOperator.ClusterRadiusTiles * cellSize;
