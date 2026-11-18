@@ -16,8 +16,9 @@ namespace TrashTD.Operators
     /// Upgrades:
     /// - Base (3★): fires every 2.8 s, 2 to 7 tiles forward; the blast deals 100% ATK.
     /// - 1x Upgraded (4★): fires every 2.3 s and reaches 1 tile further (2 to 8 tiles).
-    /// - 2x Upgraded (5★): after the blast, cluster bombs go off in a ring 1 tile wide around it,
-    ///   dealing 60% ATK to enemies the main blast did not hit.
+    /// - 2x Upgraded (5★): after the blast, cluster bombs go off one by one on and around the impact, each with
+    ///   its own blast circle. A bomb deals 100% ATK, and each enemy takes at most one bomb, so an enemy caught by
+    ///   the main blast and a bomb is hit twice.
     /// </summary>
     public sealed class BasurocketOperator : SniperOperator
     {
@@ -29,11 +30,16 @@ namespace TrashTD.Operators
         /// <summary>1st upgrade: seconds between rockets (2.8 in the data asset before it).</summary>
         public const float UpgradedAttackInterval = 2.3f;
 
-        /// <summary>2nd upgrade: the cluster ring reaches this many tiles beyond the main blast.</summary>
-        public const float ClusterRingWidthTiles = 1f;
-        public const float ClusterRadiusTiles = BlastRadiusTiles + ClusterRingWidthTiles;
-        public const float ClusterDamageMultiplier = 0.6f;
+        /// <summary>2nd upgrade: each cluster bomb blasts its own circle of this radius.</summary>
+        public const float ClusterBombRadiusTiles = 1f;
+
+        /// <summary>How far from the impact a cluster bomb reaches: bombs land on the rim of the main blast.</summary>
+        public const float ClusterRadiusTiles = BlastRadiusTiles + ClusterBombRadiusTiles;
+        public const float ClusterDamageMultiplier = 1f;
         public const float ClusterDelaySeconds = 0.18f;
+        public const float ClusterBombIntervalSeconds = 0.06f;
+
+        /// <summary>One bomb on the impact, the rest evenly around the rim of the main blast.</summary>
         public const int ClusterBombCount = 8;
 
         /// <summary>1st upgrade range: the base 2 to 7 tiles forward, plus the 8th.</summary>
@@ -70,11 +76,23 @@ namespace TrashTD.Operators
         }
 
         /// <summary>
-        /// Whether a point at this distance from the impact is hit by the cluster bombs: outside the main blast,
-        /// and no further than the cluster radius. Distances and radii in the same unit.
+        /// Where the cluster bombs land, in the order they go off: the impact first, then around the rim of the
+        /// main blast. Together their circles cover the whole main blast.
         /// </summary>
-        public static bool IsInClusterRing(float distance, float blastRadius, float clusterRadius) =>
-            distance > blastRadius && distance <= clusterRadius;
+        public static Vector3[] GetClusterBombPositions(Vector3 center, float cellSize, float startAngleDegrees)
+        {
+            var positions = new Vector3[ClusterBombCount];
+            positions[0] = center;
+
+            float distance = BlastRadiusTiles * cellSize;
+            int bombsAround = ClusterBombCount - 1;
+            for (int i = 0; i < bombsAround; i++)
+            {
+                float angle = (startAngleDegrees + i * 360f / bombsAround) * Mathf.Deg2Rad;
+                positions[i + 1] = center + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * distance;
+            }
+            return positions;
+        }
 
         public override void Attack(EnemyBase target)
         {
@@ -126,51 +144,56 @@ namespace TrashTD.Operators
                 blastTarget.TryTakeAttackDamage(damage, DamageType.Physical, this);
             }
 
-            // 2nd upgrade: cluster bombs around the blast.
+            // 2nd upgrade: cluster bombs on and around the blast.
             if (!HasSecondUpgrade) return;
 
-            float clusterRadius = ClusterRadiusTiles * cellSize;
+            Vector3[] bombs = GetClusterBombPositions(center, cellSize, Random.Range(0f, 360f));
+            float bombRadius = ClusterBombRadiusTiles * cellSize;
             if (Application.isPlaying && isActiveAndEnabled)
             {
-                StartCoroutine(ClusterRoutine(center, radius, clusterRadius, uniqueTargets));
+                StartCoroutine(ClusterRoutine(bombs, bombRadius));
             }
             else
             {
                 // Not playing (EditMode tests): no delay.
-                ApplyClusterDamage(center, radius, clusterRadius, uniqueTargets);
+                var hitByBomb = new HashSet<EnemyBase>();
+                for (int i = 0; i < bombs.Length; i++)
+                    ApplyClusterBomb(bombs[i], bombRadius, hitByBomb);
             }
         }
 
-        private IEnumerator ClusterRoutine(Vector3 center, float blastRadius, float clusterRadius, HashSet<EnemyBase> alreadyHit)
+        private IEnumerator ClusterRoutine(Vector3[] bombs, float bombRadius)
         {
             yield return new WaitForSeconds(ClusterDelaySeconds);
-            if (!isDeployed) yield break;
 
-            PlayClusterVisuals(center, blastRadius, clusterRadius);
-            PlayImpactSound();
-            ApplyClusterDamage(center, blastRadius, clusterRadius, alreadyHit);
+            var hitByBomb = new HashSet<EnemyBase>();
+            for (int i = 0; i < bombs.Length; i++)
+            {
+                if (!isDeployed) yield break;
+
+                if (i == 0) PlayImpactSound(); // one sound for the whole cluster
+                PlayClusterBombVisuals(bombs[i], bombRadius);
+                ApplyClusterBomb(bombs[i], bombRadius, hitByBomb);
+
+                if (i < bombs.Length - 1)
+                    yield return new WaitForSeconds(ClusterBombIntervalSeconds);
+            }
         }
 
         /// <summary>
-        /// The cluster bombs hit every enemy in the ring between the main blast and the cluster radius once,
-        /// for less than the main blast. Enemies the main blast already hit are not hit again, even if they
-        /// have moved into the ring since.
+        /// One bomb hits every enemy in its circle for normal damage. Enemies the main blast hit can be hit again,
+        /// but each enemy takes only one bomb per cluster, so overlapping circles do not stack.
         /// </summary>
-        public void ApplyClusterDamage(Vector3 center, float blastRadius, float clusterRadius, HashSet<EnemyBase> alreadyHit)
+        private void ApplyClusterBomb(Vector3 position, float bombRadius, HashSet<EnemyBase> hitByBomb)
         {
             if (EnemyManager.Instance == null || data == null)
                 return;
 
-            List<EnemyBase> candidates = EnemyManager.Instance.GetEnemiesInRadius(center, clusterRadius, data.position);
-            HashSet<EnemyBase> clusterHit = new HashSet<EnemyBase>();
-            for (int i = 0; i < candidates.Count; i++)
+            List<EnemyBase> targets = EnemyManager.Instance.GetEnemiesInRadius(position, bombRadius, data.position);
+            for (int i = 0; i < targets.Count; i++)
             {
-                EnemyBase enemy = candidates[i];
-                if (enemy == null || enemy.IsDead || (alreadyHit != null && alreadyHit.Contains(enemy)) || !clusterHit.Add(enemy))
-                    continue;
-
-                float distance = Vector2.Distance(enemy.transform.position, center);
-                if (!IsInClusterRing(distance, blastRadius, clusterRadius))
+                EnemyBase enemy = targets[i];
+                if (enemy == null || enemy.IsDead || !hitByBomb.Add(enemy))
                     continue;
 
                 int damage = Mathf.RoundToInt(currentATK * ClusterDamageMultiplier);
@@ -179,23 +202,11 @@ namespace TrashTD.Operators
             }
         }
 
-        /// <summary>
-        /// A ring at the cluster radius shows the exact area hit; the small explosions sit in the middle of the
-        /// ring, going off one after another around the impact.
-        /// </summary>
-        private static void PlayClusterVisuals(Vector3 center, float blastRadius, float clusterRadius)
+        /// <summary>The bomb's own circle shows the exact area it hits.</summary>
+        private static void PlayClusterBombVisuals(Vector3 position, float bombRadius)
         {
-            AoeBlastVisual.PlayCircle(center, clusterRadius, BlastColor, AoeStyle.Pulse);
-
-            float ringDistance = (blastRadius + clusterRadius) * 0.5f;
-            float bombRadius = (clusterRadius - blastRadius) * 0.5f;
-            float startAngle = Random.Range(0f, 360f);
-            for (int i = 0; i < ClusterBombCount; i++)
-            {
-                float angle = (startAngle + i * 360f / ClusterBombCount) * Mathf.Deg2Rad;
-                Vector2 position = (Vector2)center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * ringDistance;
-                CombatFx.Explosion(position, bombRadius, i * 0.03f, true);
-            }
+            AoeBlastVisual.PlayCircle(position, bombRadius, BlastColor, AoeStyle.Pulse);
+            CombatFx.Explosion(position, bombRadius * 0.5f, 0f, true);
         }
 
         public override void CollectStatEffects(List<StatEffect> effects)
@@ -209,7 +220,7 @@ namespace TrashTD.Operators
             }
 
             if (HasSecondUpgrade)
-                effects.Add(new StatEffect("5★ UPGRADE", $"Cluster bombs: {ClusterDamageMultiplier * 100f:0}% ATK around the blast", "ATK"));
+                effects.Add(new StatEffect("5★ UPGRADE", $"{ClusterBombCount} cluster bombs: {ClusterDamageMultiplier * 100f:0}% ATK each", "ATK"));
         }
     }
 }
