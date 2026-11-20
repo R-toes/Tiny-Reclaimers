@@ -11,7 +11,7 @@ namespace TrashTD.Audio
     public partial class AudioSettingsUI
     {
         private const float MobileBandBottom = 290f;   // the desktop SCREEN rows end at y = 286; the CRT STYLE header starts at 298
-        private const float MobileCrtShiftDown = 40f;  // room for a third row and a hint line above the CRT section
+        private const float MobileRowStep = 42f;       // three rows of 40-unit buttons fit above the CRT section without moving it
 
         private readonly Button[] uiSizeButtons = new Button[3];
         private readonly Button[] frameRateButtons = new Button[3];
@@ -19,7 +19,8 @@ namespace TrashTD.Audio
 
         /// <summary>
         /// Phones and tablets always fill their screen, so the desktop SCREEN section (resolution, fullscreen or windowed)
-        /// is hidden and replaced by what matters on a phone: UI SIZE, FRAME RATE and PICTURE. The CRT section moves down.
+        /// is hidden and replaced by what matters on a phone: UI SIZE, FRAME RATE and PICTURE. The CRT section stays where it is
+        /// (moving it down would put the brightness slider on top of the CLOSE button).
         /// </summary>
         private void BuildMobileDisplayRows()
         {
@@ -32,42 +33,41 @@ namespace TrashTD.Audio
                 if (rect == null) continue;
                 float y = -rect.anchoredPosition.y;
                 if (y < MobileBandBottom) child.gameObject.SetActive(false);
-                else rect.anchoredPosition += Vector2.down * MobileCrtShiftDown;
             }
 
             Transform previousRoot = pageRoot;
             pageRoot = displayPage.transform;
             CreateSectionHeader("TOUCH AND BATTERY", 150f);
 
-            CreateRowLabel("UI SIZE", 196f);
+            const float row1 = 192f; // buttons span 172-212, 214-254 and 256-296; the CRT STYLE header's text starts at 298
+            const float row2 = row1 + MobileRowStep;
+            const float row3 = row2 + MobileRowStep;
+
+            CreateRowLabel("UI SIZE", row1);
             string[] sizeLabels = { "SMALL", "NORMAL", "LARGE" };
             for (int i = 0; i < 3; i++)
             {
                 UiSize size = (UiSize)i;
-                uiSizeButtons[i] = CreateSegmentButton("UiSize" + sizeLabels[i] + "Button", sizeLabels[i], i, 196f);
+                uiSizeButtons[i] = CreateSegmentButton("UiSize" + sizeLabels[i] + "Button", sizeLabels[i], i, row1);
                 Bind(uiSizeButtons[i], () => SetUiSize(size));
             }
 
-            CreateRowLabel("FRAME RATE", 244f);
+            CreateRowLabel("FRAME RATE", row2);
             for (int i = 0; i < 3; i++)
             {
                 int fps = MobileSettings.FrameRates[i];
-                frameRateButtons[i] = CreateSegmentButton("Fps" + fps + "Button", fps + " FPS", i, 244f);
+                frameRateButtons[i] = CreateSegmentButton("Fps" + fps + "Button", fps + " FPS", i, row2);
                 Bind(frameRateButtons[i], () => SetFrameRate(fps));
             }
 
-            CreateRowLabel("PICTURE", 292f);
+            CreateRowLabel("PICTURE", row3);
             string[] pictureLabels = { "FULL", "75%", "50%" };
             for (int i = 0; i < 3; i++)
             {
                 PictureQuality quality = (PictureQuality)i;
-                pictureButtons[i] = CreateSegmentButton("Picture" + i + "Button", pictureLabels[i], i, 292f);
+                pictureButtons[i] = CreateSegmentButton("Picture" + i + "Button", pictureLabels[i], i, row3);
                 Bind(pictureButtons[i], () => SetPicture(quality));
             }
-
-            Text hint = CreateText(pageRoot, "A lower frame rate and a smaller picture save battery and keep the phone cool.", 10,
-                TextAnchor.MiddleLeft, HintColor);
-            PlaceTopLeft(hint.rectTransform, ControlX, 318f, CardWidth - Padding - ControlX, 16f);
 
             pageRoot = previousRoot;
             RefreshMobileControls();

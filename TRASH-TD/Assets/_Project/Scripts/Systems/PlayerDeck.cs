@@ -313,6 +313,21 @@ namespace TrashTD.Systems
         }
 
         /// <summary>
+        /// Replaces the deck with these slots, in order, empty slots (null) included. Used to continue a saved run, so the
+        /// cards sit where the player left them.
+        /// </summary>
+        public void RestoreSlots(IReadOnlyList<DraftCard> slots)
+        {
+            deckSlots.Clear();
+            pendingReturnedCards.Clear();
+            if (slots != null)
+            {
+                for (int i = 0; i < slots.Count && i < MAX_DECK_SIZE; i++) deckSlots.Add(slots[i]);
+            }
+            OnDeckChanged?.Invoke(deckSlots);
+        }
+
+        /// <summary>
         /// Clear the entire deck (e.g., stage reset).
         /// </summary>
         public void ClearDeck()

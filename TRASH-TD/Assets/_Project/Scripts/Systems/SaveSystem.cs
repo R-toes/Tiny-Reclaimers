@@ -27,14 +27,45 @@ namespace TrashTD.Systems
     public class SaveData
     {
         // Not stored yet, waiting on design (PROJECT_GUIDELINES.md, "Save data"): an economy beyond the card draft (currencies,
-        // a shop) and whether a roster or a run in progress persists. Adding a field later is backward compatible: older saves
-        // simply lack it and JsonUtility leaves it at its default.
+        // a shop) and a roster. A run in progress is stored in suspendedRuns (Save & Exit). Adding a field later is backward
+        // compatible: older saves simply lack it and JsonUtility leaves it at its default.
         public int version = SaveSystem.CurrentVersion;
         /// <summary>The old PlayerPrefs progress has been moved into this file (see SaveSystem.LegacyPrefs).</summary>
         public bool legacyPrefsImported;
         public bool tutorialDone;
         public List<StageProgressEntry> stageProgress = new List<StageProgressEntry>();
         public List<EnemyIntelEntry> enemyIntel = new List<EnemyIntelEntry>();
+
+        /// <summary>Stage runs saved with SAVE &amp; EXIT, at most one per stage and difficulty.</summary>
+        public List<StageSnapshot> suspendedRuns = new List<StageSnapshot>();
+
+        /// <summary>The saved run of this stage and difficulty, or null.</summary>
+        public StageSnapshot FindRun(string stageId, int difficulty)
+        {
+            if (suspendedRuns == null) return null; // a save written before this field existed
+            for (int i = 0; i < suspendedRuns.Count; i++)
+            {
+                StageSnapshot run = suspendedRuns[i];
+                if (run != null && run.stageId == stageId && run.difficulty == difficulty) return run;
+            }
+            return null;
+        }
+
+        /// <summary>Stores a saved run, replacing any earlier one for the same stage and difficulty.</summary>
+        public void SetRun(StageSnapshot run)
+        {
+            if (run == null) return;
+            if (suspendedRuns == null) suspendedRuns = new List<StageSnapshot>();
+            ClearRun(run.stageId, run.difficulty);
+            suspendedRuns.Add(run);
+        }
+
+        /// <summary>Forgets the saved run of this stage and difficulty. True when there was one.</summary>
+        public bool ClearRun(string stageId, int difficulty)
+        {
+            return suspendedRuns != null &&
+                   suspendedRuns.RemoveAll(run => run != null && run.stageId == stageId && run.difficulty == difficulty) > 0;
+        }
 
         /// <summary>Best stars on this stage and difficulty (0 = never cleared).</summary>
         public int GetStars(string stageId, int difficulty)
@@ -79,6 +110,13 @@ namespace TrashTD.Systems
         {
             if (stageProgress == null) stageProgress = new List<StageProgressEntry>();
             if (enemyIntel == null) enemyIntel = new List<EnemyIntelEntry>();
+            if (suspendedRuns == null) suspendedRuns = new List<StageSnapshot>();
+            suspendedRuns.RemoveAll(run => run == null);
+            foreach (StageSnapshot run in suspendedRuns)
+            {
+                if (run.deck == null) run.deck = new List<CardSnapshot>();
+                if (run.deployed == null) run.deployed = new List<DeployedSnapshot>();
+            }
             for (int i = 0; i < enemyIntel.Count; i++)
             {
                 if (enemyIntel[i] != null && enemyIntel[i].sightedStageIds == null) enemyIntel[i].sightedStageIds = new List<string>();

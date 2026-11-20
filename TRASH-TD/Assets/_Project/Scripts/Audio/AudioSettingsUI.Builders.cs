@@ -43,6 +43,7 @@ namespace TrashTD.Audio
 
             RefreshValueTexts();
             RefreshMobileControls();
+            RefreshPlaytestControls();
         }
 
         private void RefreshValueTexts()

@@ -279,6 +279,7 @@ namespace TrashTD.Audio
             Bind(closeButton, Hide, SfxId.UiBack);
 
             if (PointerInput.IsMobileDevice) BuildMobileDisplayRows();
+            if (TrashTD.Playtest.PlaytestConfig.Current.IsComplete) BuildPlaytestRows();
 
             // The placement options are animated diagrams made from generated sprites, so they are created here, on the CONTROLS page
             Transform controlsPage = pages[(int)Tab.Controls].transform;

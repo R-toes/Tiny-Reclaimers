@@ -71,6 +71,10 @@ sysinfo.txt
 # Mono auto generated files
 mono_crash.*
 
+# Playtest form address and question ids (see Docs/PLAYTEST_SETUP.md); never commit it
+**/Resources/PlaytestConfig.json
+**/Resources/PlaytestConfig.json.meta
+
 # Builds
 *.apk
 *.aab

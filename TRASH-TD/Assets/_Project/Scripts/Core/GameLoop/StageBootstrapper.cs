@@ -211,6 +211,9 @@ namespace TrashTD.Core.GameLoop
                 return;
             }
 
+            // Playtest reporting (does nothing unless the build has a playtest config and the player allowed it)
+            TrashTD.Playtest.PlaytestTracker.Begin(gameObject, stageData.stageId, difficulty.ToString());
+
             // 1. Initialize Grid
             gridManager.InitializeFromStageData(stageData);
 
@@ -286,6 +289,10 @@ namespace TrashTD.Core.GameLoop
             }
             cardDraftSystem.ResetForNewStage();
 
+            // A run the player chose to continue (Save & Exit, then CONTINUE on the stage screen): never in the sandbox or tutorial
+            StageSnapshot resume = IsSandbox || IsTutorial ? null : StageResume.Consume(stageData.stageId, (int)difficulty);
+            RestoreDraftState(resume);
+
             // 5. Initialize Wave Manager
             waveManager.Initialize(stageData, difficulty);
 
@@ -296,7 +303,13 @@ namespace TrashTD.Core.GameLoop
             }
 
             // 6. Start Stage (enters CardPick phase, which shows the CardDraftOverlayUI)
-            gameManager.StartStage(stageData, difficulty);
+            gameManager.StartStage(stageData, difficulty, resume);
+            if (resume != null) RestoreDeckAndOperators(resume);
+
+            // Save & Exit bookkeeping: remember each wave's start, and forget the saved run once the stage is won or lost
+            gameManager.OnPhaseChanged += HandlePhaseForSuspend;
+            gameManager.OnStageVictory += HandleRunFinished;
+            gameManager.OnStageDefeat += HandleRunFinished;
 
             if (stageData.stageId == "SANDBOX")
             {

@@ -122,6 +122,15 @@ namespace TrashTD.Systems
             oddsTable = table;
         }
 
+        /// <summary>Puts the draft counters back for a continued run (the round, which decides the opening draft, and the rerolls left).</summary>
+        public void RestoreState(int round, int rerolls)
+        {
+            currentRound = Mathf.Max(0, round);
+            rerollsRemaining = Mathf.Max(0, rerolls);
+            currentOfferedCards.Clear();
+            OnRerollCountChanged?.Invoke(rerollsRemaining);
+        }
+
         /// <summary>Set before each draft (the draft overlay passes GameManager's wave index during Card Pick).</summary>
         public void SetWavesCleared(int count)
         {

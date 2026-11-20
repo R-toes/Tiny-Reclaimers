@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using TrashTD.Audio;
 using TrashTD.Data;
+using TrashTD.Systems;
 using StageProgress = TrashTD.Core.GameLoop.StageProgress;
 using static TrashTD.UI.UiKit;
 
@@ -28,6 +29,40 @@ namespace TrashTD.UI
                 PlayDenied();
                 return;
             }
+
+            // A saved run of this stage and difficulty (SAVE & EXIT): offer to continue it or to start over
+            StageSnapshot saved = selectedStage.stageId == SandboxStageId || IsTutorialStage(selectedStage)
+                ? null
+                : SaveSystem.Data.FindRun(selectedStage.stageId, (int)selectedDifficulty);
+            if (saved != null && StageSnapshotRules.IsUsable(saved))
+            {
+                if (ChoiceDialog.IsShowing) return;
+                ChoiceDialog.Show("CONTINUE THIS STAGE?",
+                    "You have a saved run on this stage: " + StageSnapshotRules.DescribeWave(saved) + ", " + saved.lives +
+                    (saved.lives == 1 ? " life" : " lives") + " left.\n\nCONTINUE picks up where you left off. START AGAIN deletes the saved run and begins from the start.",
+                    new ChoiceDialog.Option("CONTINUE", ChoiceDialog.Positive, () =>
+                    {
+                        StageResume.Request(saved);
+                        LaunchSelectedStage();
+                    }),
+                    new ChoiceDialog.Option("START AGAIN", ChoiceDialog.Negative, () =>
+                    {
+                        SaveSystem.Data.ClearRun(saved.stageId, saved.difficulty);
+                        SaveSystem.Save();
+                        LaunchSelectedStage();
+                    }),
+                    new ChoiceDialog.Option("CANCEL", ChoiceDialog.Neutral, null));
+                return;
+            }
+
+            if (saved != null) SaveSystem.Data.ClearRun(saved.stageId, saved.difficulty); // damaged or from a newer version: drop it
+            LaunchSelectedStage();
+        }
+
+        /// <summary>Loads the selected stage (the checks and the saved-run question happen in <see cref="PlaySelectedStage"/>).</summary>
+        private void LaunchSelectedStage()
+        {
+            if (isLoadingStage || selectedStage == null) return;
 
             SetPendingStage(selectedStage);
             SetPendingStageDifficulty(selectedDifficulty);

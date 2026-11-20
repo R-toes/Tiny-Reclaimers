@@ -879,7 +879,32 @@ namespace TrashTD.UI
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
+        /// <summary>
+        /// EXIT TO MENU. On a real stage it first asks whether to save the run (SAVE &amp; EXIT) so it can be continued
+        /// later from the stage screen; the tutorial and the sandbox leave straight away.
+        /// </summary>
         private void ExitToMenu()
+        {
+            if (stageBootstrapper == null || !stageBootstrapper.CanSuspend || ChoiceDialog.IsShowing)
+            {
+                LeaveStage();
+                return;
+            }
+
+            string where = stageBootstrapper.SuspendDescription();
+            ChoiceDialog.Show("LEAVE THE STAGE?",
+                "SAVE & EXIT keeps your lives, your deck and your operators. You continue from the start of " +
+                (string.IsNullOrEmpty(where) ? "this wave" : where.ToLowerInvariant()) + ".",
+                new ChoiceDialog.Option("SAVE & EXIT", ChoiceDialog.Positive, () =>
+                {
+                    if (!stageBootstrapper.SuspendAndSave()) Debug.LogWarning("The run could not be saved; leaving without saving.");
+                    LeaveStage();
+                }),
+                new ChoiceDialog.Option("EXIT WITHOUT SAVING", ChoiceDialog.Negative, LeaveStage),
+                new ChoiceDialog.Option("CANCEL", ChoiceDialog.Neutral, null));
+        }
+
+        private void LeaveStage()
         {
             Time.timeScale = 1f;
             MainMenuController.ReturnToStageSelectorOnLoad();

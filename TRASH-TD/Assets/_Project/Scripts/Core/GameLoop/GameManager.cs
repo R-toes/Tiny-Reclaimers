@@ -53,6 +53,8 @@ namespace TrashTD.Core.GameLoop
         public float ElapsedTime => elapsedTime;
         public GamePlayState CurrentState => currentState;
         public bool IsPaused => currentState == GamePlayState.Paused;
+        /// <summary>An enemy has reached the exit this run (the 3-star rule needs it; a saved run keeps it).</summary>
+        public bool LeakedAnyEnemy => leakedAnyEnemy;
         public float GameSpeed { get; private set; } = 1f;
         /// <summary>QA sandbox stage: leaks never cost lives and the stage can't be lost.</summary>
         public bool IsSandbox => currentStage != null && currentStage.stageId == "SANDBOX";
@@ -101,7 +103,7 @@ namespace TrashTD.Core.GameLoop
         /// <summary>
         /// Starts or restarts the stage with the specified stage data and difficulty.
         /// </summary>
-        public void StartStage(StageData stageData, StageDifficulty difficulty)
+        public void StartStage(StageData stageData, StageDifficulty difficulty, StageSnapshot resume = null)
         {
             currentStage = stageData;
             currentDifficulty = difficulty;
@@ -120,11 +122,20 @@ namespace TrashTD.Core.GameLoop
                 OperatorManager.Instance.SquadLimit = stageData.squadSizeLimit;
             }
 
+            // Continuing a saved run: the lives, the clock and the wave it was at, and the phase it was saved in
+            if (resume != null)
+            {
+                currentLifePoints = Mathf.Clamp(resume.lives, 1, maxLifePoints);
+                elapsedTime = Mathf.Max(0f, resume.elapsed);
+                leakedAnyEnemy = resume.leaked;
+                currentWaveIndex = Mathf.Max(0, resume.waveIndex);
+            }
+
             SetState(GamePlayState.Playing);
             OnLifePointsChanged?.Invoke(currentLifePoints, maxLifePoints);
 
-            // Start with the card pick phase
-            SetPhase(StagePhase.CardPick);
+            // Start with the card pick phase (a continued run goes back to the phase it was saved in)
+            SetPhase(resume != null && resume.phase == StageSnapshotRules.PhasePreparation ? StagePhase.Preparation : StagePhase.CardPick);
         }
 
         /// <summary>
