@@ -57,6 +57,18 @@ namespace TrashTD.UI
                 if (label != null) label.text = "||";
             }
 
+            // Phones: a HIDE UI button on the empty stretch of the bar (a keyboard has H). SHOW UI sits at the same
+            // place on the hidden-HUD canvas (CreateHudHiddenHint), so a second tap in the same spot brings the HUD back.
+            if (MobileUi.IsMobile)
+            {
+                Button hideButton = CreateButton(stageInfoPanel.transform, "HideUiButton", "HIDE UI", HudToggleSize, ButtonContainerType.IconDark);
+                SetPosition(hideButton.GetComponent<RectTransform>(), new Vector2(0f, -41f), new Vector2(HudToggleArtX / TopArtWidth, 1f),
+                    HudToggleSize, new Vector2(0.5f, 0.5f));
+                SetPlacementButtonStyle(hideButton, ButtonContainerType.IconDark, 15);
+                StyleButton(hideButton, ButtonContainerType.IconDark, Color.white, 1.06f);
+                hideButton.onClick.AddListener(HideHudFromButton);
+            }
+
             // Readouts sit on the art's four dark screens as labelled terminal readouts: a small dim label and a
             // bright value, with scanlines and a faint glow in the phase colour. Each screen is anchored as a
             // fraction of the bar, so it stays on its screen however the art is stretched (any aspect ratio).
@@ -111,6 +123,10 @@ namespace TrashTD.UI
 
         // Top Panel BG frame size in art pixels; it is drawn across the full bar width, 3x at 1920x90.
         private const float TopArtWidth = 640f;
+
+        // HIDE UI / SHOW UI (phones): where they sit on the bar art (between the hostiles and lives screens) and their size
+        private const float HudToggleArtX = 470f;
+        private static readonly Vector2 HudToggleSize = new Vector2(150f, 52f);
         private const float TopArtHeight = 30f;
 
         /// <summary>

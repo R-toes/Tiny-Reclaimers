@@ -727,6 +727,21 @@ namespace TrashTD.UI
             SetHudHidden(canHide && GameplaySettings.HideHud);
         }
 
+        /// <summary>The HIDE UI button (phones): the same switch as the H key and Settings > Gameplay > HIDE UI.</summary>
+        private void HideHudFromButton()
+        {
+            if (TutorialDirector.Instance != null) return; // the tutorial needs the HUD, like the H key
+            GameplaySettings.HideHud = true;
+            AudioManager.Instance?.PlaySfx(SfxId.UiClick, sfxVolume);
+        }
+
+        /// <summary>The SHOW UI button (phones), shown while the HUD is hidden.</summary>
+        private void ShowHudFromButton()
+        {
+            GameplaySettings.HideHud = false;
+            AudioManager.Instance?.PlaySfx(SfxId.UiClick, sfxVolume);
+        }
+
         private void SetHudHidden(bool hidden)
         {
             if (hidden == hudHidden || canvas == null) return;
@@ -739,7 +754,7 @@ namespace TrashTD.UI
         /// <summary>A small, faint "UI HIDDEN [H]" reminder on a canvas of its own (the HUD canvas is switched off).</summary>
         private void CreateHudHiddenHint()
         {
-            hudHiddenHint = new GameObject("HudHiddenHint", typeof(Canvas), typeof(CanvasScaler));
+            hudHiddenHint = new GameObject("HudHiddenHint", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var hintCanvas = hudHiddenHint.GetComponent<Canvas>();
             hintCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
             hintCanvas.sortingOrder = 101;
@@ -752,7 +767,7 @@ namespace TrashTD.UI
             var textObject = new GameObject("Text", typeof(RectTransform), typeof(Text));
             textObject.transform.SetParent(hudHiddenHint.transform, false);
             var text = textObject.GetComponent<Text>();
-            text.text = "UI HIDDEN   [ H ]";
+            text.text = MobileUi.IsMobile ? "UI HIDDEN" : "UI HIDDEN   [ H ]";
             text.font = UIFontHelper.GetPixelFont();
             text.fontSize = 12;
             text.alignment = TextAnchor.LowerLeft;
@@ -762,6 +777,17 @@ namespace TrashTD.UI
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 0f);
             rect.anchoredPosition = new Vector2(16f, 12f);
             rect.sizeDelta = new Vector2(260f, 20f);
+
+            // Phones: SHOW UI at the spot HIDE UI was in, a little see-through so it stays out of the way
+            if (MobileUi.IsMobile)
+            {
+                Button showButton = CreateButton(hudHiddenHint.transform, "ShowUiButton", "SHOW UI", HudToggleSize, ButtonContainerType.IconDark);
+                SetPosition(showButton.GetComponent<RectTransform>(), new Vector2(0f, -41f), new Vector2(HudToggleArtX / TopArtWidth, 1f),
+                    HudToggleSize, new Vector2(0.5f, 0.5f));
+                SetPlacementButtonStyle(showButton, ButtonContainerType.IconDark, 15);
+                showButton.onClick.AddListener(ShowHudFromButton);
+                showButton.gameObject.AddComponent<CanvasGroup>().alpha = 0.7f;
+            }
 
             hudHiddenHint.SetActive(false);
         }

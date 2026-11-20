@@ -314,7 +314,8 @@ namespace TrashTD.UI
                 if (pk >= 1f)
                 {
                     labelPopTime = -1f;
-                    if (selectedOperatorLabelRoot != null) selectedOperatorLabelRoot.transform.localScale = Vector3.one;
+                    // Rests at the phone size (1 on desktop). Setting Vector3.one here shrank the tab back right after it popped in.
+                    if (selectedOperatorLabelRoot != null) selectedOperatorLabelRoot.transform.localScale = Vector3.one * MobileUi.InfoTab;
                     if (retreatFeedback != null) retreatFeedback.introScale = 1f;
                 }
             }
