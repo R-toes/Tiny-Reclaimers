@@ -259,37 +259,29 @@ namespace TrashTD.Core.GameLoop
             }
             pinchDistance = -1f;
 
-            // Pointer: a held touch, otherwise the mouse
-            Vector2? pointer = null;
-            bool pressed = false;
-            bool pressedThisFrame = false;
-            bool leftPress = false;
-            if (touchscreen != null && touchscreen.primaryTouch.press.isPressed)
-            {
-                pointer = touchscreen.primaryTouch.position.ReadValue();
-                pressed = true;
-                pressedThisFrame = touchscreen.primaryTouch.press.wasPressedThisFrame;
-                leftPress = pressedThisFrame;
-            }
+            // Pointer: a finger, otherwise the mouse (any mouse button drags the map)
+            if (!PointerInput.Available) return;
+            Vector2 pointer = PointerInput.ScreenPosition;
+            bool fingerDown = touchscreen != null && touchscreen.primaryTouch.press.isPressed;
+            bool leftPress = PointerInput.PressedThisFrame;
+            bool pressed = PointerInput.IsPressed;
+            bool pressedThisFrame = leftPress;
 
             Mouse mouse = Mouse.current;
-            if (pointer == null && mouse != null)
+            if (mouse != null && !fingerDown)
             {
-                pointer = mouse.position.ReadValue();
-                pressed = mouse.leftButton.isPressed || mouse.rightButton.isPressed || mouse.middleButton.isPressed;
-                leftPress = mouse.leftButton.wasPressedThisFrame;
-                pressedThisFrame = leftPress || mouse.rightButton.wasPressedThisFrame || mouse.middleButton.wasPressedThisFrame;
+                pressed |= mouse.rightButton.isPressed || mouse.middleButton.isPressed;
+                pressedThisFrame |= mouse.rightButton.wasPressedThisFrame || mouse.middleButton.wasPressedThisFrame;
 
                 float scroll = mouse.scroll.ReadValue().y;
                 if (Mathf.Abs(scroll) > 0.01f && !PointerOverUi())
                 {
                     float notches = Mathf.Sign(scroll) * Mathf.Max(1f, Mathf.Abs(scroll) / 120f);
-                    SetTargetZoom(targetZoom * Mathf.Pow(1f + ZoomStep, notches), CrtDisplay.ScreenToPicture(pointer.Value));
+                    SetTargetZoom(targetZoom * Mathf.Pow(1f + ZoomStep, notches), CrtDisplay.ScreenToPicture(pointer));
                 }
             }
 
-            if (pointer == null) return;
-            Vector2 picture = CrtDisplay.ScreenToPicture(pointer.Value);
+            Vector2 picture = CrtDisplay.ScreenToPicture(pointer);
 
             if (DragMode) ReadDrag(picture, pressed, pressedThisFrame, leftPress, dt);
             else pointerDown = dragging = false;
@@ -312,7 +304,7 @@ namespace TrashTD.Core.GameLoop
                 if (!dragging && (picture - pressStart).sqrMagnitude > DragStartPixels * DragStartPixels) dragging = true;
                 if (dragging)
                 {
-                    float worldPerPixel = 2f * cam.orthographicSize / Screen.height;
+                    float worldPerPixel = 2f * cam.orthographicSize / CrtDisplay.PictureSize.y;
                     Vector2 worldDelta = (picture - lastPointer) * worldPerPixel;
                     dragTarget -= worldDelta;
                     if (dt > 0f) dragVelocity = Vector2.Lerp(dragVelocity, -worldDelta / dt, 0.5f);
@@ -345,8 +337,9 @@ namespace TrashTD.Core.GameLoop
             {
                 float oldSize = homeSize / previous;
                 float newSize = homeSize / targetZoom;
-                float worldPerPixel = 2f * oldSize / Screen.height;
-                Vector2 fromCentre = (cursorPicture.Value - new Vector2(Screen.width, Screen.height) * 0.5f) * worldPerPixel;
+                Vector2 pictureSize = CrtDisplay.PictureSize;
+                float worldPerPixel = 2f * oldSize / pictureSize.y;
+                Vector2 fromCentre = (cursorPicture.Value - pictureSize * 0.5f) * worldPerPixel;
                 dragTarget += fromCentre * (1f - newSize / oldSize);
             }
             dragVelocity = Vector2.zero;
@@ -354,7 +347,7 @@ namespace TrashTD.Core.GameLoop
 
         private static bool PointerOverUi()
         {
-            return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+            return PointerInput.IsOverUi();
         }
 
         private bool IsPlacingCard()

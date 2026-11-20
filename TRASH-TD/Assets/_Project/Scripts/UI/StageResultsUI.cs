@@ -472,9 +472,8 @@ namespace TrashTD.UI
         private void HandleInput()
         {
             Keyboard keyboard = Keyboard.current;
-            Mouse mouse = Mouse.current;
             bool anyKey = keyboard != null && keyboard.anyKey.wasPressedThisFrame;
-            bool click = mouse != null && mouse.leftButton.wasPressedThisFrame;
+            bool click = PointerInput.PressedThisFrame;
 
             if (!introDone)
             {

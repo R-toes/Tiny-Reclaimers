@@ -294,9 +294,8 @@ namespace TrashTD.UI
             }
 
             // Grid reference of the cursor over the map
-            Mouse mouse = Mouse.current;
             string coords = "--.-- --.--";
-            if (mouse != null && !IsBlocked() && TryViewportPoint(mouse.position.ReadValue(), out Vector2 point))
+            if (PointerInput.Available && !IsBlocked() && TryViewportPoint(PointerInput.ScreenPosition, out Vector2 point))
             {
                 Vector2 m = (point - pan) / size + new Vector2(0.5f, 0.5f);
                 if (m.x >= 0f && m.x <= 1f && m.y >= 0f && m.y <= 1f)

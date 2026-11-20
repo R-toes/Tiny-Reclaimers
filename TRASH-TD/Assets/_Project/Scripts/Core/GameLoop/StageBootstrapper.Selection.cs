@@ -19,9 +19,8 @@ namespace TrashTD.Core.GameLoop
         private bool TryGetGridClick(out Vector2Int gridPosition)
         {
             gridPosition = default;
-            return Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame &&
-                (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject()) &&
-                TryGetGridPosition(CrtDisplay.ScreenToPicture(Mouse.current.position.ReadValue()), out gridPosition) &&
+            return PointerInput.PressedThisFrame && !PointerInput.IsOverUi() &&
+                TryGetGridPosition(PointerInput.PicturePosition, out gridPosition) &&
                 gridManager != null && gridManager.IsInBounds(gridPosition);
         }
 
@@ -139,7 +138,7 @@ namespace TrashTD.Core.GameLoop
             return -1;
         }
 
-        private void TryQuickDeployFromDeck(int slotIndex, Mouse mouse)
+        private void TryQuickDeployFromDeck(int slotIndex)
         {
             if (playerDeck == null || gridManager == null || operatorManager == null) return;
             if (!IsSandbox && operatorManager.IsAtSquadLimit) return;
@@ -149,9 +148,9 @@ namespace TrashTD.Core.GameLoop
             if (card.cooldownRoundsRemaining > 0) return;
 
             // Cursor must not be over UI (e.g. HUD, buttons)
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
+            if (PointerInput.IsOverUi()) return;
 
-            Vector2 mouseScreen = mouse != null ? CrtDisplay.ScreenToPicture(mouse.position.ReadValue()) : Vector2.zero;
+            Vector2 mouseScreen = PointerInput.PicturePosition;
             if (!TryGetGridPosition(mouseScreen, out Vector2Int cursorGridPos)) return;
             if (!gridManager.IsInBounds(cursorGridPos)) return;
 
@@ -192,7 +191,7 @@ namespace TrashTD.Core.GameLoop
 
             // Calculate initial facing from displacement if cursor is slightly away from tile center
             Camera gameCamera = Camera.main;
-            if (gameCamera != null && mouse != null)
+            if (gameCamera != null && PointerInput.Available)
             {
                 Vector3 mouseWorld = gameCamera.ScreenToWorldPoint(new Vector3(mouseScreen.x, mouseScreen.y, -gameCamera.transform.position.z));
                 Vector2 displacement = (Vector2)(mouseWorld - sweepAnchorWorldPosition);

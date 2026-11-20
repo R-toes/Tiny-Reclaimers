@@ -272,8 +272,7 @@ namespace TrashTD.UI
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null && keyboard.anyKey.wasPressedThisFrame) return true;
 
-            Mouse mouse = Mouse.current;
-            if (mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame)) return true;
+            if (PointerInput.PressedThisFrame || PointerInput.SecondaryPressedThisFrame) return true; // mouse click or a tap
 
             Gamepad pad = Gamepad.current;
             return pad != null && (pad.buttonSouth.wasPressedThisFrame || pad.startButton.wasPressedThisFrame);
@@ -293,7 +292,7 @@ namespace TrashTD.UI
                 promptText.horizontalOverflow = HorizontalWrapMode.Overflow;
                 promptText.verticalOverflow = VerticalWrapMode.Overflow;
                 promptText.raycastTarget = false;
-                promptText.text = "- PRESS ANY KEY -";
+                promptText.text = PointerInput.IsMobileDevice ? "- TAP TO START -" : "- PRESS ANY KEY -";
                 var rect = promptText.rectTransform;
                 rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
                 rect.pivot = new Vector2(0.5f, 1f);

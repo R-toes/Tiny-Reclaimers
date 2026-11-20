@@ -107,8 +107,39 @@ namespace TrashTD.UI
         {
             if (!IsActive) return screenPosition;
             Vector2 size = new Vector2(instance.picture.width, instance.picture.height);
-            Vector2 uv = new Vector2(screenPosition.x / Screen.width, screenPosition.y / Screen.height);
-            return Vector2.Scale(CrtScreen.Distort(uv, instance.settings.curvature), size);
+            return Vector2.Scale(CrtScreen.Distort(ScreenToUv(screenPosition), instance.settings.curvature), size);
+        }
+
+        /// <summary>
+        /// The part of the screen the game is drawn in, in pixels: the whole screen, except on phones where it stays
+        /// inside Screen.safeArea so notches, rounded corners and the gesture bar never hide the HUD.
+        /// </summary>
+        public static Rect PictureRect
+        {
+            get
+            {
+                Rect full = new Rect(0f, 0f, Mathf.Max(1, Screen.width), Mathf.Max(1, Screen.height));
+                if (!Application.isMobilePlatform) return full;
+                Rect safe = Screen.safeArea;
+                return safe.width >= 16f && safe.height >= 16f ? safe : full;
+            }
+        }
+
+        /// <summary>Size in pixels of the game picture (what cameras render into). The screen size when the CRT is inactive.</summary>
+        public static Vector2 PictureSize
+        {
+            get
+            {
+                if (IsActive) return new Vector2(instance.picture.width, instance.picture.height);
+                return new Vector2(Mathf.Max(1, Screen.width), Mathf.Max(1, Screen.height));
+            }
+        }
+
+        /// <summary>A real screen position as 0-1 coordinates inside the picture's rectangle.</summary>
+        private static Vector2 ScreenToUv(Vector2 screenPosition)
+        {
+            Rect rect = PictureRect;
+            return new Vector2((screenPosition.x - rect.x) / rect.width, (screenPosition.y - rect.y) / rect.height);
         }
 
         /// <summary>The CRT's own full-screen canvas; skip it when looking for a canvas to build UI on.</summary>
@@ -132,8 +163,7 @@ namespace TrashTD.UI
             picturePosition = default;
             if (!IsMappingPointer) return false;
 
-            Vector2 uv = new Vector2(screenPosition.x / Screen.width, screenPosition.y / Screen.height);
-            Vector2 pictureUv = CrtScreen.Distort(uv, settings.curvature);
+            Vector2 pictureUv = CrtScreen.Distort(ScreenToUv(screenPosition), settings.curvature);
             if (!CrtScreen.IsOnScreen(pictureUv, settings.cornerRadius)) return false;
 
             picturePosition = new Vector2(pictureUv.x * picture.width, pictureUv.y * picture.height);
@@ -225,6 +255,7 @@ namespace TrashTD.UI
             }
 
             presentImage.texture = picture;
+            FitPictureToSafeArea();
             if (material != null)
             {
                 material.SetTexture(UiTexId, uiPicture);
@@ -233,10 +264,22 @@ namespace TrashTD.UI
             CrtScreen.UpdateFrame(material, settings, picture.width, picture.height, CrtScreen.VirtualPictureHeight);
         }
 
+        /// <summary>The picture fills the safe area only (the whole screen on desktop); the rest stays black.</summary>
+        private void FitPictureToSafeArea()
+        {
+            Rect area = PictureRect;
+            RectTransform imageRect = presentImage.rectTransform;
+            imageRect.anchorMin = new Vector2(area.xMin / Screen.width, area.yMin / Screen.height);
+            imageRect.anchorMax = new Vector2(area.xMax / Screen.width, area.yMax / Screen.height);
+            imageRect.offsetMin = Vector2.zero;
+            imageRect.offsetMax = Vector2.zero;
+        }
+
         private void SyncTextures()
         {
-            int width = Mathf.Max(16, Screen.width);
-            int height = Mathf.Max(16, Screen.height);
+            Rect area = PictureRect;
+            int width = Mathf.Max(16, Mathf.RoundToInt(area.width));
+            int height = Mathf.Max(16, Mathf.RoundToInt(area.height));
             if (picture != null && picture.width == width && picture.height == height) return;
 
             foreach (Camera cam in Camera.allCameras)

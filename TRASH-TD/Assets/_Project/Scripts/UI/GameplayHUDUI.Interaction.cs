@@ -486,8 +486,7 @@ namespace TrashTD.UI
         {
             if (deckInfoSlot < 0) return false;
 
-            bool clickedOutside = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame &&
-                (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject());
+            bool clickedOutside = PointerInput.PressedThisFrame && !PointerInput.IsOverUi();
             DraftCard card = playerDeck != null ? playerDeck.GetCard(deckInfoSlot) : null;
             if (card == null || card.operatorData == null || !ReferenceEquals(card, deckInfoCard) ||
                 deckButtons == null || deckInfoSlot >= deckButtons.Length || canvas == null ||

@@ -684,7 +684,7 @@ Each asset's `skillDescription` is the authoritative description of that operato
 
 ### 7.6 Controls & Keybinds
 
-The project uses the **New Input System only** (`activeInputHandler: 1`). Read keys from `Keyboard.current` / `Mouse.current`. Any `UnityEngine.Input` call must sit inside `#if ENABLE_LEGACY_INPUT_MANAGER`, or it throws at runtime.
+The project uses the **New Input System only** (`activeInputHandler: 1`). Read keys from `Keyboard.current`; read the pointer (mouse **or** finger) through `PointerInput`, never `Mouse.current` (see "Android (touch) version"). Any `UnityEngine.Input` call must sit inside `#if ENABLE_LEGACY_INPUT_MANAGER`, or it throws at runtime.
 
 | Context | Key | Action |
 |---|---|---|
@@ -1194,3 +1194,16 @@ A dying operator crumbles into jumbled pixels (`SpriteDisintegration`, `Scripts/
 - **Framiliar copies** have their grey baked into the pixels, because their grey material is destroyed with the operator.
 - **Limits:** only the operator's main sprite crumbles; separate parts such as Resicochet's crystals vanish at once. Echosquire's Second Chance returns before `OperatorBase.Die`, so a revive does not play it.
 - **No tests yet** for the effect itself.
+
+## Android (touch) version (2026-11-20)
+
+The same landscape game runs on Android phones and tablets; touch replaces the mouse and keyboard. **It has only been compiled and tested with simulated input so far (no phone, and no Android Build Support installed on the dev machines): treat a first run on a real phone as untested.**
+- **One pointer API.** `UI/PointerInput.cs` answers "where is the pointer and is it down" for a mouse or a finger (`ScreenPosition`, `PicturePosition`, `PressedThisFrame`, `IsPressed`, `ReleasedThisFrame`, `IsOverUi()`). A finger counts as the left mouse button; when both exist the finger wins while it is down. **Do not read `Mouse.current` in game code any more** (it is null on a phone); use `PointerInput`. The right mouse button has no touch equivalent (`PointerInput.SecondaryPressedThisFrame` is false for touch), so every action on it also has an on-screen button: CANCEL (placement) and the retreat button (selected operator). Start wave, path preview, pause and the deck are buttons too; Space / P / 1-8 / H / M are only shortcuts.
+- **Back button.** Android's Back is the Escape key in the Input System, so the Esc handling (cancel placement, deselect, pause) already covers it.
+- **Camera.** `GameplayCameraController` already pinch-zooms and drags with fingers; it now reads the pointer through `PointerInput`, so the map drag also ends cleanly when the finger lifts on a phone without a mouse.
+- **Safe area.** `CrtDisplay.PictureRect` is `Screen.safeArea` on a phone and the whole screen elsewhere. The game picture and the UI picture are that size and sit inside it (black around), so notches, rounded corners and the gesture bar never hide the HUD. `ScreenToPicture` and the UI raycaster map through the same rectangle, and pixel maths uses `CrtDisplay.PictureSize`, not `Screen.width/height`.
+- **Defaults on a phone** (`MobileBootstrap`, runs before the first scene, only when `Application.isMobilePlatform`): landscape only, screen stays awake, 60 fps, no vsync. The CRT style starts at OFF (`GameGraphicsSettings`); the player can still pick Classic or Full TV. Settings > Display hides the resolution and fullscreen rows. The title says TAP TO START, and loading tips that name keys are skipped.
+- **Pause.** The stage already pauses when the app loses focus (`GameplayHUDUI.OnApplicationFocus`), which is what Android sends when the player switches app.
+- **Build.** *TRASH TD > Android > Apply Android Settings* sets landscape-only, IL2CPP, ARM64, Android 8 (API 26) and the package name `com.coinkeeper.tinyreclaimerstd` (`Editor/AndroidSetup.cs`). *Build Android APK...* applies them and builds the scenes in Build Settings. It needs the **Android Build Support** module (with OpenJDK and Android SDK & NDK Tools) for Unity 6000.6.1f1, installed through Unity Hub. `*.apk` and `*.aab` are git-ignored.
+- **Tests.** `PointerInputTests` drive simulated mouse and touch devices (`InputTestFixture`; the test assembly now references `Unity.InputSystem` and `Unity.InputSystem.TestFramework`).
+- **Known limits.** Buttons keep their desktop sizes (many are 40-44 canvas units, about 6-7 mm on a typical phone, under the 9 mm Android suggests): check the HUD, deck cards and placement arrows on a real device and enlarge what is hard to hit. Hover tooltips (enemy / operator info on hover) have no touch trigger. The Full TV effect is heavy for a phone. The Sandbox (dev) screen was moved to `PointerInput` but is not designed for touch. The settings screen still says "[ESC] CLOSE" (it has a close button).

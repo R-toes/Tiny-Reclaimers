@@ -43,16 +43,21 @@ namespace TrashTD.UI
         private static readonly Color Plate = new Color(0.010f, 0.030f, 0.020f, 0.85f);
         private static readonly Color TrackColor = new Color(0.020f, 0.050f, 0.034f, 1f);
 
-        private static readonly string[] Tips =
+        // Tips that name keyboard keys are not shown on a phone
+        private static readonly string[] KeyboardTips =
         {
             "Press P before a wave to preview the enemy route.",
             "Press Space to start the wave.",
+            "During a card draft, press M to minimize it and look at the map and your deck.",
+            "Number keys 1-8 deploy that deck slot onto the tile under the cursor."
+        };
+
+        private static readonly string[] Tips =
+        {
             "Most ranged operators deploy on High Ground. Melee operators hold Low Ground.",
             "After placing an operator, hold and drag from it to choose which way it faces.",
             "Placed someone on the wrong tile? Recall them and deploy again.",
             "Three copies of a card in your deck merge into a higher rarity. Recall one from the field to merge it.",
-            "During a card draft, press M to minimize it and look at the map and your deck.",
-            "Number keys 1-8 deploy that deck slot onto the tile under the cursor.",
             "Rerolls are limited. Save them for drafts that really need one.",
             "Taunting enemies pull your operators' fire. Plan around them.",
             "Clearing a stage on Hard opens Hard on the next one."
@@ -171,6 +176,14 @@ namespace TrashTD.UI
         // ─────────────────────────────────────────────────────
         //  Layout (1920 x 1080 reference)
         // ─────────────────────────────────────────────────────
+
+        /// <summary>A random tip; keyboard-key tips are left out on a phone.</summary>
+        private static string PickTip()
+        {
+            int count = Tips.Length + (PointerInput.IsMobileDevice ? 0 : KeyboardTips.Length);
+            int index = Random.Range(0, count);
+            return index < Tips.Length ? Tips[index] : KeyboardTips[index - Tips.Length];
+        }
 
         private void Build(StageData stage, string stageTag, StageDifficulty difficulty, Color difficultyColor)
         {
@@ -307,7 +320,7 @@ namespace TrashTD.UI
             Place(percentText.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-ProgressRightInset, 182f), new Vector2(120f, 24f));
             percentText.rectTransform.pivot = new Vector2(1f, 0.5f);
 
-            Text tip = CreateText(root, "Tip", Tips[Random.Range(0, Tips.Length)], 14, TextAnchor.UpperLeft, TextDim);
+            Text tip = CreateText(root, "Tip", PickTip(), 14, TextAnchor.UpperLeft, TextDim);
             tip.horizontalOverflow = HorizontalWrapMode.Wrap;
             PlaceBottomRow(tip.rectTransform, 96f, 136f, ProgressRightInset);
         }

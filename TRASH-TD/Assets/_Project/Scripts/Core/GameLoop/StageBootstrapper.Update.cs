@@ -36,7 +36,7 @@ namespace TrashTD.Core.GameLoop
             }
 
             Keyboard keyboard = Keyboard.current;
-            Mouse mouse = Mouse.current;
+            bool hasPointer = PointerInput.Available;
 
             // Escape key cancels placement or deselects operator, or delegates to GameplayHUDUI
             if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
@@ -67,7 +67,8 @@ namespace TrashTD.Core.GameLoop
             }
 
             // Right-click cancels active placement or undeploys the currently selected operator
-            if (mouse != null && mouse.rightButton.wasPressedThisFrame)
+            // (touch has the CANCEL and retreat buttons instead)
+            if (PointerInput.SecondaryPressedThisFrame)
             {
                 if (isPlacementPreviewActive || pendingDeployCard != null || isDraggingToDeploy)
                 {
@@ -93,7 +94,7 @@ namespace TrashTD.Core.GameLoop
                     bool blockedByUi = (gameplayHudUI != null && (gameplayHudUI.IsPaused || gameplayHudUI.IsEnvironmentBriefingActive));
                     if (!blockedByUi)
                     {
-                        TryQuickDeployFromDeck(deckSlotKey, mouse);
+                        TryQuickDeployFromDeck(deckSlotKey);
                     }
                 }
             }
@@ -102,8 +103,8 @@ namespace TrashTD.Core.GameLoop
             if (isPreparing && isDraggingToDeploy)
             {
                 Camera gameCamera = Camera.main;
-                Vector2 mouseScreen = mouse != null ? CrtDisplay.ScreenToPicture(mouse.position.ReadValue()) : Vector2.zero;
-                Vector3 mouseWorld = (gameCamera != null && mouse != null)
+                Vector2 mouseScreen = PointerInput.PicturePosition;
+                Vector3 mouseWorld = (gameCamera != null && hasPointer)
                     ? gameCamera.ScreenToWorldPoint(new Vector3(mouseScreen.x, mouseScreen.y, -gameCamera.transform.position.z))
                     : sweepAnchorWorldPosition;
 
@@ -142,9 +143,9 @@ namespace TrashTD.Core.GameLoop
                 }
 
                 // PointerUp / Click: Releasing the mouse button executes the choice, placing the operator
-                if (mouse != null && mouse.leftButton.wasReleasedThisFrame && Time.frameCount != lastQuickDeployFrame)
+                if (PointerInput.ReleasedThisFrame && Time.frameCount != lastQuickDeployFrame)
                 {
-                    bool pointerOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+                    bool pointerOverUI = PointerInput.IsOverUi();
                     if (pointerOverUI)
                     {
                         CancelOperatorPlacement();
@@ -162,14 +163,14 @@ namespace TrashTD.Core.GameLoop
             // 2a. Arrow schemes: the pending operator is held and dragged to another tile
             if (isPreparing && isMovingPreview && pendingDeployCard != null)
             {
-                if (mouse == null || !mouse.leftButton.isPressed)
+                if (!PointerInput.IsPressed)
                 {
                     isMovingPreview = false;
                     RefreshPlacementPreview(); // the arrows come back on the new tile
                     return;
                 }
 
-                if (TryGetGridPosition(CrtDisplay.ScreenToPicture(mouse.position.ReadValue()), out Vector2Int hoveredTile) &&
+                if (TryGetGridPosition(PointerInput.PicturePosition, out Vector2Int hoveredTile) &&
                     gridManager != null && gridManager.IsInBounds(hoveredTile) && hoveredTile != placementGridPosition)
                 {
                     GridCell hoveredCell = gridManager.GetCell(hoveredTile);
@@ -182,9 +183,9 @@ namespace TrashTD.Core.GameLoop
             // 2. Pending deployment card selected from deck: Left-clicking and holding on a tile maps to PointerDown
             if (isPreparing && pendingDeployCard != null)
             {
-                bool pointerOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-                if (!pointerOverUI && mouse != null && mouse.leftButton.wasPressedThisFrame &&
-                    TryGetGridPosition(CrtDisplay.ScreenToPicture(mouse.position.ReadValue()), out Vector2Int clickedTile))
+                bool pointerOverUI = PointerInput.IsOverUi();
+                if (!pointerOverUI && PointerInput.PressedThisFrame &&
+                    TryGetGridPosition(PointerInput.PicturePosition, out Vector2Int clickedTile))
                 {
                     bool inBounds = gridManager != null && gridManager.IsInBounds(clickedTile);
                     GridCell cell = inBounds ? gridManager.GetCell(clickedTile) : null;

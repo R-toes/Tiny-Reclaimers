@@ -40,6 +40,14 @@ traffic, acid rain).
 - **CI:** `.github/workflows/ci.yml` runs the repository checks on every push and pull request, and the Unity EditMode
   tests too once the `UNITY_LICENSE` secret is set (see the comments in that file).
 
+## Android
+
+The game also runs on Android phones and tablets (landscape, touch). Open the project in Unity, install the **Android
+Build Support** module for this Unity version through Unity Hub (with OpenJDK and Android SDK & NDK Tools), then use
+**TRASH TD > Android > Build Android APK...**. **Apply Android Settings** in the same menu only sets the Player Settings.
+Copy the `.apk` to the phone and open it, or run `adb install -r TinyReclaimersTD.apk`. The touch controls have been tested
+with simulated input only so far. Details are in `PROJECT_GUIDELINES.md`, "Android (touch) version".
+
 ## Saves
 
 Progress (stage clears and stars, the tutorial flag, the Intel enemy files) is one JSON file,

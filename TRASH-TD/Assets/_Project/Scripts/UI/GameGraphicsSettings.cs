@@ -74,9 +74,11 @@ namespace TrashTD.UI
         {
             if (loaded) return;
             loaded = true;
-            // Classic until the player picks a style: Full TV is harder to read on small screens.
-            int style = PlayerPrefs.GetInt(CrtStyleKey, (int)CrtStyle.Classic);
-            crtStyle = Enum.IsDefined(typeof(CrtStyle), style) ? (CrtStyle)style : CrtStyle.Classic;
+            // Classic until the player picks a style: Full TV is harder to read on small screens. Phones start with
+            // the effect off (sharper text on a small screen, and less work for the battery).
+            CrtStyle defaultStyle = Application.isMobilePlatform ? CrtStyle.Off : CrtStyle.Classic;
+            int style = PlayerPrefs.GetInt(CrtStyleKey, (int)defaultStyle);
+            crtStyle = Enum.IsDefined(typeof(CrtStyle), style) ? (CrtStyle)style : defaultStyle;
             brightness = Mathf.Clamp(PlayerPrefs.GetFloat(BrightnessKey, DefaultBrightness), MinBrightness, MaxBrightness);
         }
     }

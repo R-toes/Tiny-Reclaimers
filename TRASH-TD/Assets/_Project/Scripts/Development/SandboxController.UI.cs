@@ -166,10 +166,10 @@ namespace TrashTD.Development
         {
             get
             {
-                if (uiHidden || openDropdown == Dropdown.None || Mouse.current == null) return false;
+                if (uiHidden || openDropdown == Dropdown.None || !PointerInput.Available) return false;
                 GameObject panel = dropdownPanels[(int)openDropdown];
                 if (panel == null || !panel.activeInHierarchy) return false;
-                Vector2 pointer = CrtDisplay.ScreenToPicture(Mouse.current.position.ReadValue());
+                Vector2 pointer = PointerInput.PicturePosition;
                 return RectTransformUtility.RectangleContainsScreenPoint((RectTransform)panel.transform, pointer, uiCamera);
             }
         }
@@ -611,9 +611,9 @@ namespace TrashTD.Development
         private EnemyBase FindHoveredEnemy()
         {
             Camera cam = Camera.main;
-            if (cam == null || Mouse.current == null) return null;
+            if (cam == null || !PointerInput.Available) return null;
 
-            Vector2 screen = CrtDisplay.ScreenToPicture(Mouse.current.position.ReadValue());
+            Vector2 screen = PointerInput.PicturePosition;
             Vector3 world = cam.ScreenToWorldPoint(new Vector3(screen.x, screen.y, -cam.transform.position.z));
             float cell = bootstrapper != null && bootstrapper.gridManager != null ? bootstrapper.gridManager.CellSize : 1f;
             float bestDistance = (cell * 0.6f) * (cell * 0.6f);

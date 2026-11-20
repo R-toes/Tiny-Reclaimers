@@ -36,8 +36,10 @@ namespace TrashTD.UI
         public const float ViewportHeight = 1080f - ViewportTop - ViewportBottom;
         private const float ContentPadding = 24f; // room beside the first and last card for their brackets and hover glow
 
-        private const string DefaultHint = "CLICK AN ACT TO DEPLOY     [ESC] BACK";
-        private const string ScrollHint = "DRAG, SCROLL OR USE THE SLIDER FOR MORE ACTS     [ESC] BACK";
+        private static string DefaultHint => PointerInput.IsMobileDevice ? "TAP AN ACT TO DEPLOY" : "CLICK AN ACT TO DEPLOY     [ESC] BACK";
+        private static string ScrollHint => PointerInput.IsMobileDevice
+            ? "DRAG OR USE THE SLIDER FOR MORE ACTS"
+            : "DRAG, SCROLL OR USE THE SLIDER FOR MORE ACTS     [ESC] BACK";
 
         private static readonly Color BackgroundColor = new Color(0.02f, 0.05f, 0.03f, 1f);
         private static readonly Color AccentColor = new Color(0.18f, 0.82f, 0.45f, 1f);

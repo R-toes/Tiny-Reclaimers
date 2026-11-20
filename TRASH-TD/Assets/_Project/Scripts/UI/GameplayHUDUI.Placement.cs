@@ -172,6 +172,6 @@ namespace TrashTD.UI
 
         /// <summary>A deck card is being dragged onto the map; the placement controls wait for the drop.</summary>
         public bool IsDeckCardDragging =>
-            isDeckCardDragging && Mouse.current != null && Mouse.current.leftButton.isPressed; // never stuck if a drag end is lost
+            isDeckCardDragging && PointerInput.IsPressed; // never stuck if a drag end is lost (mouse or finger)
     }
 }
