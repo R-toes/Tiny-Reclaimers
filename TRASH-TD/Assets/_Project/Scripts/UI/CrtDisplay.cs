@@ -277,9 +277,11 @@ namespace TrashTD.UI
 
         private void SyncTextures()
         {
+            // On a phone the player can draw the picture smaller than the screen (Settings > Display) to save battery
             Rect area = PictureRect;
-            int width = Mathf.Max(16, Mathf.RoundToInt(area.width));
-            int height = Mathf.Max(16, Mathf.RoundToInt(area.height));
+            float scale = MobileSettings.CurrentPictureScale;
+            int width = Mathf.Max(16, Mathf.RoundToInt(area.width * scale));
+            int height = Mathf.Max(16, Mathf.RoundToInt(area.height * scale));
             if (picture != null && picture.width == width && picture.height == height) return;
 
             foreach (Camera cam in Camera.allCameras)

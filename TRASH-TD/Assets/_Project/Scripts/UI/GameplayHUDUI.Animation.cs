@@ -54,7 +54,12 @@ namespace TrashTD.UI
             livesTarget = Mathf.Clamp01((float)current / total);
             if (lpText != null)
             {
-                lpText.text = $"{current}/{total}";
+                if (current != shownLivesCurrent || total != shownLivesTotal)
+                {
+                    shownLivesCurrent = current;
+                    shownLivesTotal = total;
+                    lpText.text = $"{current}/{total}";
+                }
                 lpText.color = livesTarget > 0.5f ? Color.white : livesTarget > 0.25f ? DraftColor : LifeColor;
             }
             if (livesDisplayed < 0f)
@@ -98,6 +103,7 @@ namespace TrashTD.UI
                 // Sandbox has no wave count, squad cap or life loss; avoid "x/2147483647" style overflow.
                 if (lpText != null)
                 {
+                    shownLivesCurrent = shownLivesTotal = int.MinValue; // the lives text is rebuilt if the sandbox is left
                     lpText.text = "LIVES LOCKED";
                     lpText.color = TextDim;
                 }
@@ -119,9 +125,14 @@ namespace TrashTD.UI
             if (squadCountText != null && operatorManager != null)
             {
                 bool isFull = operatorManager.IsAtSquadLimit;
-                squadCountText.text = isFull
-                    ? $"SQUAD FULL {operatorManager.DeployedCount}/{operatorManager.SquadLimit}"
-                    : $"SQUAD {operatorManager.DeployedCount}/{operatorManager.SquadLimit}";
+                int squadKey = (operatorManager.DeployedCount * 1000 + operatorManager.SquadLimit) * 2 + (isFull ? 1 : 0);
+                if (squadKey != shownSquadKey)
+                {
+                    shownSquadKey = squadKey;
+                    squadCountText.text = isFull
+                        ? $"SQUAD FULL {operatorManager.DeployedCount}/{operatorManager.SquadLimit}"
+                        : $"SQUAD {operatorManager.DeployedCount}/{operatorManager.SquadLimit}";
+                }
                 squadCountText.color = isFull ? new Color(1f, 0.28f, 0.24f) : Color.white;
 
                 int deployed = operatorManager.DeployedCount;

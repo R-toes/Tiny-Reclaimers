@@ -55,12 +55,17 @@ namespace TrashTD.UI
             RectTransform labelRect = selectedOperatorLabelRoot.GetComponent<RectTransform>();
             RectTransform retreatRect = retreatOperatorButton.GetComponent<RectTransform>();
 
-            float halfW = labelRect.sizeDelta.x * 0.5f;
-            float panelH = labelRect.sizeDelta.y;
+            // On a phone the tab and the retreat button are drawn bigger (MobileUi); the clamping and the retreat
+            // button's place follow their on-screen size
+            float tabScale = MobileUi.InfoTab;
+            float halfW = labelRect.sizeDelta.x * 0.5f * tabScale;
+            float panelH = labelRect.sizeDelta.y * tabScale;
+            ApplyTouchSizes(retreatRect);
+            float retreatSize = retreatRect.sizeDelta.x;
 
             // Screen clamping: keep the panel and retreat button entirely on-screen
             float minX = -canvasRect.rect.width * 0.5f + halfW + 10f;
-            float maxX = canvasRect.rect.width * 0.5f - halfW - 60f;
+            float maxX = canvasRect.rect.width * 0.5f - halfW - (retreatSize + 16f);
             float minY = -canvasRect.rect.height * 0.5f + 10f;
             float maxY = canvasRect.rect.height * 0.5f - panelH - 10f;
 
@@ -72,8 +77,8 @@ namespace TrashTD.UI
             selectedOperatorShowMoreButton.gameObject.SetActive(true);
 
             // Retreat button positioned to the right of the tab, vertically aligned with Row 1-4
-            float retreatX = localPosition.x + halfW + 28f;
-            float retreatY = localPosition.y + panelH - 53f;
+            float retreatX = localPosition.x + halfW + retreatSize * 0.5f + 6f;
+            float retreatY = localPosition.y + panelH - 53f * tabScale;
             retreatRect.anchoredPosition = new Vector2(retreatX, retreatY);
             retreatOperatorButton.gameObject.SetActive(showRetreat);
 
@@ -83,6 +88,27 @@ namespace TrashTD.UI
                 labelPopTime = 0f;
                 snapHealthFill = true;
                 ApplyLabelPop(0f);
+            }
+        }
+
+        /// <summary>
+        /// Phone only: sizes the retreat button and the details panel for the player's UI size option, so changing it in
+        /// Settings shows at once. (Off a phone these are the desktop sizes, set when the HUD was built.)
+        /// </summary>
+        private void ApplyTouchSizes(RectTransform retreatRect)
+        {
+            if (!MobileUi.IsMobile) return;
+
+            float side = MobileUi.Retreat;
+            retreatRect.sizeDelta = new Vector2(side, side);
+            if (retreatIconRect != null)
+            {
+                float icon = 24f * side / 44f;
+                retreatIconRect.sizeDelta = new Vector2(icon, icon);
+            }
+            if (selectedOperatorDetailsPanel != null)
+            {
+                selectedOperatorDetailsPanel.transform.localScale = Vector3.one * MobileUi.Details(DetailsPanelScale);
             }
         }
 
@@ -149,7 +175,11 @@ namespace TrashTD.UI
         private void ApplyLabelPop(float k)
         {
             float s = Mathf.LerpUnclamped(0.8f, 1f, EaseOutBack(k));
-            if (selectedOperatorLabelRoot != null) selectedOperatorLabelRoot.transform.localScale = new Vector3(s, s, 1f);
+            if (selectedOperatorLabelRoot != null)
+            {
+                float tabScale = s * MobileUi.InfoTab;
+                selectedOperatorLabelRoot.transform.localScale = new Vector3(tabScale, tabScale, 1f);
+            }
             if (retreatFeedback != null) retreatFeedback.introScale = s;
         }
 

@@ -178,6 +178,8 @@ namespace TrashTD.UI
         private Button retreatOperatorButton;
         private Button placementConfirmButton;
         private Button placementCancelButton;
+        private RectTransform retreatIconRect; // resized with the retreat button when the player changes the UI size
+        private Button touchCancelButton; // phone only: always-visible CANCEL while a card is being placed
         // Facing arrows around the previewed tile, in OperatorFacing order (see CreatePlacementControls)
         private readonly Dictionary<OperatorFacing, Button> placementFacingButtons = new Dictionary<OperatorFacing, Button>();
         private readonly Dictionary<OperatorFacing, MenuButtonFeedback> placementFacingFeedbacks = new Dictionary<OperatorFacing, MenuButtonFeedback>();
@@ -327,6 +329,15 @@ namespace TrashTD.UI
         private float waveProgressDisplayed;
         private int lastSquadCount = -1;
         private int lastLives = -1;
+
+        // The text last written to each top-bar readout, so a readout is rebuilt only when its numbers change
+        private int shownLivesCurrent = int.MinValue;
+        private int shownLivesTotal = int.MinValue;
+        private int shownSquadKey = int.MinValue;
+        private long shownWaveKey = long.MinValue;
+        private long shownHostileKey = long.MinValue;
+        private int hostileNextWaveIndex = int.MinValue;
+        private int hostileNextWaveSize;
         private float livesTarget = 1f;
         private float livesDisplayed = -1f; // < 0 until the first lives update, which snaps instead of draining
         private float dangerFlashTime = -1f;
@@ -459,6 +470,7 @@ namespace TrashTD.UI
             }
             RefreshCounters();
             RefreshSelectedOperatorInfo();
+            RefreshTouchCancelButton();
             AnimateEffectBadges();
             UpdateAnimations(Time.unscaledDeltaTime, Time.unscaledTime);
         }

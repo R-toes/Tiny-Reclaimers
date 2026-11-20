@@ -124,8 +124,9 @@ namespace TrashTD.Core.GameLoop
 
             // Zoom eases toward its target
             zoom = Mathf.Lerp(zoom, targetZoom, 1f - Mathf.Exp(-ZoomSharpness * dt));
-            float size = homeSize / zoom;
             float aspect = cam.aspect > 0f ? cam.aspect : 16f / 9f;
+            float size = homeSize / zoom;
+            if (strictBounds) size = Mathf.Min(size, CalculateMaxSizeInsideBounds(mapBounds, aspect));
             GetViewLimits(size, aspect, out Vector2 minOffset, out Vector2 maxOffset);
             hasPanRoom = maxOffset.x - minOffset.x > PanRoomThreshold || maxOffset.y - minOffset.y > PanRoomThreshold;
 
@@ -222,6 +223,18 @@ namespace TrashTD.Core.GameLoop
             // fit the bounds, so this only applies when the playable grid itself doesn't fit.
             if (min.x > max.x) min.x = max.x = (min.x + max.x) * 0.5f;
             if (min.y > max.y) min.y = max.y = (min.y + max.y) * 0.5f;
+        }
+
+        /// <summary>
+        /// The biggest view (orthographic size) that still fits inside the bounds art at this aspect ratio. The home view
+        /// is framed for the screen the game started on; a wider or narrower screen (a phone, the safe area after a
+        /// rotation) would show past the art, so the view is never allowed to grow beyond this. The part under the HUD
+        /// bars can then be panned into view instead.
+        /// </summary>
+        public static float CalculateMaxSizeInsideBounds(Rect mapBounds, float aspect)
+        {
+            if (aspect <= 0f) return float.MaxValue;
+            return Mathf.Max(0.1f, Mathf.Min(mapBounds.width / (2f * aspect), mapBounds.height * 0.5f));
         }
 
         /// <summary>

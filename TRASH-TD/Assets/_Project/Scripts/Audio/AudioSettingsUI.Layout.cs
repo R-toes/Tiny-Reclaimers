@@ -278,7 +278,7 @@ namespace TrashTD.Audio
             Bind(resetProgressButton, OnResetProgressClicked);
             Bind(closeButton, Hide, SfxId.UiBack);
 
-            if (PointerInput.IsMobileDevice) HideDesktopScreenRows();
+            if (PointerInput.IsMobileDevice) BuildMobileDisplayRows();
 
             // The placement options are animated diagrams made from generated sprites, so they are created here, on the CONTROLS page
             Transform controlsPage = pages[(int)Tab.Controls].transform;

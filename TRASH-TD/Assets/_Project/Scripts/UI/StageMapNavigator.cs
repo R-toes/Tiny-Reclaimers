@@ -115,6 +115,8 @@ namespace TrashTD.UI
             content.anchorMin = content.anchorMax = content.pivot = new Vector2(0.5f, 0.5f);
             canvas = GetComponentInParent<Canvas>();
 
+            // On a phone the zoom buttons are what the player needs (there is no wheel), so they start in view
+            hudExpanded = MobileUi.IsMobile;
             BuildHud(mapSprite, hudParent, styleButton);
             ResetView(true);
         }
@@ -179,7 +181,7 @@ namespace TrashTD.UI
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (!dragging || !TryViewportPoint(eventData.position, out Vector2 point)) return;
+            if (pinching || !dragging || !TryViewportPoint(eventData.position, out Vector2 point)) return;
 
             Vector2 delta = point - lastDragPoint;
             lastDragPoint = point;
@@ -223,6 +225,7 @@ namespace TrashTD.UI
             float dt = Time.unscaledDeltaTime;
 
             if (!IsBlocked()) HandleKeys(dt);
+            HandlePinch();
 
             // Throw after a drag
             if (!dragging && velocity.sqrMagnitude > 1f)
@@ -251,6 +254,36 @@ namespace TrashTD.UI
             if (direction != 0f) ZoomAbout(Vector2.zero, targetZoom * Mathf.Pow(KeyZoomPerSecond, direction * dt));
 
             if (keyboard.rKey.wasPressedThisFrame || keyboard.homeKey.wasPressedThisFrame) ResetView(false);
+        }
+
+        private float pinchDistance = -1f;
+        private bool pinching;
+
+        /// <summary>Two fingers on the map zoom it about the point between them (the touch version of the wheel).</summary>
+        private void HandlePinch()
+        {
+            Touchscreen touchscreen = Touchscreen.current;
+            bool twoFingers = touchscreen != null && !IsBlocked() && touchscreen.touches.Count > 1 &&
+                              touchscreen.touches[0].press.isPressed && touchscreen.touches[1].press.isPressed;
+            if (!twoFingers)
+            {
+                pinchDistance = -1f;
+                pinching = false;
+                return;
+            }
+
+            Vector2 a = touchscreen.touches[0].position.ReadValue();
+            Vector2 b = touchscreen.touches[1].position.ReadValue();
+            float distance = Vector2.Distance(a, b);
+            pinching = true;
+            dragging = false;
+            velocity = Vector2.zero;
+
+            if (pinchDistance > 0f && distance > 0f && TryViewportPoint((a + b) * 0.5f, out Vector2 middle))
+            {
+                ZoomAbout(middle, targetZoom * (distance / pinchDistance));
+            }
+            pinchDistance = distance;
         }
 
         /// <summary>Zooms keeping the map point under <paramref name="viewportPoint"/> (centre-origin) in place.</summary>
@@ -431,7 +464,8 @@ namespace TrashTD.UI
             Place((RectTransform)reset.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(178f, rowY), new Vector2(78f, 40f));
             reset.onClick.AddListener(() => ResetView(false));
 
-            Text hint = CreateText(hudBody, "Hint", "SCROLL ZOOM / DRAG PAN / R RESET", 9, TextAnchor.MiddleRight,
+            string hintText = MobileUi.IsMobile ? "PINCH ZOOM / DRAG PAN / DOUBLE-TAP ZOOM" : "SCROLL ZOOM / DRAG PAN / R RESET";
+            Text hint = CreateText(hudBody, "Hint", hintText, 9, TextAnchor.MiddleRight,
                 new Color(TerminalText.r, TerminalText.g, TerminalText.b, 0.6f));
             Place(hint.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(0f, rowY - 52f), new Vector2(HudWidth, 16f));
 

@@ -51,6 +51,34 @@ namespace TrashTD.UI
             placementConfirmButton = confirmButton;
             placementCancelButton = cancelButton;
             placementControlsRoot.SetActive(false);
+
+            if (MobileUi.IsMobile) CreateTouchCancelButton(root);
+        }
+
+        /// <summary>
+        /// Phones have no right-click or Esc, and the Swipe scheme has no CANCEL button, so a card picked from the deck
+        /// could not be put back. This button sits at the left edge, in reach of the thumb, and shows while a card is
+        /// being placed (and the Precise scheme's own CANCEL is not already on screen).
+        /// </summary>
+        private void CreateTouchCancelButton(Transform root)
+        {
+            touchCancelButton = CreateButton(root, "TouchCancelPlacementButton", "X  CANCEL", new Vector2(210f, 84f), ButtonContainerType.Danger);
+            SetPosition(touchCancelButton.GetComponent<RectTransform>(), new Vector2(24f, 0f), new Vector2(0f, 0.5f), null, new Vector2(0f, 0.5f));
+            SetPlacementButtonStyle(touchCancelButton, ButtonContainerType.Danger, 22);
+            touchCancelButton.onClick.AddListener(() => stageBootstrapper?.CancelOperatorPlacement());
+            AttachFeedback(touchCancelButton, new Color(1f, 0.4f, 0.4f, 1f), 1.08f);
+            touchCancelButton.gameObject.SetActive(false);
+        }
+
+        /// <summary>Shows the touch CANCEL button while a deck card is being placed (called every frame).</summary>
+        private void RefreshTouchCancelButton()
+        {
+            if (touchCancelButton == null) return;
+
+            bool placing = stageBootstrapper != null && stageBootstrapper.IsPlacementActive && !IsPaused;
+            bool precisePlaceCancelShown = placementCancelButton != null && placementCancelButton.gameObject.activeInHierarchy;
+            bool show = placing && !precisePlaceCancelShown;
+            if (touchCancelButton.gameObject.activeSelf != show) touchCancelButton.gameObject.SetActive(show);
         }
 
         private void CreateFacingButton(string objectName, OperatorFacing facing, float iconRotation)

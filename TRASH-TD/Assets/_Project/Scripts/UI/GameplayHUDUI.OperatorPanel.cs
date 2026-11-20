@@ -149,7 +149,8 @@ namespace TrashTD.UI
             CreateFramiliarCopySection(selectedOperatorLabelRoot.transform);
 
             // Retreat button (positioned to the right of the tab, horizontally aligned with Row 1-4)
-            retreatOperatorButton = CreateButton(root, "RetreatOperatorButton", string.Empty, new Vector2(44f, 44f), ButtonContainerType.IconDanger);
+            float retreatSize = MobileUi.Retreat; // 44 on desktop, bigger on a phone
+            retreatOperatorButton = CreateButton(root, "RetreatOperatorButton", string.Empty, new Vector2(retreatSize, retreatSize), ButtonContainerType.IconDanger);
             SetPosition(retreatOperatorButton.GetComponent<RectTransform>(), new Vector2(151f, 53f), new Vector2(0.5f, 0.5f));
             SetPlacementButtonStyle(retreatOperatorButton, ButtonContainerType.IconDanger, 28);
             retreatOperatorButton.onClick.AddListener(RetreatSelectedOperator);
@@ -158,7 +159,8 @@ namespace TrashTD.UI
             var exitIcon = GetExitIconSprite();
             if (exitIcon != null)
             {
-                CreateIconImage(retreatOperatorButton.transform, "Icon", exitIcon, Color.white, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(24f, 24f), new Vector2(0.5f, 0.5f));
+                float iconSize = 24f * retreatSize / 44f;
+                retreatIconRect = CreateIconImage(retreatOperatorButton.transform, "Icon", exitIcon, Color.white, Vector2.zero, new Vector2(0.5f, 0.5f), new Vector2(iconSize, iconSize), new Vector2(0.5f, 0.5f)).rectTransform;
             }
             else
             {
@@ -188,7 +190,7 @@ namespace TrashTD.UI
             panelRect.sizeDelta = new Vector2(500f, 640f);
             panelRect.anchoredPosition = new Vector2(-24f, 0f);
             // The whole panel, effects column included, is drawn at this scale about its right edge
-            panelRect.localScale = Vector3.one * DetailsPanelScale;
+            panelRect.localScale = Vector3.one * MobileUi.Details(DetailsPanelScale);
 
             Image panelImage = selectedOperatorDetailsPanel.GetComponent<Image>();
             ApplyPanelContainer(selectedOperatorDetailsPanel, PanelContainerType.Metal);

@@ -245,5 +245,42 @@ namespace TrashTD.Tests
 
             Assert.Greater(checkedStages, 0, "no stage has bounds art, is the test still looking in the right place?");
         }
+
+        // ------------------------------------------------------------------ any screen shape (phones)
+
+        [Test]
+        public void MaxSizeInsideBounds_FitsTheBoundsWidthOnAWideScreen()
+        {
+            var bounds = Rect.MinMaxRect(0f, 0f, 20f, 12f);
+            float wide = 20f / 9f;
+            float size = GameplayCameraController.CalculateMaxSizeInsideBounds(bounds, wide);
+            Assert.AreEqual(20f / (2f * wide), size, Tolerance, "the width is the limit on a wide screen");
+            Assert.Less(size, 6f, "smaller than the height-limited size");
+        }
+
+        [Test]
+        public void MaxSizeInsideBounds_FitsTheBoundsHeightOnANarrowScreen()
+        {
+            var bounds = Rect.MinMaxRect(0f, 0f, 20f, 12f);
+            Assert.AreEqual(6f, GameplayCameraController.CalculateMaxSizeInsideBounds(bounds, 4f / 3f), Tolerance);
+        }
+
+        [TestCase(4f / 3f)]
+        [TestCase(16f / 9f)]
+        [TestCase(2f)]
+        [TestCase(20f / 9f)]
+        [TestCase(21f / 9f)]
+        [TestCase(2.6f)]
+        public void CappedView_NeverShowsPastTheBounds_OnAnyAspect(float aspect)
+        {
+            var bounds = Rect.MinMaxRect(-2f, -1f, 18f, 11f);
+            Vector2 home = new Vector2(8f, 4f);
+            const float homeSize = 5.6f; // framed for 16:9: too big for a wide phone
+            foreach (float zoom in new[] { 1f, 1.5f, 2.25f })
+            {
+                float size = Mathf.Min(homeSize / zoom, GameplayCameraController.CalculateMaxSizeInsideBounds(bounds, aspect));
+                AssertViewInside(bounds, home, homeSize, size, aspect);
+            }
+        }
     }
 }

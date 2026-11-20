@@ -445,8 +445,11 @@ namespace TrashTD.UI
 
             if (IsSandbox)
             {
+                int sandboxWave = Mathf.Max(1, waveManager.SandboxWaveNumber);
+                if (shownWaveKey == -sandboxWave) return;
+                shownWaveKey = -sandboxWave;
                 if (waveLabelText != null) waveLabelText.text = "WAVE";
-                waveText.text = Mathf.Max(1, waveManager.SandboxWaveNumber).ToString("00");
+                waveText.text = sandboxWave.ToString("00");
                 return;
             }
 
@@ -457,6 +460,9 @@ namespace TrashTD.UI
             int number = betweenWaves && gameManager != null
                 ? Mathf.Clamp(gameManager.GetCurrentWaveIndex() + 1, 1, total)
                 : Mathf.Clamp(waveManager.CurrentWaveNumber, 1, total);
+            long waveKey = (number * 1000L + total) * 2 + (betweenWaves ? 1 : 0);
+            if (waveKey == shownWaveKey) return;
+            shownWaveKey = waveKey;
             if (waveLabelText != null) waveLabelText.text = betweenWaves ? "NEXT" : "WAVE";
             waveText.text = $"{number:00}/{total:00}";
         }
@@ -467,8 +473,32 @@ namespace TrashTD.UI
             if (enemyText == null || enemyManager == null) return;
 
             bool betweenWaves = !IsSandbox && gameManager != null && gameManager.CurrentPhase != StagePhase.WaveActive;
-            int nextWaveSize = betweenWaves && waveManager != null ? WaveManager.CountEnemies(waveManager.PeekNextWave()) : 0;
-            if (betweenWaves && enemyManager.ActiveEnemyCount == 0 && nextWaveSize > 0)
+            int nextWaveSize = 0;
+            if (betweenWaves && waveManager != null)
+            {
+                // Counting the next wave's enemies once per wave, not once per frame
+                int waveIndex = gameManager != null ? gameManager.GetCurrentWaveIndex() : 0;
+                if (waveIndex != hostileNextWaveIndex)
+                {
+                    hostileNextWaveIndex = waveIndex;
+                    hostileNextWaveSize = WaveManager.CountEnemies(waveManager.PeekNextWave());
+                    shownHostileKey = long.MinValue;
+                }
+                nextWaveSize = hostileNextWaveSize;
+            }
+            else
+            {
+                hostileNextWaveIndex = int.MinValue; // counted again the next time a wave ends
+            }
+
+            int active = enemyManager.ActiveEnemyCount;
+            int pending = waveManager != null ? waveManager.PendingSpawnCount : 0;
+            bool incoming = betweenWaves && active == 0 && nextWaveSize > 0;
+            long hostileKey = incoming ? -(long)nextWaveSize - 1L : active * 100000L + pending;
+            if (hostileKey == shownHostileKey) return;
+            shownHostileKey = hostileKey;
+
+            if (incoming)
             {
                 if (enemyLabelText != null) enemyLabelText.text = "INCOMING";
                 enemyText.text = nextWaveSize.ToString();
@@ -476,9 +506,8 @@ namespace TrashTD.UI
                 return;
             }
 
-            int pending = waveManager != null ? waveManager.PendingSpawnCount : 0;
             if (enemyLabelText != null) enemyLabelText.text = "HOSTILES";
-            enemyText.text = enemyManager.ActiveEnemyCount.ToString();
+            enemyText.text = active.ToString();
             bool split = pending > 0;
             if (split) enemyIncomingText.text = "+" + pending;
             SetHostileReadoutSplit(split);

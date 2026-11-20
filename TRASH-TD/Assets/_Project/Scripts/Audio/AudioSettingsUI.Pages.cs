@@ -182,27 +182,6 @@ namespace TrashTD.Audio
             Screen.SetResolution(size.x, size.y, Screen.fullScreenMode);
         }
 
-        /// <summary>
-        /// Phones and tablets always fill their screen, so the SCREEN section (resolution, fullscreen/windowed) has
-        /// nothing to set. Hides it and moves the CRT section up into its place.
-        /// </summary>
-        private void HideDesktopScreenRows()
-        {
-            const float screenBandBottom = 290f; // the SCREEN rows end at y = 286; the CRT STYLE header starts at 298
-            const float shiftUp = 160f;          // from the SCREEN header (150) to the CRT STYLE header (310)
-            GameObject displayPage = pages[(int)Tab.Display];
-            if (displayPage == null) return;
-
-            foreach (Transform child in displayPage.transform)
-            {
-                RectTransform rect = child as RectTransform;
-                if (rect == null) continue;
-                float y = -rect.anchoredPosition.y;
-                if (y < screenBandBottom) child.gameObject.SetActive(false);
-                else rect.anchoredPosition += Vector2.up * shiftUp;
-            }
-        }
-
         private void SetWindowMode(bool fullscreen)
         {
             FullScreenMode mode = fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;
