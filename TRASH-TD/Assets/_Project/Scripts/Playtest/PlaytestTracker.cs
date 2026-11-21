@@ -190,7 +190,15 @@ namespace TrashTD.Playtest
                 .Add("rerolls", rerolls)
                 .Add("avgFps", AverageFps(frames, frameTimeSum))
                 .Add("hitches", hitches)
-                .Add("worstMs", Mathf.RoundToInt(worstFrame * 1000f));
+                .Add("worstMs", Mathf.RoundToInt(worstFrame * 1000f))
+                // The graphics options in force now (a tester can change them mid-session, so session_start is not
+                // enough): this is what lets the sheet compare frame rate per CRT style on each device
+                .Add("crt", GameGraphicsSettings.CrtStyle.ToString());
+            if (PointerInput.IsMobileDevice)
+            {
+                data.Add("fpsCap", MobileSettings.FrameRate)
+                    .Add("picture", MobileSettings.Picture.ToString());
+            }
             data.AddCounts("deployed", deployed);
             data.AddCounts("retreated", retreated);
             data.AddCounts("died", died);

@@ -11,8 +11,10 @@ namespace TrashTD.Combat
     /// hot core, highlight, base, shadow and dark outline in its own colour. Sprites are cached by shape and
     /// colour; the cache checks for destroyed sprites because domain reload is off (they are destroyed when
     /// play mode ends but the static cache survives).
+    /// Each sprite is drawn on its own texture and then copied into a shared atlas page (<see cref="ToSprite"/>), so
+    /// the many small effect sprites on screen at once share a few textures and the renderer can batch them.
     /// </summary>
-    public static class CombatFxArt
+    public static partial class CombatFxArt
     {
         public const float PixelsPerUnit = 32f;
         public const float Pixel = 1f / PixelsPerUnit;
@@ -930,12 +932,10 @@ namespace TrashTD.Combat
             };
         }
 
-        private static Sprite ToSprite(Texture2D texture) =>
-            Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), PixelsPerUnit);
-
         private static Sprite Cached(string key, Func<Sprite> build)
         {
-            if (SpriteCache.TryGetValue(key, out Sprite sprite) && sprite != null) return sprite;
+            // A sprite can outlive its atlas page when play mode ends (domain reload is off), and then draws plain white
+            if (SpriteCache.TryGetValue(key, out Sprite sprite) && sprite != null && sprite.texture != null) return sprite;
             sprite = build();
             SpriteCache[key] = sprite;
             return sprite;
@@ -944,7 +944,7 @@ namespace TrashTD.Combat
         private static Sprite[] CachedFrames(string key, Func<Sprite[]> build)
         {
             if (FrameCache.TryGetValue(key, out Sprite[] frames) && frames != null &&
-                Array.TrueForAll(frames, frame => frame != null))
+                Array.TrueForAll(frames, frame => frame != null && frame.texture != null))
             {
                 return frames;
             }

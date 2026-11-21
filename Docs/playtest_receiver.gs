@@ -14,7 +14,8 @@
 
 var HEADERS = {
   Stages: ['Time', 'Tester', 'Platform', 'Device', 'Build', 'Stage', 'Difficulty', 'Result', 'Stars', 'Seconds', 'Wave', 'Waves',
-    'Lives left', 'Lives lost', 'Rerolls', 'Avg FPS', 'Hitches', 'Worst frame (ms)', 'Operators used', 'Operators lost', 'Drafted'],
+    'Lives left', 'Lives lost', 'Rerolls', 'Avg FPS', 'Hitches', 'Worst frame (ms)', 'Operators used', 'Operators lost', 'Drafted',
+    'CRT', 'FPS cap', 'Picture'],
   Operators: ['Operator', 'Drafted', 'Deployed', 'Retreated', 'Lost', 'Stages used', 'Stages cleared', 'Clear rate'],
   Sessions: ['Time', 'Tester', 'Session', 'Platform', 'Build', 'Device', 'OS', 'RAM (MB)', 'GPU', 'Screen', 'DPI', 'Refresh (Hz)',
     'Controls', 'CRT', 'Touch', 'UI size', 'FPS cap', 'Picture'],
@@ -63,7 +64,7 @@ function recordEvent_(book, p) {
         appendRow_(sheet_(book, 'Stages'), [now, tester, platform, text_(data.device), build, stage, text_(data.difficulty),
           text_(data.result), num_(data.stars), num_(data.seconds), num_(data.wave), num_(data.waves), num_(data.livesLeft),
           num_(data.livesLost), num_(data.rerolls), num_(data.avgFps), num_(data.hitches), num_(data.worstMs),
-          counts_(data.deployed), counts_(data.died), list_(data.picks)]);
+          counts_(data.deployed), counts_(data.died), list_(data.picks), text_(data.crt), num_(data.fpsCap), text_(data.picture)]);
         updateOperators_(book, data);
         break;
       case 'feedback':
@@ -144,6 +145,7 @@ function addSampleData() {
           seconds: 240 + Math.floor(random() * 600), wave: wave, waves: waves, livesLeft: result === 'clear' ? 1 + Math.floor(random() * 3) : 0,
           livesLost: Math.floor(random() * 4), rerolls: Math.floor(random() * 3), avgFps: Math.max(15, Math.round(tester.fps * (0.85 + random() * 0.2))),
           hitches: Math.floor(random() * 30), worstMs: 40 + Math.floor(random() * 200), deployed: deployed,
+          crt: tester.touch ? 'Off' : 'Classic', fpsCap: tester.touch ? 60 : 0, picture: tester.touch ? 'Full' : '',
           retreated: random() < 0.4 ? (function () { var x = {}; x[pick(operators)] = 1; return x; })() : {},
           died: random() < 0.5 ? (function () { var x = {}; x[pick(operators)] = 1; return x; })() : {}, picks: picks, t: 300 + r * 400 }) }));
 
@@ -345,7 +347,7 @@ function formatDataTab_(sheet, name, columns) {
   if (name !== 'Operators') sheet.getRange(2, 1, BANDING_ROWS, 1).setNumberFormat('yyyy-mm-dd hh:mm');
 
   var widths = {
-    Stages: [130, 80, 90, 150, 70, 90, 80, 70, 50, 70, 50, 50, 70, 70, 60, 70, 70, 100, 260, 220, 260],
+    Stages: [130, 80, 90, 150, 70, 90, 80, 70, 50, 70, 50, 50, 70, 70, 60, 70, 70, 100, 260, 220, 260, 70, 70, 80],
     Operators: [170, 80, 90, 90, 70, 100, 110, 100],
     Sessions: [130, 80, 120, 90, 70, 150, 220, 80, 180, 90, 60, 90, 90, 80, 60, 70, 70, 80],
     Feedback: [130, 80, 90, 70, 90, 60, 480],

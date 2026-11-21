@@ -67,9 +67,13 @@ The **Tester** column is a random install id (the first part of the session id):
 |---|---|---|
 | `session_start` | once per launch | Sessions |
 | `stage_start` | a stage begins | Log |
-| `stage_end` | cleared, failed or left (`result` is `clear`, `fail` or `quit`) | Stages and Operators |
+| `stage_end` | cleared, failed or left (`result` is `clear`, `fail` or `quit`); includes the CRT style, and on phones the FPS cap and picture size, in force at that moment | Stages and Operators |
 | `feedback` | tester presses SEND in Settings | Feedback |
 | `error` | a script error in the game | Errors |
+
+## Frame rate per graphics style
+
+The **Stages** tab has three last columns, **CRT** (Off, Classic or Full TV), **FPS cap** and **Picture** (phones only), next to **Avg FPS** and **Device**. To compare styles on a device, filter or pivot the Stages tab on those columns. A sheet created before they existed keeps working: type `CRT`, `FPS cap` and `Picture` into cells V1, W1 and X1 of the Stages tab and redeploy the script (Deploy > Manage deployments > edit > New version). Do not run `setupSheets()` for this, it erases the rows. The same values are in the **Log** tab either way.
 
 ## Good to know
 
