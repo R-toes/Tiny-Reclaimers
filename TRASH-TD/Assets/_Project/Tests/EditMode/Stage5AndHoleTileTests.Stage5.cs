@@ -22,7 +22,7 @@ namespace TrashTD.Tests
             Assert.IsNotNull(stage5, "STAGE_05 asset should be loaded from Resources/Stages.");
 
             Assert.AreEqual("STAGE_05", stage5.stageId);
-            Assert.AreEqual("Boulevard", stage5.mapName);
+            Assert.AreEqual("New Calder Basin", stage5.mapName); // renamed to the team's lore on 2026-10-24
             Assert.AreEqual(13, stage5.gridWidth);
             Assert.AreEqual(8, stage5.gridHeight);
             Assert.AreEqual(32, stage5.visualTilePixelSize);
@@ -160,7 +160,9 @@ namespace TrashTD.Tests
             // Test 100% chance roll -> exactly 5 cars
             var fullRoll = encounter.RollAndScheduleCarsForWave(1.0f, 5);
             Assert.AreEqual(5, fullRoll.Count, "100% chance should result in 5 scheduled cars.");
-            Assert.AreEqual(5, encounter.QueuedCarCount, "Spawn queue should contain 5 cars.");
+            // The spawn coroutine takes the first car off the queue as soon as it starts and counts down its interval,
+            // so the other 4 are the ones still waiting
+            Assert.AreEqual(4, encounter.QueuedCarCount, "4 cars should still be waiting in the spawn queue.");
 
             float prevTimestamp = 0f;
             for (int i = 0; i < fullRoll.Count; i++)
@@ -238,16 +240,23 @@ namespace TrashTD.Tests
             var sr = car.GetComponent<SpriteRenderer>();
             Assert.AreEqual(9, sr.sortingOrder, "Car sprite should be sortingOrder 9.");
 
+            int enemyAStart = enemyA.CurrentHP;
+            int enemyBStart = enemyB.CurrentHP;
+            int allyStart = op.CurrentHP;
+
             // Move car forward so front reaches x=8.5 (hitting Enemy A and Ally)
             // Car starts at x=0 (cell0CenterX=0.5, startX=0.5). At x=8.5, distance to tile 8 is 8.0 tiles!
             car.transform.position = new Vector3(gridManager.GridToWorldPosition(8, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
             car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
 
-            // Enemy A at tile 8 (8 tiles from start) takes 40 + (8/2)*20 = 120 true damage -> 880 HP remaining
-            Assert.AreEqual(880, enemyA.CurrentHP, "Enemy A should take 120 true damage (40 + 4*20) leaving 880 HP.");
+            // Enemy A at tile 8 (8 tiles from start) takes the ramp's damage for 8 tiles (20 + 4*20 = 100) as true damage.
+            // The enemy's HP is scaled when it is made, so measure from the HP it really had.
+            int damageAt8 = Stage5TrafficCar.CalculateDamage(8);
+            Assert.AreEqual(100, damageAt8);
+            Assert.AreEqual(enemyAStart - damageAt8, enemyA.CurrentHP, "Enemy A should take 100 true damage (20 + 4*20), ignoring its DEF.");
 
-            // Ally at tile 8 (8 tiles from start) takes 120 true damage (ignoring DEF 50) -> 380 HP remaining
-            Assert.AreEqual(380, op.CurrentHP, "Ally should take 120 true damage (40 + 4*20) ignoring DEF, leaving 380 HP.");
+            // Ally at tile 8 takes the same true damage (ignoring DEF 50)
+            Assert.AreEqual(allyStart - damageAt8, op.CurrentHP, "Ally should take 100 true damage (20 + 4*20) ignoring DEF.");
 
             // First operator hit was not killed, so it should be stunned!
             Assert.IsTrue(op.IsStunned, "First operator hit should be stunned when surviving.");
@@ -255,11 +264,12 @@ namespace TrashTD.Tests
             Assert.IsFalse(op.TryBlock(enemyB), "Stunned operator cannot block.");
 
             // Now move car to tile 10 (2 tiles after Enemy A)
-            // Enemy counter reset at tile 8, so Enemy B at tile 10 takes 40 + (2/2)*20 = 60 damage -> 940 HP remaining
+            // Enemy counter reset at tile 8, so Enemy B at tile 10 takes the ramp's damage for 2 tiles (20 + 20 = 40)
             car.transform.position = new Vector3(gridManager.GridToWorldPosition(10, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
             car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
 
-            Assert.AreEqual(940, enemyB.CurrentHP, "Enemy B at tile 10 should take 60 true damage (40 + 1*20) since counter reset at Enemy A.");
+            Assert.AreEqual(enemyBStart - Stage5TrafficCar.CalculateDamage(2), enemyB.CurrentHP,
+                "Enemy B at tile 10 should take 40 true damage (20 + 1*20) since the counter reset at Enemy A.");
 
             // Clean up
             Object.DestroyImmediate(carObj);
@@ -349,59 +359,61 @@ namespace TrashTD.Tests
             var opMgr = opMgrObj.AddComponent<OperatorManager>();
             opMgr.Initialize(gridManager);
 
-            // Op 1 at tile 4 (4 tiles from startX=0.5 -> damage = 40 + (4/2)*20 = 80)
+            // The ramp is 20, 40, 60, 80 ... (+20 every 2 tiles), counted from the last operator the car hit, and the
+            // first operator hit is stunned whatever the damage; after that only a hit of 80 or more stuns.
+            // Op 1 at tile 1 (damage 20, first hit: stunned), Op 2 at tile 2 (1 tile later: damage 20, not stunned),
+            // Op 3 at tile 8 (6 tiles after Op 2: damage 80, stunned again).
             var op1Obj = new GameObject("Op1");
-            op1Obj.transform.position = gridManager.GridToWorldPosition(4, 5);
+            op1Obj.transform.position = gridManager.GridToWorldPosition(1, 5);
             var op1 = op1Obj.AddComponent<GuardOperator>();
             var op1Data = ScriptableObject.CreateInstance<OperatorData>();
             op1Data.baseHP = 1000;
             op1.Initialize(op1Data, OperatorRarity.Star1);
-            op1.Deploy(gridManager.GetCell(4, 5));
+            op1.Deploy(gridManager.GetCell(1, 5));
             opMgr.RegisterOperator(op1);
 
-            // Op 2 at tile 5 (1 tile after Op 1 -> damage = 40)
             var op2Obj = new GameObject("Op2");
-            op2Obj.transform.position = gridManager.GridToWorldPosition(5, 5);
+            op2Obj.transform.position = gridManager.GridToWorldPosition(2, 5);
             var op2 = op2Obj.AddComponent<GuardOperator>();
             var op2Data = ScriptableObject.CreateInstance<OperatorData>();
             op2Data.baseHP = 1000;
             op2.Initialize(op2Data, OperatorRarity.Star1);
-            op2.Deploy(gridManager.GetCell(5, 5));
+            op2.Deploy(gridManager.GetCell(2, 5));
             opMgr.RegisterOperator(op2);
 
-            // Op 3 at tile 9 (4 tiles after Op 2 -> damage = 40 + (4/2)*20 = 80)
             var op3Obj = new GameObject("Op3");
-            op3Obj.transform.position = gridManager.GridToWorldPosition(9, 5);
+            op3Obj.transform.position = gridManager.GridToWorldPosition(8, 5);
             var op3 = op3Obj.AddComponent<GuardOperator>();
             var op3Data = ScriptableObject.CreateInstance<OperatorData>();
             op3Data.baseHP = 1000;
             op3.Initialize(op3Data, OperatorRarity.Star1);
-            op3.Deploy(gridManager.GetCell(9, 5));
+            op3.Deploy(gridManager.GetCell(8, 5));
             opMgr.RegisterOperator(op3);
 
             var carObj = new GameObject("Car");
             var car = carObj.AddComponent<Stage5TrafficCar>();
             car.Initialize(5, null, gridManager, enemyMgr, opMgr, speed: 10f);
 
-            // 1. Hit Op 1 at tile 4 (damage 80) -> Stunned!
-            car.transform.position = new Vector3(gridManager.GridToWorldPosition(4, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
+            // 1. Hit Op 1 at tile 1 (damage 20) -> Stunned, because it is the first operator hit
+            car.transform.position = new Vector3(gridManager.GridToWorldPosition(1, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
             car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
 
-            Assert.AreEqual(920, op1.CurrentHP, "Op 1 should take 80 damage.");
-            Assert.IsTrue(op1.IsStunned, "First operator hit with 80 damage should be stunned.");
+            Assert.AreEqual(1000 - Stage5TrafficCar.CalculateDamage(1), op1.CurrentHP, "Op 1 should take 20 damage.");
+            Assert.IsTrue(op1.IsStunned, "The first operator hit is stunned.");
 
-            // 2. Hit Op 2 at tile 5 (1 tile from Op 1 -> damage 40) -> NOT Stunned!
-            car.transform.position = new Vector3(gridManager.GridToWorldPosition(5, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
+            // 2. Hit Op 2 at tile 2 (1 tile from Op 1 -> damage 20) -> NOT stunned
+            car.transform.position = new Vector3(gridManager.GridToWorldPosition(2, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
             car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
 
-            Assert.AreEqual(960, op2.CurrentHP, "Op 2 should take 40 damage.");
+            Assert.AreEqual(1000 - Stage5TrafficCar.CalculateDamage(1), op2.CurrentHP, "Op 2 should take 20 damage.");
             Assert.IsFalse(op2.IsStunned, "Op 2 should NOT be stunned because damage has not ramped back up to 80.");
 
-            // 3. Hit Op 3 at tile 9 (4 tiles from Op 2 -> damage 80) -> STUNNED AGAIN!
-            car.transform.position = new Vector3(gridManager.GridToWorldPosition(9, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
+            // 3. Hit Op 3 at tile 8 (6 tiles from Op 2 -> damage 80) -> STUNNED AGAIN
+            car.transform.position = new Vector3(gridManager.GridToWorldPosition(8, 5).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
             car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
 
-            Assert.AreEqual(920, op3.CurrentHP, "Op 3 should take 80 damage.");
+            Assert.AreEqual(Stage5TrafficCar.StunRampDamageThreshold, Stage5TrafficCar.CalculateDamage(6));
+            Assert.AreEqual(1000 - Stage5TrafficCar.CalculateDamage(6), op3.CurrentHP, "Op 3 should take 80 damage.");
             Assert.IsTrue(op3.IsStunned, "Op 3 SHOULD BE STUNNED AGAIN because damage ramped back up to 80+.");
 
             Object.DestroyImmediate(carObj);
@@ -528,16 +540,21 @@ namespace TrashTD.Tests
             car.Initialize(4, null, gridManager, enemyMgr, opMgr, speed: 10f, sortingOrder: 9);
 
             // Move car to tile 4 (4 tiles from column 0)
-            // Damage formula at 4 tiles: 40 + (4/2)*20 = 80 damage!
+            // Damage formula at 4 tiles: 20 + (4/2)*20 = 60 damage
+            int hpBeforeHit = op.CurrentHP;
+            TestUtility.ExpectEditModeDestroy(); // the popped bubble's visual is destroyed, which edit mode reports as an error
+            TestUtility.ExpectEditModeDestroy();
             car.transform.position = new Vector3(gridManager.GridToWorldPosition(4, 4).x - car.FrontBumperOffsetX, car.transform.position.y, 0f);
             car.CheckCollisions(car.transform.position.x + car.FrontBumperOffsetX, car.transform.position.x + car.RearBumperOffsetX);
 
             // 1. Bubble shield was popped!
             Assert.IsFalse(BubbleShield.HasActiveShield(op), "Bubble shield should be popped by car hit.");
 
-            // 2. Shield negation was ignored -> operator took the 80 true damage!
-            // (Bubble pop heal of 30 was applied during pop if recipient was missing HP, but op was full HP 500, so 500 - 80 = 420)
-            Assert.AreEqual(420, op.CurrentHP, "Operator should take 80 true damage despite having a bubble shield.");
+            // 2. Shield negation was ignored -> operator took the 60 true damage!
+            // (Bubble pop heal of 30 was applied during pop if recipient was missing HP, but op was at full HP)
+            Assert.AreEqual(60, Stage5TrafficCar.CalculateDamage(4));
+            Assert.AreEqual(hpBeforeHit - Stage5TrafficCar.CalculateDamage(4), op.CurrentHP,
+                "Operator should take 60 true damage despite having a bubble shield.");
 
             // 3. Operator survived, so first hit stun applies!
             Assert.IsTrue(op.IsStunned, "Surviving operator should be stunned.");
@@ -575,6 +592,7 @@ namespace TrashTD.Tests
             enemyData.movementType = EnemyMovementType.Ground;
             enemy.Initialize(enemyData, 0);
             enemyMgr.RegisterEnemy(enemy);
+            int enemyStart = enemy.CurrentHP;
 
             // Spawn car on Lane 5
             var carObj = new GameObject("Car");
@@ -592,8 +610,9 @@ namespace TrashTD.Tests
             // 3. Move car past ExitX (0.01s at speed 10 = 0.1 units -> frontX reaches/exceeds ExitX)
             car.Move(0.01f);
 
-            // Enemy at tile 12 took 160 true damage (12 tiles travelled: 40 + (12/2)*20 = 160)
-            Assert.AreEqual(840, enemy.CurrentHP, "Enemy at last violet tile should have taken 160 true damage upon car arrival.");
+            // Enemy at tile 12 took the ramp's top damage (12 tiles travelled: 20 + 6*20 = 140)
+            Assert.AreEqual(140, Stage5TrafficCar.CalculateDamage(12));
+            Assert.AreEqual(enemyStart - 140, enemy.CurrentHP, "Enemy at last violet tile should have taken 140 true damage upon car arrival.");
 
             // Car should now be destroyed immediately when reaching ExitX (one tile after last violet tile)
             Assert.IsTrue(car == null || car.gameObject == null, "Car should be destroyed immediately when reaching one tile after the last violet tile on the right.");

@@ -97,8 +97,10 @@ namespace TrashTD.Tests
 
                 visuals.SetPassiveState(10, 1f, 1f);
                 Assert.AreEqual(2, visuals.CurrentTier);
-                instance.SetActive(false);
-                instance.SetActive(true);
+                // Switching the object off and on resets it. Edit mode does not send OnDisable / OnEnable, so send them as
+                // SetActive(false) and SetActive(true) would in play mode.
+                typeof(PompothPowerVisuals).GetMethod("OnDisable", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(visuals, null);
+                typeof(PompothPowerVisuals).GetMethod("OnEnable", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(visuals, null);
                 Assert.AreEqual(0, visuals.CurrentTier);
             }
             finally

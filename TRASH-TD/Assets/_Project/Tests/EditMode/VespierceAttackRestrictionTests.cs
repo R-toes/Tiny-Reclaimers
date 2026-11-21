@@ -199,10 +199,11 @@ namespace TrashTD.Tests
             TankEnemy attacker = CreateEnemy<TankEnemy>(EnemyArchetype.Tank);
             int startingHP = vespierce.CurrentHP;
             int attackerHP = attacker.CurrentHP;
+            // Perfect Parry is the 2nd upgrade (5 stars); the 1st upgrade (4 stars) is the phantom, so a direct hit lands in full
             Assert.IsTrue(vespierce.TryTakeAttackDamage(100, DamageType.True, attacker));
-            Assert.AreEqual(startingHP - 65, vespierce.CurrentHP);
-            Assert.AreEqual(attackerHP - 20, attacker.CurrentHP,
-                "The 2x upgrade must retain the 1x Perfect Parry ability.");
+            Assert.AreEqual(startingHP - 100, vespierce.CurrentHP);
+            Assert.AreEqual(attackerHP, attacker.CurrentHP,
+                "Nothing is reflected before the 2nd upgrade's Perfect Parry.");
 
             GruntEnemy firstTarget = CreateEnemy<GruntEnemy>(EnemyArchetype.Grunt);
             GruntEnemy secondTarget = CreateEnemy<GruntEnemy>(EnemyArchetype.Grunt);

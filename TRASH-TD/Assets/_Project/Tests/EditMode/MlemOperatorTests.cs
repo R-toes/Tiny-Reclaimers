@@ -116,6 +116,12 @@ namespace TrashTD.Tests
             return enemy;
         }
 
+        private static void SetPathIndex(EnemyBase enemy, int index)
+        {
+            typeof(EnemyBase).GetField("currentPathIndex", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(enemy, index);
+        }
+
         private EnemyBase FindTarget()
         {
             return (EnemyBase)typeof(MlemOperator)
@@ -198,9 +204,12 @@ namespace TrashTD.Tests
         [Test]
         public void SameType_TheOneFurthestAlongThePathGoesFirst()
         {
-            CreateEnemy(EnemyArchetype.Grunt, 0);
+            // "Furthest along" counts the path still to walk from the waypoint the enemy is heading for, so each enemy
+            // has to be heading for the next waypoint, as it would be after walking there
+            SetPathIndex(CreateEnemy(EnemyArchetype.Grunt, 0), 1);
             EnemyBase furthest = CreateEnemy(EnemyArchetype.Grunt, 2);
-            CreateEnemy(EnemyArchetype.Grunt, 1);
+            SetPathIndex(furthest, 3);
+            SetPathIndex(CreateEnemy(EnemyArchetype.Grunt, 1), 2);
 
             Assert.AreSame(furthest, FindTarget());
         }
@@ -317,7 +326,8 @@ namespace TrashTD.Tests
 
             mlem.TakeTrueDamage(mlem.TemporaryHP + 20); // through the temporary HP and 20 into real HP
             Assert.AreEqual(baseMaxHP - 20, mlem.CurrentHP);
-            for (int i = 0; i < 8; i++) mlem.AdvanceDigestion(0.5f);
+            // A Grunt takes 4.5 s to digest, 3.6 s with the 1st upgrade's 20% off: stop at 3 s, still digesting
+            for (int i = 0; i < 6; i++) mlem.AdvanceDigestion(0.5f);
             Assert.IsTrue(mlem.IsDigesting);
             Assert.AreEqual(baseMaxHP, mlem.CurrentHP, "The 1st upgrade's regen heals him back to the normal max, no further.");
 
@@ -384,8 +394,9 @@ namespace TrashTD.Tests
             TestUtility.ExpectEditModeDestroy();
             mlem.Attack(tank);
 
-            mlem.TakeTrueDamage(100);
+            mlem.TakeTrueDamage(mlem.TemporaryHP + 100); // the swallowed tank's temporary HP takes hits first
             int hurt = mlem.CurrentHP;
+            Assert.Less(hurt, mlem.MaxHP, "He has to be hurt for the regen to show.");
             for (int i = 0; i < 4; i++) mlem.AdvanceDigestion(0.5f);
 
             Assert.Greater(mlem.CurrentHP, hurt, "The 1st upgrade heals him while he digests.");

@@ -54,6 +54,7 @@ namespace TrashTD.Tests
             ClearInstance(typeof(TrashTD.Systems.PlayerDeck));
             ClearInstance(typeof(TrashTD.Systems.RarityUpgradeSystem));
             ClearInstance(typeof(TrashTD.Systems.OperatorManager));
+            ClearInstance(typeof(TrashTD.Systems.EnemyManager)); // a destroyed one left behind makes later tests register enemies nowhere
         }
 
         private static void ClearInstance(Type type)

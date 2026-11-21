@@ -44,7 +44,7 @@ namespace TrashTD.Tests
             gridManager.InitializeFromStageData(stageData);
 
             enemyManagerObject = new GameObject("TestEnemyManager");
-            enemyManager = enemyManagerObject.AddComponent<EnemyManager>();
+            enemyManager = TestUtility.AddAwakened<EnemyManager>(enemyManagerObject); // sets EnemyManager.Instance, where spawned enemies register
             enemyManager.Initialize(gridManager);
         }
 
@@ -225,13 +225,22 @@ namespace TrashTD.Tests
 
             BlockingSystem.TryEngageBlock(op, carrier);
             Assert.AreEqual(1, op.GetBlockCount());
+            SlipperyEffect slippery = carrier.ActiveSlipperyEffect;
+            Assert.IsNotNull(slippery);
+            Assert.IsFalse(slippery.IsFading, "The debuff is held while the carrier is blocked.");
 
             // Release the block
             op.ReleaseBlock(carrier);
 
-            Assert.AreEqual(2, op.GetBlockCount(), "Block count should be restored to 2 after release.");
-            Assert.AreEqual(0, op.BlockCountModifier, "BlockCountModifier should be restored to 0.");
+            // The debuff does not vanish with the carrier: it fades over 10 s, then the block count comes back
+            Assert.IsTrue(slippery.IsFading, "Letting go starts the fade.");
+            Assert.AreEqual(1, op.GetBlockCount(), "The -1 block lingers while the debuff fades.");
             Assert.AreEqual(0, op.GetCurrentBlockCount(), "No enemies should be blocked.");
+
+            slippery.Tick(slippery.Duration);
+
+            Assert.AreEqual(2, op.GetBlockCount(), "Block count should be restored to 2 once the debuff has faded.");
+            Assert.AreEqual(0, op.BlockCountModifier, "BlockCountModifier should be restored to 0.");
 
             Object.DestroyImmediate(carrierObj);
             Object.DestroyImmediate(carrierData);
@@ -240,7 +249,7 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void Carrier_WhenKilled_RestoresBlockCountAndSpawnsTwoOculites()
+        public void Carrier_WhenKilled_RestoresBlockCountAndSpawnsThreeOculites()
         {
             var path = CreateStraightPath();
             var (carrierObj, carrier, carrierData, spawnData) = CreateCarrier(path);
@@ -249,28 +258,36 @@ namespace TrashTD.Tests
             BlockingSystem.TryEngageBlock(op, carrier);
             Assert.AreEqual(1, op.GetBlockCount());
             Assert.AreEqual(1, enemyManager.ActiveEnemyCount);
+            SlipperyEffect slippery = carrier.ActiveSlipperyEffect;
+            Assert.IsNotNull(slippery);
 
             TestUtility.ExpectEditModeDestroy();
 
             // Deal fatal damage to carrier
             carrier.TakeDamage(1000, DamageType.True);
 
-            // Block debuff must be removed from operator
-            Assert.AreEqual(2, op.GetBlockCount(), "Block count should be restored to 2 when carrier dies.");
+            // The block debuff outlives the carrier: it fades over 10 s, then the operator's block count is restored
+            Assert.IsTrue(slippery.IsFading, "The carrier's death starts the fade.");
+            Assert.AreEqual(1, op.GetBlockCount(), "The -1 block lingers while the debuff fades.");
+            slippery.Tick(slippery.Duration);
+            Assert.AreEqual(2, op.GetBlockCount(), "Block count should be restored to 2 once the debuff has faded.");
             Assert.AreEqual(0, op.BlockCountModifier);
 
-            // Carrier is dead, and two Oculite Spawns should have spawned
+            // Carrier is dead, and three Oculite Spawns should have spawned
             Assert.IsTrue(carrier.IsDead);
-            Assert.AreEqual(2, enemyManager.ActiveEnemyCount, "Two Oculite Spawns should be spawned into active enemies.");
-
+            // A dead carrier is only unregistered when Unity destroys it, which edit mode does not do, so leave it out
+            int spawnCount = 0;
             foreach (var enemy in enemyManager.ActiveEnemies)
             {
+                if (enemy == carrier) continue;
+                spawnCount++;
                 Assert.AreEqual("Oculite Spawn", enemy.Data.enemyName);
                 Assert.IsTrue(enemy.IsImmuneToAcidRain);
                 Assert.IsTrue(enemy.IsImmuneToAcidTiles);
                 Assert.IsNotNull(enemy.Path, "Spawned children must have a movement path assigned.");
                 Assert.Greater(enemy.Path.Count, 0, "Spawned children path must not be empty.");
             }
+            Assert.AreEqual(3, spawnCount, "Three Oculite Spawns should be spawned into active enemies (two before 2026-10-28).");
 
             Object.DestroyImmediate(carrierObj);
             Object.DestroyImmediate(carrierData);

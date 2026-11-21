@@ -121,10 +121,12 @@ namespace TrashTD.Tests
             // Trigger damage tick
             visual.OnDamageTick(visual.CurrentStacks);
 
-            // Tick down until expiration
+            // Tick down until expiration. The expired DOT destroys itself, which edit mode reports as an error and does not
+            // carry out, so check that every stack ran out instead of that the component is gone.
+            TestUtility.ExpectEditModeDestroy(); // the poison visual is removed, then the DOT destroys itself
+            TestUtility.ExpectEditModeDestroy();
             dot.Tick(6.0f);
-            Assert.IsNull(attacker.GetComponent<TrashTD.Combat.ThornchinSpikeDOT>(), "DOT should expire and be destroyed.");
-            Assert.IsNull(attacker.GetComponent<TrashTD.Combat.ThornchinPoisonVisual>(), "Poison visual should be removed upon expiration.");
+            Assert.AreEqual(0, dot.CurrentStacks, "Every stack should have expired.");
         }
 
         [Test]

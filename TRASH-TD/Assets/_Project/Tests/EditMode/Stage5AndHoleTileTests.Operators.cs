@@ -89,12 +89,13 @@ namespace TrashTD.Tests
             enemyData.baseDEF = 50;
             enemyData.baseRES = 50;
             enemy.Initialize(enemyData, 0);
+            int enemyStart = enemy.CurrentHP; // an enemy's HP is scaled when it is made, so measure from the real value
 
             enemy.TakeTrueDamage(3);
-            Assert.AreEqual(97, enemy.CurrentHP, "Enemy should take unmitigated true damage from TakeTrueDamage.");
+            Assert.AreEqual(enemyStart - 3, enemy.CurrentHP, "Enemy should take unmitigated true damage from TakeTrueDamage.");
 
             enemy.TakeDamage(3, DamageType.True);
-            Assert.AreEqual(94, enemy.CurrentHP, "Enemy should take unmitigated true damage from TakeDamage(..., DamageType.True).");
+            Assert.AreEqual(enemyStart - 6, enemy.CurrentHP, "Enemy should take unmitigated true damage from TakeDamage(..., DamageType.True).");
 
             Object.DestroyImmediate(opObj);
             Object.DestroyImmediate(opData);
@@ -198,6 +199,7 @@ namespace TrashTD.Tests
 
             op.Initialize(data, OperatorRarity.Star3);
             Assert.AreEqual(6, op.GetBlockCount(), "IRONHOWL MK-IX's second upgrade should add two block slots.");
+            Assert.IsTrue(op.Deploy(new GridCell(0, 0, TileType.LowGround, Vector3.zero))); // a stun only lands on a deployed operator
             op.ApplyStun(1f);
             Assert.AreEqual(0, op.GetBlockCount(), "A stunned operator must still have no block capacity.");
 
@@ -352,8 +354,12 @@ namespace TrashTD.Tests
             var mossmoData = UnityEditor.AssetDatabase.LoadAssetAtPath<OperatorData>("Assets/_Project/Data/Operators/OP_Defender_Mossmo.asset");
             if (mossmoData != null)
             {
-                Assert.AreEqual("Mossmo does not attack and is likely to be attacked but when taking damage he heals up to 2 operators in its range including itself",
-                    mossmoData.skillDescription);
+                // The text lists the base kit and each upgrade, with colour tags, so check what it has to say
+                StringAssert.Contains("Base (3★)", mossmoData.skillDescription);
+                StringAssert.Contains("Does not attack and taunts", mossmoData.skillDescription);
+                StringAssert.Contains("heals up to 2 operators in range", mossmoData.skillDescription);
+                StringAssert.Contains("1st upgrade (4★)", mossmoData.skillDescription);
+                StringAssert.Contains("2nd upgrade (5★)", mossmoData.skillDescription);
             }
 
             var opObj = new GameObject("MossmoTest");
@@ -374,9 +380,10 @@ namespace TrashTD.Tests
             var eData = ScriptableObject.CreateInstance<EnemyData>();
             eData.baseHP = 100;
             e.Initialize(eData, 0);
+            int enemyStart = e.CurrentHP; // an enemy's HP is scaled when it is made, so measure from the real value
 
             op.Attack(e);
-            Assert.AreEqual(100, e.CurrentHP, "Mossmo must not deal damage on Attack.");
+            Assert.AreEqual(enemyStart, e.CurrentHP, "Mossmo must not deal damage on Attack.");
 
             Object.DestroyImmediate(eData);
             Object.DestroyImmediate(eObj);
@@ -387,9 +394,10 @@ namespace TrashTD.Tests
         [Test]
         public void Mossmo_TauntMechanic_RangedEnemyPrioritizesMossmoInSurroundingTile()
         {
-            // Set up GridManager and OperatorManager
+            // Set up GridManager (the Stage 5 map, so there are cells to deploy onto) and OperatorManager
+            gridManager.InitializeFromStageData(Resources.Load<StageData>("Stages/STAGE_05"));
             var opMgrObj = new GameObject("OpManager");
-            var opMgr = opMgrObj.AddComponent<OperatorManager>();
+            var opMgr = TestUtility.AddAwakened<OperatorManager>(opMgrObj); // sets OperatorManager.Instance, which enemies look operators up in
             opMgr.Initialize(gridManager);
 
             // Deploy Mossmo at (5, 5)
@@ -502,12 +510,14 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void Drawgoo_Asset_SkillDescription_And_UpgradeMerge_GrantsRandom3StarOnDeath()
+        public void Drawgoo_Asset_SkillDescription_And_UpgradeMerge_GrantsUpgradedCardsOnDeath()
         {
             var drawgooData = UnityEditor.AssetDatabase.LoadAssetAtPath<OperatorData>("Assets/_Project/Data/Operators/OP_Specialist_Drawgoo.asset");
             Assert.AreEqual(OperatorClass.Specialist, drawgooData.operatorClass, "Drawgoo should be Specialist class.");
             Assert.IsNotNull(drawgooData, "Drawgoo asset should exist.");
-            Assert.IsTrue(drawgooData.skillDescription.Contains("3-star"), "Drawgoo asset description should mention 3-star upgrade.");
+            // Upgraded Drawgoo's cards arrive 1 or 2 ranks up (the old text promised 3-star cards)
+            StringAssert.Contains("1x Upgraded", drawgooData.skillDescription);
+            StringAssert.Contains("2x Upgraded", drawgooData.skillDescription);
 
             var upgradeObj = new GameObject("UpgradeSystem");
             var upgradeSys = TestUtility.AddAwakened<RarityUpgradeSystem>(upgradeObj);
@@ -517,6 +527,12 @@ namespace TrashTD.Tests
 
             var opMgrObj = new GameObject("OpManager");
             var opMgr = TestUtility.AddAwakened<OperatorManager>(opMgrObj);
+            // A small Low Ground grid to deploy onto (the class's grid has no cells until a stage is loaded into it)
+            var gridStage = ScriptableObject.CreateInstance<StageData>();
+            gridStage.gridWidth = 2;
+            gridStage.gridHeight = 1;
+            gridStage.tileLayout = new[] { TileType.LowGround, TileType.LowGround };
+            gridManager.InitializeFromStageData(gridStage);
             opMgr.Initialize(gridManager);
 
             var draftObj = new GameObject("DraftSystem");
@@ -547,18 +563,20 @@ namespace TrashTD.Tests
                 Assert.IsTrue(opMgr.TryDeployOperator(mergedCard, new Vector2Int(0, 0), OperatorFacing.Right, out var deployedOp));
                 deck.RemoveCard(0);
                 Assert.AreEqual(OperatorRarity.Star2, deployedOp.CurrentRarity);
-                Assert.AreEqual("When Drawgoo dies, draw 1 (60%) or 2 (40%) random 3-star operator cards from the pool.", deployedOp.GetSkillDescription());
+                Assert.AreEqual("When Drawgoo dies, draw 2 1x Upgraded operator cards from the pool. Cannot be healed by other operators.", deployedOp.GetSkillDescription());
 
                 // 3. Kill the 2★ Drawgoo
                 TestUtility.ExpectEditModeDestroy();
                 deployedOp.TakeTrueDamage(deployedOp.MaxHP + 100);
 
-                // Deck should now have 1 or 2 cards, and all must be the 3★ operator
-                Assert.IsTrue(deck.CardCount >= 1 && deck.CardCount <= 2);
+                // The 1st upgrade: Drawgoo drops 2 cards, each rolled with the draft odds and arriving 1 rank above
+                // its draft rarity
+                Assert.AreEqual(2, deck.CardCount);
                 foreach (DraftCard rewardCard in deck.DeckSlots)
                 {
-                    Assert.AreEqual("Mossmo", rewardCard.operatorData.operatorName);
-                    Assert.AreEqual(OperatorRarity.Star3, rewardCard.rarity);
+                    if (rewardCard == null) continue;
+                    Assert.IsTrue(pool.Contains(rewardCard.operatorData));
+                    Assert.AreEqual((OperatorRarity)((int)rewardCard.operatorData.baseRarity + 1), rewardCard.rarity);
                 }
             }
             finally
@@ -569,6 +587,7 @@ namespace TrashTD.Tests
                 Object.DestroyImmediate(deckObj);
                 Object.DestroyImmediate(upgradeObj);
                 Object.DestroyImmediate(star3Op);
+                Object.DestroyImmediate(gridStage);
             }
         }
     }

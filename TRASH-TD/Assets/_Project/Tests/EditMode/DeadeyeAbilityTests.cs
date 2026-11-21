@@ -104,18 +104,26 @@ namespace TrashTD.Tests
                 Assert.IsNotNull(selectTarget);
                 Assert.IsNotNull(applyDamage);
 
+                // The rank scales ATK and the enemy's HP is scaled too, so the expected numbers come from the real ones.
+                // Both targets have 0 DEF, so each hit deals ATK plus the ramp.
+                int atk = deadeye.CurrentATK;
+                int firstHit = Mathf.RoundToInt(atk * 1.02f);
+                int secondHit = Mathf.RoundToInt(atk * 1.04f);
+                int firstStartHp = firstTarget.CurrentHP;
+                int secondStartHp = secondTarget.CurrentHP;
+
                 selectTarget.Invoke(deadeye, new object[] { firstTarget });
                 applyDamage.Invoke(deadeye, new object[] { firstTarget, false, 0, false });
-                Assert.AreEqual(1898, firstTarget.CurrentHP, "The first landed hit should add 2% ATK as damage.");
+                Assert.AreEqual(firstStartHp - firstHit, firstTarget.CurrentHP, "The first landed hit should add 2% ATK as damage.");
                 Assert.AreEqual(1, deadeye.LandedHitsOnRampTarget);
 
                 applyDamage.Invoke(deadeye, new object[] { firstTarget, false, 1, false });
-                Assert.AreEqual(1794, firstTarget.CurrentHP, "The second landed hit should add 4% ATK as damage.");
+                Assert.AreEqual(firstStartHp - firstHit - secondHit, firstTarget.CurrentHP, "The second landed hit should add 4% ATK as damage.");
                 Assert.AreEqual(2, deadeye.LandedHitsOnRampTarget);
 
                 selectTarget.Invoke(deadeye, new object[] { secondTarget });
                 applyDamage.Invoke(deadeye, new object[] { secondTarget, false, 0, false });
-                Assert.AreEqual(1898, secondTarget.CurrentHP, "A new target should start its ramp at +2%.");
+                Assert.AreEqual(secondStartHp - firstHit, secondTarget.CurrentHP, "A new target should start its ramp at +2%.");
                 Assert.AreEqual(1, deadeye.LandedHitsOnRampTarget);
             }
             finally
@@ -159,6 +167,7 @@ namespace TrashTD.Tests
                 Assert.IsNotNull(applyDamage);
                 Assert.IsNotNull(consumeBonus);
 
+                TestUtility.ExpectEditModeDestroy(); // the kill destroys the enemy, which edit mode reports as an error
                 applyDamage.Invoke(deadeye, new object[] { target, false, 0, false });
                 Assert.IsTrue(deadeye.HasPendingKillShotBonus, "Killing an enemy should arm the next-shot bonus.");
 

@@ -57,6 +57,7 @@ namespace TrashTD.Tests
             var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             var instance = Object.Instantiate(prefab);
             var animation = instance.GetComponent<MechonkSpriteAnimation>();
+            TestUtility.CallAwake(animation); // edit mode does not run Awake, which finds the SpriteRenderer
             var spriteRenderer = instance.GetComponent<SpriteRenderer>();
 
             animation.BeginAttack(MechonkSpriteAnimation.AttackWindupSeconds);
@@ -117,7 +118,7 @@ namespace TrashTD.Tests
             bool originalHazardsEnabled = StageCombatModifiers.HazardsEnabled;
             StageCombatModifiers.HazardsEnabled = false;
             var managerObject = new GameObject("MechonkAoeTestEnemyManager");
-            var enemyManager = managerObject.AddComponent<EnemyManager>();
+            var enemyManager = TestUtility.AddAwakened<EnemyManager>(managerObject); // sets EnemyManager.Instance
             var operatorData = ScriptableObject.CreateInstance<OperatorData>();
             operatorData.baseATK = 80;
             var enemyData = ScriptableObject.CreateInstance<EnemyData>();

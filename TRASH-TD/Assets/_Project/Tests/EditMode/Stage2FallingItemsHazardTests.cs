@@ -122,6 +122,7 @@ namespace TrashTD.Tests
         {
             var stagger = CreateTestOperator<StaggerOperator>("Stagger", 110, 75);
             int initialHp = stagger.CurrentHP;
+            int baseAtk = stagger.CurrentATK;
 
             // Force successful dodge
             stagger.RandomValueProvider = () => 0.05f;
@@ -133,7 +134,8 @@ namespace TrashTD.Tests
             Assert.AreEqual(initialHp, stagger.CurrentHP, "Stagger should avoid damage on successful dodge.");
             Assert.IsFalse(stagger.IsStunned, "Stagger should not be stunned on successful dodge.");
             Assert.IsTrue(stagger.HasDodgeAtkBuff, "Stagger should gain dodge ATK buff.");
-            Assert.AreEqual(Mathf.RoundToInt(75 * 1.5f), stagger.CurrentATK, "Stagger ATK should increase by 50% after dodge.");
+            // The +50% is applied to the next attack and shown as his displayed ATK; his stat itself does not change
+            Assert.AreEqual(Mathf.RoundToInt(baseAtk * 1.5f), stagger.GetDisplayATK(), "Stagger's ATK should show +50% after a dodge.");
         }
 
         [Test]
@@ -165,7 +167,9 @@ namespace TrashTD.Tests
 
             int hpBefore = guard.CurrentHP;
 
-            // Apply direct true damage item (8 - 15)
+            // Apply direct true damage item (8 - 15). Popping the shield destroys its visual, which edit mode reports.
+            TestUtility.ExpectEditModeDestroy();
+            TestUtility.ExpectEditModeDestroy();
             hazard.ApplyEffectToOperator(guard, Stage2ItemSet.DirectTrueDamage);
 
             // Bubble shield should pop and absorb damage
@@ -182,7 +186,10 @@ namespace TrashTD.Tests
             // Hit with direct true damage item
             hazard.ApplyEffectToOperator(mossmo, Stage2ItemSet.DirectTrueDamage);
 
-            Assert.AreEqual(120 - Stage2FallingItemsHazard.DirectTrueDamageAmount, mossmo.CurrentHP);
+            // Taking damage makes him heal himself and up to 1 other operator in range, so the hit is healed straight away:
+            // he ends between "hit and not healed" and full
+            Assert.GreaterOrEqual(mossmo.CurrentHP, 120 - Stage2FallingItemsHazard.DirectTrueDamageAmount);
+            Assert.LessOrEqual(mossmo.CurrentHP, 120);
             Assert.Greater(mossmo.HealCooldownTimer, 0f, "Mossmo should enter reactive heal cooldown on damage.");
             Assert.AreEqual(3.0f, mossmo.HealCooldownTimer, 0.05f);
         }

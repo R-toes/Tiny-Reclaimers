@@ -97,12 +97,23 @@ namespace TrashTD.Tests
                 Assert.IsNotNull(applyDamage);
                 selectTarget.Invoke(pompoth, new object[] { target });
 
+                // Each shot deals 80% of his ATK (his rank scales that ATK), against the target's DEF less the ignored share.
+                // The enemy's HP is scaled when it is made, so measure from the real HP.
+                int atk = Mathf.RoundToInt(pompoth.CurrentATK * 0.8f);
+                int startHp = target.CurrentHP;
+                int firstDamage = DamageCalculator.CalculateDamage(atk, PompothOperator.CalculateDefenseAfterIgnore(target.CurrentDEF, 0, true));
+                int secondDamage = DamageCalculator.CalculateDamage(atk, PompothOperator.CalculateDefenseAfterIgnore(target.CurrentDEF, 1, true));
+                // 1% and 2% of this DEF round to the same whole number, so check the ramp itself over more hits
+                Assert.Less(PompothOperator.CalculateDefenseAfterIgnore(target.CurrentDEF, 49, true),
+                    PompothOperator.CalculateDefenseAfterIgnore(target.CurrentDEF, 0, true),
+                    "Landing more hits must ignore more of the DEF.");
+
                 applyDamage.Invoke(pompoth, new object[] { target, 0 });
-                Assert.AreEqual(995, target.CurrentHP, "The first hit should ignore 1% DEF.");
+                Assert.AreEqual(startHp - firstDamage, target.CurrentHP, "The first hit should ignore 1% DEF.");
                 Assert.AreEqual(1, pompoth.LandedHitsOnDefenseRampTarget);
 
                 applyDamage.Invoke(pompoth, new object[] { target, 1 });
-                Assert.AreEqual(989, target.CurrentHP, "The second hit should ignore 2% DEF.");
+                Assert.AreEqual(startHp - firstDamage - secondDamage, target.CurrentHP, "The second hit should ignore 2% DEF.");
                 Assert.AreEqual(2, pompoth.LandedHitsOnDefenseRampTarget);
             }
             finally

@@ -318,43 +318,46 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void DrawgooUpgradedDeathSkill_DrawsOneOrTwoRandom3StarOperatorsFromPool()
+        public void DrawgooUpgradedDeathSkill_DrawsTwoCardsRanksAboveTheirDraftRarity()
         {
-            Assert.AreEqual(1, OperatorBase.RollUpgradedDrawgooCardCount(0.0f));
-            Assert.AreEqual(1, OperatorBase.RollUpgradedDrawgooCardCount(0.59f));
-            Assert.AreEqual(2, OperatorBase.RollUpgradedDrawgooCardCount(0.60f));
+            // An upgraded Drawgoo still draws 2 cards (the old 1-or-2 roll is gone): the 1st upgrade (2 stars) makes each
+            // card arrive 1 rank above its draft rarity, the 2nd upgrade (3 stars) 2 ranks above, capped at 5 stars.
+            Assert.AreEqual(2, OperatorBase.RollUpgradedDrawgooCardCount(0.0f));
             Assert.AreEqual(2, OperatorBase.RollUpgradedDrawgooCardCount(0.99f));
 
-            var star3Op = ScriptableObject.CreateInstance<OperatorData>();
-            star3Op.operatorName = "TestStar3";
-            star3Op.operatorClass = OperatorClass.Defender;
-            star3Op.baseRarity = OperatorRarity.Star3;
-            testPool.Add(star3Op);
-            draftSystem.SetOperatorPool(testPool);
-
-            var deckObject = new GameObject("DrawgooTestDeck");
-            var deck = TestUtility.AddAwakened<PlayerDeck>(deckObject);
-            var operatorObject = new GameObject("DrawgooTestOperator");
-            var drawgoo = operatorObject.AddComponent<DrawgooTestOperator>();
-            var drawgooData = ScriptableObject.CreateInstance<OperatorData>();
-            drawgooData.operatorName = "Drawgoo";
-            drawgooData.drawTwoCardsOnDeath = true;
-            drawgoo.Initialize(drawgooData, OperatorRarity.Star2);
-
-            drawgoo.ActivateDeathSkill();
-
-            Assert.IsTrue(deck.CardCount >= 1 && deck.CardCount <= 2, "Upgraded Drawgoo should draw 1 or 2 3-star cards.");
-            foreach (DraftCard card in deck.DeckSlots)
+            var upgrades = new[]
             {
-                Assert.AreEqual("TestStar3", card.operatorData.operatorName);
-                Assert.AreEqual(OperatorRarity.Star3, card.rarity);
-                Assert.AreEqual(OperatorRarity.Star3, card.operatorData.baseRarity);
-            }
+                (rarity: OperatorRarity.Star2, ranksUp: 1),
+                (rarity: OperatorRarity.Star3, ranksUp: 2)
+            };
+            foreach (var upgrade in upgrades)
+            {
+                var deckObject = new GameObject("DrawgooTestDeck");
+                var deck = TestUtility.AddAwakened<PlayerDeck>(deckObject);
+                var operatorObject = new GameObject("DrawgooTestOperator");
+                var drawgoo = operatorObject.AddComponent<DrawgooTestOperator>();
+                var drawgooData = ScriptableObject.CreateInstance<OperatorData>();
+                drawgooData.operatorName = "Drawgoo";
+                drawgooData.drawTwoCardsOnDeath = true;
+                drawgoo.Initialize(drawgooData, upgrade.rarity);
 
-            Object.DestroyImmediate(operatorObject);
-            Object.DestroyImmediate(deckObject);
-            Object.DestroyImmediate(drawgooData);
-            Object.DestroyImmediate(star3Op);
+                drawgoo.ActivateDeathSkill();
+
+                Assert.AreEqual(2, deck.CardCount, upgrade.rarity + " Drawgoo should draw 2 cards.");
+                foreach (DraftCard card in deck.DeckSlots)
+                {
+                    if (card == null) continue;
+                    Assert.IsTrue(testPool.Contains(card.operatorData));
+                    int expected = Mathf.Min((int)card.operatorData.baseRarity + upgrade.ranksUp, 5);
+                    Assert.AreEqual((OperatorRarity)expected, card.rarity,
+                        $"{upgrade.rarity} Drawgoo's cards arrive {upgrade.ranksUp} rank(s) above their draft rarity.");
+                }
+
+                Object.DestroyImmediate(operatorObject);
+                Object.DestroyImmediate(deckObject);
+                Object.DestroyImmediate(drawgooData);
+                TestUtility.ClearSingletons();
+            }
         }
 
         [Test]
@@ -365,13 +368,18 @@ namespace TrashTD.Tests
             var drawgooData = ScriptableObject.CreateInstance<OperatorData>();
             drawgooData.operatorName = "Drawgoo";
             drawgooData.drawTwoCardsOnDeath = true;
-            drawgooData.skillDescription = "When Drawgoo dies, draw two random operator cards from the pool. (If upgraded, draws 1 (60%) or 2 (40%) random 3-star operators instead.)";
 
             drawgoo.Initialize(drawgooData, OperatorRarity.Star1);
-            Assert.AreEqual("When Drawgoo dies, draw two random operator cards from the pool.", drawgoo.GetSkillDescription());
+            Assert.AreEqual("When Drawgoo dies, draw 2 random operator cards from the pool. Cannot be healed by other operators.",
+                drawgoo.GetSkillDescription());
 
             drawgoo.Initialize(drawgooData, OperatorRarity.Star2);
-            Assert.AreEqual("When Drawgoo dies, draw 1 (60%) or 2 (40%) random 3-star operator cards from the pool.", drawgoo.GetSkillDescription());
+            Assert.AreEqual("When Drawgoo dies, draw 2 1x Upgraded operator cards from the pool. Cannot be healed by other operators.",
+                drawgoo.GetSkillDescription());
+
+            drawgoo.Initialize(drawgooData, OperatorRarity.Star3);
+            Assert.AreEqual("When Drawgoo dies, draw 2 2x Upgraded operator cards from the pool. Cannot be healed by other operators.",
+                drawgoo.GetSkillDescription());
 
             Object.DestroyImmediate(operatorObject);
             Object.DestroyImmediate(drawgooData);

@@ -76,9 +76,7 @@ namespace TrashTD.Tests
 
             Assert.AreEqual(3, deck.DeckSlots[0].heatStacks);
 
-            deck.AdvanceRedeployCooldownsOneRound();
-            Assert.AreEqual(2, deck.DeckSlots[0].heatStacks);
-
+            // Heat drops by 2 per round while a card is benched
             deck.AdvanceRedeployCooldownsOneRound();
             Assert.AreEqual(1, deck.DeckSlots[0].heatStacks);
 
@@ -107,12 +105,15 @@ namespace TrashTD.Tests
             opData.baseRES = 0;
 
             op.Initialize(opData, OperatorRarity.Star1, OperatorFacing.Right);
+            Assert.IsTrue(op.Deploy(new GridCell(0, 0, TileType.LowGround, Vector3.zero))); // Retreat only works on a deployed operator
             op.HeatStacks = 5;
             op.IsBurning = true;
 
             Assert.IsTrue(op.IsBurning);
 
-            // Retreat extinguishes burning
+            // Retreat extinguishes burning (and destroys the burning glow, which edit mode reports as an error)
+            TestUtility.ExpectEditModeDestroy();
+            TestUtility.ExpectEditModeDestroy();
             op.Retreat();
             Assert.IsFalse(op.IsBurning);
 
@@ -179,6 +180,7 @@ namespace TrashTD.Tests
             typeof(Stage4HeatHazard)
                 .GetField("operatorManager", BindingFlags.Instance | BindingFlags.NonPublic)
                 .SetValue(hazard, operatorManager);
+            embers.Play(); // a system that is not playing does not take emitted particles
             typeof(Stage4HeatHazard)
                 .GetMethod("HandleWaveStarted", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(hazard, new object[] { 1, 5 });

@@ -71,6 +71,8 @@ namespace TrashTD.Tests
                 out retreatedOperator));
             playerDeck.RemoveCard(retreatedCopy);
 
+            // An operator retreated before it has fought, between waves, is refunded with no cooldown. This one fought.
+            retreatedOperator.HasFoughtInWave = true;
             TestUtility.ExpectEditModeDestroy();
             operatorManager.RetreatOperator(retreatedOperator);
 
@@ -94,8 +96,11 @@ namespace TrashTD.Tests
                 out deployedOperator));
         }
 
+        // Upgrades merge cards in the deck only (PROJECT_GUIDELINES.md, 1.4): an operator on the field is never upgraded.
+        // Recall it, and its card can merge from the deck.
+
         [Test]
-        public void DeployedCopy_CountsTowardMerge_AndIsUpgradedInPlace()
+        public void DeployedCopy_DoesNotCountTowardMerge_AndIsNeverUpgradedOnTheField()
         {
             var upgradeObject = new GameObject("TestUpgradeSystem");
             TestUtility.AddAwakened<RarityUpgradeSystem>(upgradeObject);
@@ -108,12 +113,20 @@ namespace TrashTD.Tests
                 playerDeck.RemoveCard(fieldCopy);
                 int star1MaxHP = deployedOperator.MaxHP;
 
+                // A field copy plus two cards is not three cards: nothing merges
                 playerDeck.AddCard(new DraftCard(operatorData, OperatorRarity.Star1));
                 playerDeck.AddCard(new DraftCard(operatorData, OperatorRarity.Star1));
 
-                Assert.AreEqual(OperatorRarity.Star2, deployedOperator.CurrentRarity);
-                Assert.Greater(deployedOperator.MaxHP, star1MaxHP);
-                Assert.AreEqual(0, playerDeck.CardCount);
+                Assert.AreEqual(OperatorRarity.Star1, deployedOperator.CurrentRarity);
+                Assert.AreEqual(star1MaxHP, deployedOperator.MaxHP);
+                Assert.AreEqual(2, playerDeck.CardCount, "The two deck cards wait for a third.");
+
+                // Three cards in the deck merge into one 2-star card, and the operator on the field stays as it was
+                playerDeck.AddCard(new DraftCard(operatorData, OperatorRarity.Star1));
+
+                Assert.AreEqual(1, playerDeck.CardCount);
+                Assert.AreEqual(OperatorRarity.Star2, FirstCard().rarity);
+                Assert.AreEqual(OperatorRarity.Star1, deployedOperator.CurrentRarity);
                 Assert.AreEqual(1, operatorManager.DeployedCount);
             }
             finally
@@ -123,7 +136,7 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void TwoDeployedCopies_MergeUsesOnlyOne_AndNothingLeavesTheField()
+        public void TwoDeployedCopies_StayAsTheyAre_WhileTheDeckMergesItsOwnCards()
         {
             var upgradeObject = new GameObject("TestUpgradeSystem");
             TestUtility.AddAwakened<RarityUpgradeSystem>(upgradeObject);
@@ -141,21 +154,30 @@ namespace TrashTD.Tests
                     secondCard, new Vector2Int(1, 0), OperatorFacing.Right, out retreatedOperator));
                 playerDeck.RemoveCard(secondCard);
 
-                // One card plus one field copy is only two copies: no merge yet.
+                // Two field copies plus two cards: still only two cards in the deck, so no merge
                 playerDeck.AddCard(new DraftCard(operatorData, OperatorRarity.Star1));
-                Assert.AreEqual(1, playerDeck.CardCount);
+                playerDeck.AddCard(new DraftCard(operatorData, OperatorRarity.Star1));
+                Assert.AreEqual(2, playerDeck.CardCount);
 
                 playerDeck.AddCard(new DraftCard(operatorData, OperatorRarity.Star1));
 
-                Assert.AreEqual(2, operatorManager.DeployedCount);
-                Assert.AreEqual(0, playerDeck.CardCount);
-                Assert.AreEqual(OperatorRarity.Star2, deployedOperator.CurrentRarity);
+                Assert.AreEqual(2, operatorManager.DeployedCount, "Nothing leaves the field.");
+                Assert.AreEqual(1, playerDeck.CardCount, "The three deck cards became one.");
+                Assert.AreEqual(OperatorRarity.Star2, FirstCard().rarity);
+                Assert.AreEqual(OperatorRarity.Star1, deployedOperator.CurrentRarity);
                 Assert.AreEqual(OperatorRarity.Star1, retreatedOperator.CurrentRarity);
             }
             finally
             {
                 Object.DestroyImmediate(upgradeObject);
             }
+        }
+
+        private DraftCard FirstCard()
+        {
+            foreach (DraftCard card in playerDeck.DeckSlots)
+                if (card != null) return card;
+            return null;
         }
 
         [Test]

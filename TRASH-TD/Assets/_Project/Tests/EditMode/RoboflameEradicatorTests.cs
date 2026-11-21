@@ -151,8 +151,12 @@ namespace TrashTD.Tests
             return enemy;
         }
 
-        private RoboflameEnemy CreateRoboflame(Vector2Int start, int atk = 20) =>
-            CreateEnemy<RoboflameEnemy>(CreateEnemyData("Roboflame", EnemyArchetype.Caster, atk), start);
+        private RoboflameEnemy CreateRoboflame(Vector2Int start, int atk = 20)
+        {
+            EnemyData data = CreateEnemyData("Roboflame", EnemyArchetype.Caster, atk);
+            data.damageType = DamageType.Arts; // EnemyData defaults to Physical; the real Roboflame asset deals Arts damage
+            return CreateEnemy<RoboflameEnemy>(data, start);
+        }
 
         private EradicatorEnemy CreateEradicator(Vector2Int start, int atk = 60, float moveSpeed = 1f) =>
             CreateEnemy<EradicatorEnemy>(CreateEnemyData("THE ERADICATOR", EnemyArchetype.Tank, atk, 2, moveSpeed), start);

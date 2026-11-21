@@ -1,5 +1,8 @@
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using TrashTD.Combat;
+using TrashTD.Core.Grid;
 using TrashTD.Data;
 using TrashTD.Enemies;
 using TrashTD.Operators;
@@ -51,6 +54,8 @@ namespace TrashTD.Tests
             lockburnObject = new GameObject("TestLockburn");
             lockburn = lockburnObject.AddComponent<LockburnOperator>();
             lockburn.Initialize(operatorData, OperatorRarity.Star2, OperatorFacing.Right);
+            // Attacking and blocking only work while deployed (Deploy also puts him on the cell's position)
+            Assert.IsTrue(lockburn.Deploy(new GridCell(0, 0, TileType.LowGround, Vector3.zero)));
             lockburn.transform.position = Vector3.zero;
 
             // Ground enemy with 50 DEF and 0 RES
@@ -107,6 +112,24 @@ namespace TrashTD.Tests
             if (highDefEnemyData != null) Object.DestroyImmediate(highDefEnemyData);
             if (highResEnemyData != null) Object.DestroyImmediate(highResEnemyData);
             if (airEnemyData != null) Object.DestroyImmediate(airEnemyData);
+        }
+
+        /// <summary>
+        /// His ranged attack is a fireball that applies its damage when it lands, which the frame loop does in play mode.
+        /// Edit mode has no frames, so land every flying projectile by hand (and clean it up).
+        /// </summary>
+        private static void LandFlyingProjectiles()
+        {
+            FieldInfo onImpact = typeof(CombatProjectileVisual).GetField("onImpact", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(onImpact);
+
+            foreach (CombatProjectileVisual projectile in Object.FindObjectsByType<CombatProjectileVisual>())
+            {
+                var impact = onImpact.GetValue(projectile) as System.Action;
+                onImpact.SetValue(projectile, null);
+                impact?.Invoke();
+                Object.DestroyImmediate(projectile.gameObject);
+            }
         }
 
         [Test]
@@ -169,8 +192,9 @@ namespace TrashTD.Tests
 
             lockburn.Attack(ownTileTarget);
 
-            // ATK 100 vs DEF 50 Physical: Damage = 100 - 50 = 50 damage
-            int expectedDamage = 100 - 50;
+            // Physical, mitigated by the target's 50 DEF. The rank scales his ATK, so use the real one.
+            int expectedDamage = DamageCalculator.CalculateDamage(lockburn.CurrentATK, 50);
+            Assert.Greater(expectedDamage, 0);
             Assert.AreEqual(startHP - expectedDamage, ownTileTarget.CurrentHP);
         }
 
@@ -182,8 +206,10 @@ namespace TrashTD.Tests
             int startHP = yellowTarget.CurrentHP;
 
             lockburn.Attack(yellowTarget);
+            LandFlyingProjectiles();
 
-            int expectedDamage = 100;
+            // Arts: the target's 0 RES mitigates nothing, so it takes his full ATK
+            int expectedDamage = lockburn.CurrentATK;
             Assert.AreEqual(startHP - expectedDamage, yellowTarget.CurrentHP);
         }
 
@@ -195,8 +221,10 @@ namespace TrashTD.Tests
             int startHP = greenTarget.CurrentHP;
 
             lockburn.Attack(greenTarget);
+            LandFlyingProjectiles();
 
-            int expectedDamage = 100;
+            // Arts: the target's 0 RES mitigates nothing, so it takes his full ATK
+            int expectedDamage = lockburn.CurrentATK;
             Assert.AreEqual(startHP - expectedDamage, greenTarget.CurrentHP);
         }
 
@@ -205,6 +233,7 @@ namespace TrashTD.Tests
         {
             int startHP = airTarget.CurrentHP;
             lockburn.Attack(airTarget);
+            LandFlyingProjectiles();
             Assert.Less(airTarget.CurrentHP, startHP, "Aerial enemy should take damage from Lockburn.");
         }
     }

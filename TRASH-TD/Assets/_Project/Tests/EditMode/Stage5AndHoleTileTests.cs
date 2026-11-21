@@ -179,8 +179,11 @@ namespace TrashTD.Tests
             opData.position = OperatorPosition.Ranged;
             opData.rangePattern = new[] { new Vector2Int(0, 0), new Vector2Int(1, 0) };
 
+            sniper.Initialize(opData, OperatorRarity.Star1); // CanAttackTarget reads the operator's data
+
             // Method reflection to test CanAttackTarget
-            var method = typeof(OperatorBase).GetMethod("CanAttackTarget", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var method = typeof(OperatorBase).GetMethod("CanAttackTarget", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.IsNotNull(method, "CanAttackTarget is public now, so the lookup has to include public methods.");
 
             Assert.IsTrue((bool)method.Invoke(sniper, new object[] { enemy }));
 

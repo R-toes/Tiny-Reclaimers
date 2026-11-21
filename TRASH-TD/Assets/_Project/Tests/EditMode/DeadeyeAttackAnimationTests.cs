@@ -69,6 +69,7 @@ namespace TrashTD.Tests
             try
             {
                 DeadeyeSpriteAnimation animation = instance.GetComponent<DeadeyeSpriteAnimation>();
+                TestUtility.CallAwake(animation); // edit mode does not run Awake, which finds the SpriteRenderer
                 SpriteRenderer renderer = instance.GetComponent<SpriteRenderer>();
 
                 animation.BeginAttack(DeadeyeSpriteAnimation.WindupTime);
@@ -92,6 +93,7 @@ namespace TrashTD.Tests
             try
             {
                 DeadeyeSpriteAnimation animation = instance.GetComponent<DeadeyeSpriteAnimation>();
+                TestUtility.CallAwake(animation); // edit mode does not run Awake, which finds the SpriteRenderer
                 SpriteRenderer renderer = instance.GetComponent<SpriteRenderer>();
                 Transform firePoint = animation.FirePoint;
 

@@ -101,12 +101,12 @@ namespace TrashTD.Tests
         }
 
         [Test]
-        public void Stage6_AssetValidation_MatchesMeltdownName()
+        public void Stage6_AssetValidation_MatchesTheLoreName()
         {
             var stage6 = Resources.Load<StageData>("Stages/STAGE_06");
             Assert.IsNotNull(stage6, "STAGE_06 asset should be loaded from Resources/Stages.");
             Assert.AreEqual("STAGE_06", stage6.stageId);
-            Assert.AreEqual("Meltdown", stage6.mapName);
+            Assert.AreEqual("The Pale", stage6.mapName); // renamed to the team's lore on 2026-10-24
         }
     }
 }

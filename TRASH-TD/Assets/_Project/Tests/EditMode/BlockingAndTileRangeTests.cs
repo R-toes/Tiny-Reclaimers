@@ -271,52 +271,42 @@ namespace TrashTD.Tests
         [Test]
         public void StaggerOperator_OnlyChecksOwnTileAndForwardRange_DoesNotCheckSidesOrBack()
         {
-            var opManagerObj = new GameObject("TestOperatorManager");
-            var opManager = TestUtility.AddAwakened<OperatorManager>(opManagerObj);
-            opManager.Initialize(gridManager);
+            // Stag-ger is an area brawler: his targets are the enemies on his own tile and on the tiles of his range ahead
+            // (the old version only looked at enemies other operators had blocked). EnemyManager.Instance is what he asks.
+            var instanceProperty = typeof(EnemyManager).GetProperty("Instance", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+            instanceProperty.SetValue(null, enemyManager);
 
-            // Path runs (0,0) -> (1,0) -> (2,0) -> (3,0)
-            // Stag-ger deployed on (2, 0) facing Right -> forward range covers (3, 0).
-            // Back ally deployed on (1, 0) facing Right (behind Stag-ger).
-            // Front ally deployed on (3, 0) facing Right (ahead in Stag-ger's range).
             var path = CreateStraightPath();
+            // Stag-ger on (2, 0) facing Right: his range covers his own tile and (3, 0)
             var (stagObj, stagger) = CreateStaggerOperator(new Vector2Int(2, 0), OperatorFacing.Right);
-            var (backAllyObj, backAlly) = CreateGuardOperator(new Vector2Int(1, 0), OperatorFacing.Right);
-            var (frontAllyObj, frontAlly) = CreateGuardOperator(new Vector2Int(3, 0), OperatorFacing.Right);
+            var (ownEnemyObj, ownEnemy) = CreateEnemy(path);
+            var (frontEnemyObj, frontEnemy) = CreateEnemy(path);
+            var (backEnemyObj, backEnemy) = CreateEnemy(path);
+            var (farEnemyObj, farEnemy) = CreateEnemy(path);
 
-            // Register in OperatorManager
-            var deployedField = typeof(OperatorManager).GetField("deployedOperators", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var deployedList = (List<OperatorBase>)deployedField.GetValue(opManager);
-            deployedList.Add(stagger);
-            deployedList.Add(backAlly);
-            deployedList.Add(frontAlly);
+            ownEnemy.transform.position = gridManager.GridToWorldPosition(2, 0);
+            frontEnemy.transform.position = gridManager.GridToWorldPosition(3, 0);
+            backEnemy.transform.position = gridManager.GridToWorldPosition(1, 0);
+            farEnemy.transform.position = gridManager.GridToWorldPosition(4, 0);
 
-            var (enemyBackObj, enemyBack) = CreateEnemy(path);
-            var (enemyFrontObj, enemyFront) = CreateEnemy(path);
+            try
+            {
+                List<EnemyBase> targets = stagger.GetTargetsInRange();
 
-            // Ally behind blocks enemyBack
-            backAlly.TryBlock(enemyBack);
-            Assert.IsTrue(enemyBack.IsBlocked);
-
-            // Ally in front blocks enemyFront
-            frontAlly.TryBlock(enemyFront);
-            Assert.IsTrue(enemyFront.IsBlocked);
-
-            // Call GetBlockedTargetsInRange via reflection
-            var method = typeof(StaggerOperator).GetMethod("GetBlockedTargetsInRange", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var targets = (List<EnemyBase>)method.Invoke(stagger, null);
-
-            // Stag-ger must target enemyFront (forward range), but NOT enemyBack (behind)
-            CollectionAssert.Contains(targets, enemyFront, "Stag-ger should include enemy blocked by ally in forward range.");
-            CollectionAssert.DoesNotContain(targets, enemyBack, "Stag-ger should NOT include enemy blocked on his back or sides.");
-
-            // Cleanup
-            Object.DestroyImmediate(enemyBackObj);
-            Object.DestroyImmediate(enemyFrontObj);
-            Object.DestroyImmediate(stagObj);
-            Object.DestroyImmediate(backAllyObj);
-            Object.DestroyImmediate(frontAllyObj);
-            Object.DestroyImmediate(opManagerObj);
+                CollectionAssert.Contains(targets, ownEnemy, "Stag-ger should include an enemy on his own tile.");
+                CollectionAssert.Contains(targets, frontEnemy, "Stag-ger should include an enemy in his forward range.");
+                CollectionAssert.DoesNotContain(targets, backEnemy, "Stag-ger should NOT include an enemy on the tile behind him.");
+                CollectionAssert.DoesNotContain(targets, farEnemy, "Stag-ger should NOT include an enemy beyond his range.");
+            }
+            finally
+            {
+                instanceProperty.SetValue(null, null);
+                Object.DestroyImmediate(ownEnemyObj);
+                Object.DestroyImmediate(frontEnemyObj);
+                Object.DestroyImmediate(backEnemyObj);
+                Object.DestroyImmediate(farEnemyObj);
+                Object.DestroyImmediate(stagObj);
+            }
         }
 
         [Test]
@@ -326,7 +316,9 @@ namespace TrashTD.Tests
             var (stagObj, stagger) = CreateStaggerOperator(new Vector2Int(2, 0), OperatorFacing.Right);
             var (enemyObj, enemy) = CreateEnemy(path);
 
-            Assert.AreEqual(75, stagger.CurrentATK, "Stag-ger base ATK should be 75.");
+            // 75 base ATK, scaled by the rank this helper deploys him at (2 stars: +15%)
+            int baseAtk = stagger.CurrentATK;
+            Assert.AreEqual(stagger.Data.GetScaledATK(OperatorRarity.Star2), baseAtk, "Stag-ger's ATK should be his base ATK scaled for his rank.");
 
             // 1. Force dodge to succeed (< 0.20)
             stagger.RandomValueProvider = () => 0.10f;
@@ -338,12 +330,11 @@ namespace TrashTD.Tests
             Assert.IsTrue(stagger.HasDodgeAtkBuff, "Successful dodge should activate next-attack ATK buff.");
 
             // 2. Perform attack while buffed
-            // Base ATK is 75 -> 50% increase = 75 * 1.5 = 112.5 -> 112.
-            // Enemy has 5 DEF, so damage = 112 - 5 = 107.
+            // The buff is +50% of his ATK, less the enemy's DEF.
             int enemyHPBefore = enemy.CurrentHP;
             stagger.Attack(enemy);
 
-            int expectedDamage = Mathf.RoundToInt(75 * 1.5f) - enemy.Data.baseDEF;
+            int expectedDamage = Mathf.RoundToInt(baseAtk * 1.5f) - enemy.CurrentDEF;
             Assert.AreEqual(enemyHPBefore - expectedDamage, enemy.CurrentHP, "Empowered attack should deal +50% ATK damage.");
             Assert.IsFalse(stagger.HasDodgeAtkBuff, "Buff should be consumed after attacking.");
 

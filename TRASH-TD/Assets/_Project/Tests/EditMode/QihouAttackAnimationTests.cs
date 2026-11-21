@@ -47,6 +47,7 @@ namespace TrashTD.Tests
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             var instance = Object.Instantiate(prefab);
             var animation = instance.GetComponent<QihouSpriteAnimation>();
+            TestUtility.CallAwake(animation); // edit mode does not run Awake, which finds the SpriteRenderer
             var spriteRenderer = instance.GetComponent<SpriteRenderer>();
 
             animation.BeginAttack(QihouSpriteAnimation.WindupDuration);
@@ -94,6 +95,7 @@ namespace TrashTD.Tests
             var instance = Object.Instantiate(prefab);
             instance.transform.position = new Vector3(4f, 5f, 0f);
             var animation = instance.GetComponent<QihouSpriteAnimation>();
+            TestUtility.CallAwake(animation); // edit mode does not run Awake, which finds the SpriteRenderer
             var spriteRenderer = instance.GetComponent<SpriteRenderer>();
 
             animation.Strike();

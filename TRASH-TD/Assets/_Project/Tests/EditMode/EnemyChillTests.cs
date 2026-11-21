@@ -39,7 +39,13 @@ namespace TrashTD.Tests
             enemy.ApplyChill(40f, 0.5f, 2.5f, 100f, 1.5f);
 
             Assert.AreEqual(0.5f, enemy.CurrentMoveSpeed, 0.001f);
-            Assert.Greater(spriteRenderer.color.b, spriteRenderer.color.r * 3f);
+
+            // Chilled is a 30% blue tint (frozen is 70%, and the ice drawn over it does the rest)
+            Color expectedTint = Color.Lerp(Color.white, new Color(0.1f, 0.6f, 1f), 0.3f);
+            Assert.AreEqual(expectedTint.r, spriteRenderer.color.r, 0.01f);
+            Assert.AreEqual(expectedTint.g, spriteRenderer.color.g, 0.01f);
+            Assert.AreEqual(expectedTint.b, spriteRenderer.color.b, 0.01f);
+            Assert.Greater(spriteRenderer.color.b, spriteRenderer.color.r, "A chilled enemy leans blue.");
             Assert.IsFalse(enemy.IsFrozen);
         }
 

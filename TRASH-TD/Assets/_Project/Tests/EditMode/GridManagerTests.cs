@@ -220,9 +220,11 @@ namespace TrashTD.Tests
                     foreach (var entry in wave.entries)
                     {
                         Assert.IsNotNull(entry.enemyData, $"{difficultyName} Wave {i + 1} entry must have valid EnemyData");
-                        Assert.IsTrue(entry.count > 0, $"{difficultyName} Wave {i + 1} entry must have count > 0");
-                        if (entry.spawnPointIndex == 0) hasSpawn0 = true;
-                        if (entry.spawnPointIndex == 1) hasSpawn1 = true;
+                        // A count of 0 is an entry deliberately emptied (Hard wave 29 dropped its Hextensions), so it only
+                        // has to not be negative; a lane counts as used only by entries that really spawn something
+                        Assert.IsTrue(entry.count >= 0, $"{difficultyName} Wave {i + 1} entry must not have a negative count");
+                        if (entry.count > 0 && entry.spawnPointIndex == 0) hasSpawn0 = true;
+                        if (entry.count > 0 && entry.spawnPointIndex == 1) hasSpawn1 = true;
                     }
 
                     Assert.IsTrue(hasSpawn0, $"{difficultyName} Wave {i + 1} must spawn enemies from spawn 0 (Top-Right)");
@@ -288,7 +290,8 @@ namespace TrashTD.Tests
                 }
             }
 
-            foreach (var trapPosition in new[] { new Vector2Int(3, 0), new Vector2Int(3, 1) })
+            // The one acid tile on the map (the tile below it, (3, 0), is now High Ground)
+            foreach (var trapPosition in new[] { new Vector2Int(3, 1) })
             {
                 var trap = gridManager.GetCell(trapPosition);
                 Assert.AreEqual(TileType.AcidLowGround, trap.TileType);

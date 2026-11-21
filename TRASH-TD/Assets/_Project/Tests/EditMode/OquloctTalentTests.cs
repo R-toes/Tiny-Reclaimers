@@ -239,8 +239,11 @@ namespace TrashTD.Tests
         public void CamouflageHealing_HealsTwentyFivePercentOfMaxHpAcrossItsDuration()
         {
             oquloct.Initialize(oquloctData, OperatorRarity.Star3);
-            oquloct.TakeDamage(40, DamageType.Physical);
+            // True damage, so the amount lost does not depend on DEF scaling: he must be missing more HP than he heals,
+            // or the healing would stop at his max HP
+            oquloct.TakeTrueDamage(100);
             int startingHP = oquloct.CurrentHP;
+            Assert.Less(startingHP, oquloct.MaxHP - 40);
             int expectedHealing = Mathf.RoundToInt(oquloct.MaxHP * OquloctOperator.CamouflageHealMaxHpRatio);
             MethodInfo updateHealing = typeof(OquloctOperator).GetMethod(
                 "UpdateCamouflageHealing", BindingFlags.Instance | BindingFlags.NonPublic);

@@ -158,7 +158,7 @@ namespace TrashTD.Tests
             gridManager.InitializeFromStageData(stageData);
 
             operatorManagerObject = new GameObject("TestOperatorManager");
-            operatorManager = operatorManagerObject.AddComponent<OperatorManager>();
+            operatorManager = TestUtility.AddAwakened<OperatorManager>(operatorManagerObject); // sets OperatorManager.Instance, which the frozen-damage bonus asks
 
             enemyManagerObject = new GameObject("TestEnemyManager");
             enemyManager = TestUtility.AddAwakened<EnemyManager>(enemyManagerObject);

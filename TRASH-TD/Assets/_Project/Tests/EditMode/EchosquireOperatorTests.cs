@@ -60,6 +60,7 @@ namespace TrashTD.Tests
             try
             {
                 EchosquireSpriteAnimation animation = instance.GetComponent<EchosquireSpriteAnimation>();
+                TestUtility.CallAwake(animation); // edit mode does not run Awake, which finds the SpriteRenderer
                 SpriteRenderer renderer = instance.GetComponent<SpriteRenderer>();
 
                 animation.BeginAttack(EchosquireSpriteAnimation.WindupSeconds);
@@ -137,6 +138,7 @@ namespace TrashTD.Tests
             echosquire.TakeTrueDamage(echosquire.CurrentHP);
             Assert.GreaterOrEqual(echosquire.CurrentHP, Mathf.CeilToInt(echosquire.MaxHP * 0.5f));
 
+            TestUtility.ExpectEditModeDestroy(); // dying destroys the operator, which edit mode reports as an error
             echosquire.TakeTrueDamage(echosquire.CurrentHP);
             Assert.AreEqual(0, echosquire.CurrentHP, "A second lethal hit in the same wave should be fatal.");
 

@@ -14,7 +14,7 @@ namespace TrashTD.Tests
             for (float t = 0f; t < AskalaserEnemy.LaserStepDuration * 8f; t += 0.25f)
             {
                 int stage = AskalaserEnemy.GetLaserStageForDuration(t);
-                int[] damageByStage = { 5, 15, 30, 80, 100, 150 };
+                int[] damageByStage = { 5, 15, 30, 50, 70, 90 }; // nerfed on 2026-11-03 (it ramped to 150 before)
                 Assert.AreEqual(damageByStage[stage], AskalaserEnemy.GetLaserDamageForDuration(t), $"t = {t}");
             }
 

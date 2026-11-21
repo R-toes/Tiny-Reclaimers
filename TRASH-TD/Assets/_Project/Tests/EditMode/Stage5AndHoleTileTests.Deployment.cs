@@ -88,6 +88,9 @@ namespace TrashTD.Tests
             var card = new DraftCard(opData, OperatorRarity.Star1);
             deck.AddCard(card);
 
+            // Moving and closing the placement preview destroys its outline pieces (several objects, a different number each
+            // time), which edit mode reports as errors, so those messages are ignored for the whole test
+            UnityEngine.TestTools.LogAssert.ignoreFailingMessages = true;
             try
             {
                 // Step 1: Click & drag card to desired tile -> preview sits at (2, 2)
@@ -130,6 +133,7 @@ namespace TrashTD.Tests
             }
             finally
             {
+                UnityEngine.TestTools.LogAssert.ignoreFailingMessages = false;
                 TestUtility.ClearSingletons();
                 Object.DestroyImmediate(opData);
                 Object.DestroyImmediate(stage);
@@ -163,6 +167,7 @@ namespace TrashTD.Tests
             stage.gridWidth = 5;
             stage.gridHeight = 5;
             stage.tileLayout = new TileType[25];
+            for (int i = 0; i < stage.tileLayout.Length; i++) stage.tileLayout[i] = TileType.HighGround; // Ranged operators deploy on High Ground
             grid.InitializeFromStageData(stage);
             opMgr.Initialize(grid);
 
@@ -184,6 +189,7 @@ namespace TrashTD.Tests
                 Assert.IsTrue(deployed1.DeployedDuringCurrentPreparation);
                 Assert.IsFalse(deployed1.HasFoughtInWave);
 
+                TestUtility.ExpectEditModeDestroy(); // retreating destroys the operator, which edit mode reports
                 opMgr.RetreatOperator(deployed1);
                 Assert.AreEqual(1, deck.CardCount);
                 Assert.AreEqual(0, deck.GetCard(0).cooldownRoundsRemaining, "Retreated during same preparation phase without fighting must have 0 cooldown.");
@@ -200,6 +206,7 @@ namespace TrashTD.Tests
                 Assert.IsTrue(deployed2.HasFoughtInWave);
                 Assert.IsFalse(deployed2.DeployedDuringCurrentPreparation);
 
+                TestUtility.ExpectEditModeDestroy();
                 opMgr.RetreatOperator(deployed2);
                 Assert.AreEqual(1, deck.CardCount);
                 Assert.AreEqual(1, deck.GetCard(0).cooldownRoundsRemaining, "Retreated during wave phase must incur class cooldown.");
@@ -220,6 +227,7 @@ namespace TrashTD.Tests
                 Assert.IsFalse(deployed3.DeployedDuringCurrentPreparation);
 
                 // Undeploy veteran during preparation
+                TestUtility.ExpectEditModeDestroy();
                 opMgr.RetreatOperator(deployed3);
                 Assert.AreEqual(1, deck.CardCount);
                 Assert.AreEqual(1, deck.GetCard(0).cooldownRoundsRemaining, "Operator who already fought on a previous round must incur cooldown even if retreated during preparation.");
@@ -234,6 +242,7 @@ namespace TrashTD.Tests
                 Assert.IsTrue(deployed4.DeployedDuringCurrentPreparation);
                 Assert.IsFalse(deployed4.HasFoughtInWave);
 
+                TestUtility.ExpectEditModeDestroy();
                 opMgr.RetreatOperator(deployed4);
                 Assert.AreEqual(1, deck.CardCount);
                 Assert.AreEqual(0, deck.GetCard(0).cooldownRoundsRemaining, "Fresh operator deployed and undeployed in preparation phase must have 0 cooldown.");
@@ -305,6 +314,7 @@ namespace TrashTD.Tests
 
                 // 3. Right-click undeploy trigger (simulates right-click when operator already selected)
                 bootstrapper.ClearOperatorRangePreview();
+                TestUtility.ExpectEditModeDestroy(); // retreating destroys the operator, which edit mode reports as an error
                 opMgr.RetreatOperator(opMgr.SelectedOperator);
 
                 // Operator should be undeployed and returned to deck, range preview cleared
@@ -327,13 +337,15 @@ namespace TrashTD.Tests
          [Test]
         public void Stage5TrafficCar_CalculateDamage_MatchesExpectedRamp()
         {
-            Assert.AreEqual(40, Stage5TrafficCar.CalculateDamage(0));
-            Assert.AreEqual(60, Stage5TrafficCar.CalculateDamage(2));
-            Assert.AreEqual(80, Stage5TrafficCar.CalculateDamage(4));
-            Assert.AreEqual(100, Stage5TrafficCar.CalculateDamage(6));
-            Assert.AreEqual(120, Stage5TrafficCar.CalculateDamage(8));
-            Assert.AreEqual(140, Stage5TrafficCar.CalculateDamage(10));
-            Assert.AreEqual(160, Stage5TrafficCar.CalculateDamage(12));
+            // 20, then +20 every 2 tiles up to 140 (rebalanced on 2026-11-03; it used to run 40 to 160)
+            Assert.AreEqual(20, Stage5TrafficCar.CalculateDamage(0));
+            Assert.AreEqual(40, Stage5TrafficCar.CalculateDamage(2));
+            Assert.AreEqual(60, Stage5TrafficCar.CalculateDamage(4));
+            Assert.AreEqual(80, Stage5TrafficCar.CalculateDamage(6));
+            Assert.AreEqual(100, Stage5TrafficCar.CalculateDamage(8));
+            Assert.AreEqual(120, Stage5TrafficCar.CalculateDamage(10));
+            Assert.AreEqual(140, Stage5TrafficCar.CalculateDamage(12));
+            Assert.AreEqual(140, Stage5TrafficCar.CalculateDamage(30), "The ramp stops at its last step.");
         }
 
         [Test]
