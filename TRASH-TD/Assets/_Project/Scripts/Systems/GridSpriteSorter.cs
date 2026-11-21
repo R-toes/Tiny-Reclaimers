@@ -32,6 +32,7 @@ namespace TrashTD.Systems
             public bool IsAir;
             public long ArrivalOrder;
             public int LastSeenFrame;
+            public int Order; // The sorting order last worked out for the unit
         }
 
         private GridManager gridManager;
@@ -40,6 +41,7 @@ namespace TrashTD.Systems
         private readonly List<MonoBehaviour> stale = new List<MonoBehaviour>();
         private long arrivalCounter;
         private int frame;
+        private bool orderChanged; // A unit appeared, left or changed tile since the orders were last worked out
 
         public void Initialize(GridManager manager)
         {
@@ -65,6 +67,7 @@ namespace TrashTD.Systems
 
             frame++;
             current.Clear();
+            orderChanged = false;
 
             if (OperatorManager.Instance != null)
             {
@@ -109,12 +112,14 @@ namespace TrashTD.Systems
 
                 entry = new Entry { Unit = unit, Group = group, Tile = tile, IsAir = isAir, ArrivalOrder = ++arrivalCounter };
                 entries.Add(unit, entry);
+                orderChanged = true;
             }
             else if (entry.Tile != tile || entry.IsAir != isAir)
             {
                 entry.Tile = tile;
                 entry.IsAir = isAir;
                 entry.ArrivalOrder = ++arrivalCounter;
+                orderChanged = true;
             }
 
             entry.LastSeenFrame = frame;
@@ -132,24 +137,38 @@ namespace TrashTD.Systems
 
             for (int i = 0; i < stale.Count; i++)
                 entries.Remove(stale[i]);
+            if (stale.Count > 0) orderChanged = true;
         }
 
         private void ApplySortingOrders()
         {
-            current.Sort(CompareByTileThenArrival);
+            // The order only depends on which tile each unit is on and who arrived first, so it is worked out again
+            // only when a unit appeared, left or moved to another tile (most frames none did).
+            if (orderChanged)
+            {
+                current.Sort(CompareByTileThenArrival);
 
-            int rank = 0;
+                int rank = 0;
+                for (int i = 0; i < current.Count; i++)
+                {
+                    Entry entry = current[i];
+                    bool sameTileAsPrevious = i > 0 &&
+                        current[i - 1].IsAir == entry.IsAir &&
+                        current[i - 1].Tile == entry.Tile;
+                    rank = sameTileAsPrevious ? rank + 1 : 0;
+
+                    int depth = GetTileDepth(entry.Tile, gridManager.Height);
+                    entry.Order = GetSortingOrder(depth, rank, entry.IsAir);
+                }
+            }
+
+            // Still checked every frame, because something else may have written a group's order (Mlem's grab does).
+            // Reading is cheap; writing the same value again would make the renderer re-sort for nothing.
             for (int i = 0; i < current.Count; i++)
             {
                 Entry entry = current[i];
-                bool sameTileAsPrevious = i > 0 &&
-                    current[i - 1].IsAir == entry.IsAir &&
-                    current[i - 1].Tile == entry.Tile;
-                rank = sameTileAsPrevious ? rank + 1 : 0;
-
                 if (entry.Group == null) continue;
-                int depth = GetTileDepth(entry.Tile, gridManager.Height);
-                entry.Group.sortingOrder = GetSortingOrder(depth, rank, entry.IsAir);
+                if (entry.Group.sortingOrder != entry.Order) entry.Group.sortingOrder = entry.Order;
             }
         }
 

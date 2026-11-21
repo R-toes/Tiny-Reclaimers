@@ -12,13 +12,22 @@
 // _CrtVirtualScale > 1 (Full TV below 4K): the full-look effects are laid out as if the picture were
 // _CrtVirtualScale times taller (about 2160 lines), then filtered down to the real pixels instead of being
 // redrawn per screen pixel, so low resolutions get the 4K look without the effects smearing small text.
+//
+// Performance: the three looks, the heat effect and the halation source are compile-time keywords (set by
+// CrtScreen.ApplySettings / CrtDisplay), not runtime branches, so Classic and Off do not carry the Full TV
+// look's register use. For Classic and Full TV the picture is normally ONE texture: CrtDisplay lays the UI over the
+// game in a small pass first (CrtComposite.shader, which also applies the Stage 4 heat ripple). Only Off and the brief
+// heat-blur flare read the game and UI as two textures and layer them here (CRT_HEAT, with the heat effect).
+// Full TV with CRT_MIPGLOW takes its halation from two blurred mip levels of the composited picture instead of
+// eight spread taps. Colour maths uses half precision; positions stay float.
+// Keywords: CRT_CLASSIC (first, crisper look), CRT_CLEAN (brightness only), neither = Full TV;
+// CRT_HEAT (UI is a separate texture, heat effect on); CRT_MIPGLOW.
 Shader "TrashTD/UI/CRT"
 {
     Properties
     {
         [PerRendererData] _MainTex ("Texture", 2D) = "black" {}
         _UiTex ("UI Layer (set by CrtDisplay)", 2D) = "black" {}
-        _HasUi ("Composite UI Layer", Float) = 0
         _Legacy ("Classic (first version) look", Float) = 0
         _Passthrough ("Passthrough (brightness only)", Float) = 0
         _HeatBlur ("Heat Flare Blur", Range(0, 1)) = 0
@@ -58,6 +67,10 @@ Shader "TrashTD/UI/CRT"
         _CrtTime ("Time (unscaled, set by script)", Float) = 0
         _CrtResolution ("Resolution in px (set by script)", Vector) = (1920, 1080, 0, 0)
         _CrtVirtualScale ("Virtual resolution scale (set by script)", Float) = 1
+        _CrtGlowLod ("Halation mip levels: near, far (set by script)", Vector) = (2, 4, 0, 0)
+
+        [HideInInspector] _SrcBlend ("Source Blend", Float) = 5
+        [HideInInspector] _DstBlend ("Destination Blend", Float) = 10
 
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
@@ -92,7 +105,7 @@ Shader "TrashTD/UI/CRT"
         Lighting Off
         ZWrite Off
         ZTest [unity_GUIZTestMode]
-        Blend SrcAlpha OneMinusSrcAlpha
+        Blend [_SrcBlend] [_DstBlend]
         ColorMask [_ColorMask]
 
         Pass
@@ -107,6 +120,9 @@ Shader "TrashTD/UI/CRT"
             #include "UnityCG.cginc"
             #include "UnityUI.cginc"
 
+            #pragma multi_compile_local _ CRT_CLASSIC CRT_CLEAN
+            #pragma multi_compile_local _ CRT_HEAT
+            #pragma multi_compile_local _ CRT_MIPGLOW
             #pragma multi_compile_local _ UNITY_UI_CLIP_RECT
             #pragma multi_compile_local _ UNITY_UI_ALPHACLIP
 
@@ -129,9 +145,6 @@ Shader "TrashTD/UI/CRT"
 
             sampler2D _MainTex;
             sampler2D _UiTex;
-            float _HasUi;
-            float _Legacy;
-            float _Passthrough;
             float _HeatBlur;
             float4 _HeatWarp;
             float4 _HeatVentX;
@@ -166,6 +179,7 @@ Shader "TrashTD/UI/CRT"
             float _CrtTime;
             float4 _CrtResolution;
             float _CrtVirtualScale;
+            float4 _CrtGlowLod;
 
             v2f vert(appdata_t v)
             {
@@ -204,45 +218,48 @@ Shader "TrashTD/UI/CRT"
                 return offset * strength;
             }
 
-            // The picture at uv: the game layer, with the UI layer on top when CrtDisplay supplies one.
-            // The UI texture is rendered with normal alpha blending onto transparent black, so its colour is
-            // already multiplied by coverage and its alpha is coverage squared (single layer).
-            float4 Pic(float2 uv)
+            // The picture at uv. Always an explicit mip 0 read: the picture has a mip chain for the halation, and the
+            // derivative-based level the hardware would pick inside SharpUv's stretched bands must not blur the taps.
+            // Normally one texture (the UI is already laid over it by CrtComposite). With CRT_HEAT the game layer is
+            // warped by the heat shimmer and the separate UI layer goes on top, unwarped. The UI texture is rendered with normal alpha
+            // blending onto transparent black, so its colour is already multiplied by coverage and its alpha is
+            // coverage squared (single layer).
+            half4 Pic(float2 uv)
             {
-                float4 picture = tex2D(_MainTex, uv + HeatOffset(uv));
-                if (_HasUi > 0.5)
-                {
-                    float4 ui = tex2D(_UiTex, uv);
-                    float coverage = sqrt(saturate(ui.a));
-                    picture.rgb = ui.rgb + picture.rgb * (1.0 - coverage);
-                    picture.a = max(picture.a, coverage);
-                }
+            #if defined(CRT_HEAT)
+                half4 picture = tex2Dlod(_MainTex, float4(uv + HeatOffset(uv), 0.0, 0.0));
+                half4 ui = tex2Dlod(_UiTex, float4(uv, 0.0, 0.0));
+                half coverage = sqrt(saturate(ui.a));
+                picture.rgb = ui.rgb + picture.rgb * (1.0 - coverage);
+                picture.a = max(picture.a, coverage);
                 return picture;
+            #else
+                return tex2Dlod(_MainTex, float4(uv, 0.0, 0.0));
+            #endif
             }
 
-            float4 HeatPic(float2 uv)
+        #if defined(CRT_HEAT)
+            half4 HeatPic(float2 uv)
             {
                 float2 warped = uv + HeatOffset(uv);
-                float4 picture = tex2D(_MainTex, warped);
+                half4 picture = tex2Dlod(_MainTex, float4(warped, 0.0, 0.0));
                 if (_HeatBlur > 0.001)
                 {
                     float2 offset = _HeatBlur * 1.5 / max(_CrtResolution.xy, float2(1.0, 1.0));
                     picture.rgb = picture.rgb * 0.4
-                        + tex2D(_MainTex, warped + float2(offset.x, 0.0)).rgb * 0.15
-                        + tex2D(_MainTex, warped - float2(offset.x, 0.0)).rgb * 0.15
-                        + tex2D(_MainTex, warped + float2(0.0, offset.y)).rgb * 0.15
-                        + tex2D(_MainTex, warped - float2(0.0, offset.y)).rgb * 0.15;
+                        + tex2Dlod(_MainTex, float4(warped + float2(offset.x, 0.0), 0.0, 0.0)).rgb * 0.15
+                        + tex2Dlod(_MainTex, float4(warped - float2(offset.x, 0.0), 0.0, 0.0)).rgb * 0.15
+                        + tex2Dlod(_MainTex, float4(warped + float2(0.0, offset.y), 0.0, 0.0)).rgb * 0.15
+                        + tex2Dlod(_MainTex, float4(warped - float2(0.0, offset.y), 0.0, 0.0)).rgb * 0.15;
                 }
 
-                if (_HasUi > 0.5)
-                {
-                    float4 ui = tex2D(_UiTex, uv);
-                    float coverage = sqrt(saturate(ui.a));
-                    picture.rgb = ui.rgb + picture.rgb * (1.0 - coverage);
-                    picture.a = max(picture.a, coverage);
-                }
+                half4 ui = tex2Dlod(_UiTex, float4(uv, 0.0, 0.0));
+                half coverage = sqrt(saturate(ui.a));
+                picture.rgb = ui.rgb + picture.rgb * (1.0 - coverage);
+                picture.a = max(picture.a, coverage);
                 return picture;
             }
+        #endif
 
             float Hash(float2 p)
             {
@@ -294,12 +311,12 @@ Shader "TrashTD/UI/CRT"
             }
 
             // Analogue-style horizontal reconstruction: neighbours blend in as sharpness drops
-            float3 SampleSoft(float2 uv, float texelX, float sharpScale)
+            half3 SampleSoft(float2 uv, float texelX, float sharpScale)
             {
-                float side = 0.5 * (1.0 - _Sharpness);
-                float3 c = Pic(SharpUv(uv, sharpScale)).rgb;
-                float3 l = Pic(SharpUv(uv - float2(texelX, 0.0), sharpScale)).rgb;
-                float3 r = Pic(SharpUv(uv + float2(texelX, 0.0), sharpScale)).rgb;
+                half side = 0.5 * (1.0 - _Sharpness);
+                half3 c = Pic(SharpUv(uv, sharpScale)).rgb;
+                half3 l = Pic(SharpUv(uv - float2(texelX, 0.0), sharpScale)).rgb;
+                half3 r = Pic(SharpUv(uv + float2(texelX, 0.0), sharpScale)).rgb;
                 return (c + (l + r) * side) / (1.0 + 2.0 * side);
             }
 
@@ -332,16 +349,22 @@ Shader "TrashTD/UI/CRT"
 
             fixed4 frag(v2f IN) : SV_Target
             {
-                // Passthrough: the picture as-is, only brightness (CrtDisplay in Classic mode)
-                if (_Passthrough > 0.5)
+            #if defined(CRT_CLEAN)
+                // Passthrough: the picture as-is, only brightness (graphics option Off)
                 {
-                    float4 plain = Pic(IN.texcoord);
-                    if (_HeatBlur > 0.001)
+                    half4 plain;
+                #if defined(CRT_HEAT)
+                    [branch] if (_HeatBlur > 0.001)
                         plain = HeatPic(IN.texcoord);
+                    else
+                        plain = Pic(IN.texcoord);
+                #else
+                    plain = Pic(IN.texcoord);
+                #endif
                     fixed4 plainColor = fixed4(saturate(plain.rgb * _Brightness), lerp(plain.a, 1.0, _Opaque)) * IN.color;
                     return FinishUi(plainColor, IN);
                 }
-
+            #else
                 float t = _CrtTime;
                 float2 res = max(_CrtResolution.xy, float2(1.0, 1.0));
                 float2 texel = 1.0 / res;
@@ -360,14 +383,14 @@ Shader "TrashTD/UI/CRT"
                 float inside = ScreenMask(uv, 0.003);
 
                 float2 fringe = (uv - 0.5) * _Chromatic * 2.0;
-                float3 col;
-                float alpha;
+                half3 col;
+                half alpha;
 
-                if (_Legacy > 0.5)
+            #if defined(CRT_CLASSIC)
                 {
                     // Classic: the first CRT version, kept exactly. Direct samples, a small glow,
                     // sine scanlines that bright pixels wash out, and a light RGB stripe tint.
-                    float4 center = Pic(uv);
+                    half4 center = Pic(uv);
                     col.r = Pic(uv + fringe).r;
                     col.g = center.g;
                     col.b = Pic(uv - fringe).b;
@@ -375,10 +398,10 @@ Shader "TrashTD/UI/CRT"
 
                     float2 o1 = float2(texel.x * 2.5, 0.0);
                     float2 o2 = float2(0.0, texel.y * 2.5);
-                    float3 blur = (Pic(uv + o1).rgb + Pic(uv - o1).rgb + Pic(uv + o2).rgb + Pic(uv - o2).rgb) * 0.25;
+                    half3 blur = (Pic(uv + o1).rgb + Pic(uv - o1).rgb + Pic(uv + o2).rgb + Pic(uv - o2).rgb) * 0.25;
                     col += blur * blur * _Bloom * 0.6;
 
-                    float classicLuma = dot(col, float3(0.299, 0.587, 0.114));
+                    float classicLuma = dot(col, half3(0.299, 0.587, 0.114));
                     float classicScan = 0.5 + 0.5 * sin(uv.y * res.y * 6.2831853 / period);
                     classicScan = lerp(classicScan, 1.0, saturate(classicLuma * 0.6));
                     col *= lerp(1.0, classicScan, _ScanlineStrength);
@@ -387,19 +410,24 @@ Shader "TrashTD/UI/CRT"
                     float3 grille = column < 0.5 ? float3(1.0, 0.0, 0.0) : (column < 1.5 ? float3(0.0, 1.0, 0.0) : float3(0.0, 0.0, 1.0));
                     col *= lerp(float3(1.0, 1.0, 1.0), lerp(float3(0.55, 0.55, 0.55), float3(1.0, 1.0, 1.0), grille), _MaskStrength);
                 }
-                else
+            #else
                 {
                     // Picture with colour fringing toward the edges
                     col.r = SampleSoft(uv + fringe, virtualTexel.x, virtualScale).r;
                     col.g = SampleSoft(uv, virtualTexel.x, virtualScale).g;
                     col.b = SampleSoft(uv - fringe, virtualTexel.x, virtualScale).b;
-                    alpha = Pic(uv).a;
+
+                    // The picture's own alpha only matters when the output is not opaque (CrtDisplay's is always
+                    // opaque, which saves a fetch per pixel)
+                    alpha = 1.0;
+                    [branch] if (_Opaque < 0.999)
+                        alpha = Pic(uv).a;
 
                     // Scanline beam: a gaussian across each line, wider for brighter pixels,
                     // normalised so a line keeps roughly its average brightness. Averaged over the
                     // pixel's height, so lines only a few screen pixels tall soften instead of cutting
                     // through text; under 3 screen pixels a line also fades a little.
-                    float luma = dot(col, float3(0.2126, 0.7152, 0.0722));
+                    float luma = dot(col, half3(0.2126, 0.7152, 0.0722));
                     float beam = lerp(_BeamMin, _BeamMax, saturate(luma));
                     float lineCoord = uv.y * virtualRes.y / period;
                     float linesPerPixel = virtualScale / period;
@@ -421,18 +449,29 @@ Shader "TrashTD/UI/CRT"
                     col *= lerp(MaskMean().xxx, mask, saturate(phosphorPixels));
 
                     // Halation: light spreading in the glass, filling the mask and scanline gaps
+                #if defined(CRT_MIPGLOW) && !defined(CRT_HEAT)
+                    // Two blurred mip levels of the picture (CrtDisplay builds them): a tight halo and a wide one,
+                    // which is what the eight spread taps below add up to, for two fetches instead of eight.
+                    half3 glowMip = tex2Dlod(_MainTex, float4(uv, 0.0, _CrtGlowLod.x)).rgb
+                                  + tex2Dlod(_MainTex, float4(uv, 0.0, _CrtGlowLod.y)).rgb;
+                    col += glowMip * (0.5 * _Bloom);
+                #else
                     float2 r1 = virtualTexel * 3.0;
                     float2 r2 = virtualTexel * 7.0;
-                    float3 glow =
+                    half3 glow =
                         Pic(uv + float2(r1.x, 0.0)).rgb + Pic(uv - float2(r1.x, 0.0)).rgb +
                         Pic(uv + float2(0.0, r1.y)).rgb + Pic(uv - float2(0.0, r1.y)).rgb +
                         Pic(uv + r2).rgb + Pic(uv - r2).rgb +
                         Pic(uv + float2(r2.x, -r2.y)).rgb + Pic(uv + float2(-r2.x, r2.y)).rgb;
                     col += glow * (0.125 * _Bloom);
+                #endif
                 }
+            #endif
 
-                if (_HeatBlur > 0.001)
+            #if defined(CRT_HEAT)
+                [branch] if (_HeatBlur > 0.001)
                     col = lerp(col, HeatPic(uv).rgb, _HeatBlur * 0.55);
+            #endif
 
                 col *= _Brightness;
 
@@ -459,6 +498,7 @@ Shader "TrashTD/UI/CRT"
                 float3 finalRgb = lerp(_BezelColor.rgb, saturate(col), inside);
                 float finalAlpha = lerp(_BezelColor.a, pictureAlpha, inside);
                 return FinishUi(fixed4(finalRgb, finalAlpha) * IN.color, IN);
+            #endif
             }
             ENDCG
         }

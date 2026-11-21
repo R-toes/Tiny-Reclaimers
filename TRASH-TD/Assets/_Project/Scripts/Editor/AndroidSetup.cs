@@ -76,8 +76,30 @@ namespace TrashTD.Editor
                 changes.Add("Start in fullscreen");
             }
 
+            // Sustained Performance Mode: the phone holds a clock it can keep up, so the frame rate stays steady
+            // instead of starting fast and dropping when it heats up (matters most with the CRT effects on).
+            if (SetSustainedPerformanceMode(true)) changes.Add("Sustained Performance Mode: on");
+
             if (changes.Count > 0) AssetDatabase.SaveAssets();
             return changes;
+        }
+
+        /// <summary>
+        /// Player Settings > Other Settings > Configuration > Sustained Performance Mode. Unity has no public setter, so
+        /// the serialized field is written. Returns true when the value changed.
+        /// </summary>
+        private static bool SetSustainedPerformanceMode(bool enabled)
+        {
+            Object[] assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
+            if (assets == null || assets.Length == 0) return false;
+
+            var settings = new SerializedObject(assets[0]);
+            SerializedProperty property = settings.FindProperty("AndroidEnableSustainedPerformanceMode");
+            if (property == null || property.boolValue == enabled) return false;
+
+            property.boolValue = enabled;
+            settings.ApplyModifiedPropertiesWithoutUndo();
+            return true;
         }
 
         [MenuItem("TRASH TD/Android/Build Android APK...")]

@@ -233,6 +233,13 @@ namespace TrashTD.UI
         private static readonly int TimeId = Shader.PropertyToID("_CrtTime");
         private static readonly int ResolutionId = Shader.PropertyToID("_CrtResolution");
         private static readonly int VirtualScaleId = Shader.PropertyToID("_CrtVirtualScale");
+        private static readonly int GlowLodId = Shader.PropertyToID("_CrtGlowLod");
+
+        // Shader variants (multi_compile_local in CrtScreen.shader). Neither of the first two = the Full TV look.
+        internal const string ClassicKeyword = "CRT_CLASSIC";
+        internal const string CleanKeyword = "CRT_CLEAN";
+        internal const string HeatKeyword = "CRT_HEAT";
+        internal const string MipGlowKeyword = "CRT_MIPGLOW";
 
         /// <summary>Creates a CRT material, or null if the shader is missing (logs a warning).</summary>
         internal static Material CreateMaterial(string materialName, Object context)
@@ -247,10 +254,38 @@ namespace TrashTD.UI
             return new Material(shader) { name = materialName };
         }
 
+        /// <summary>True for the Full TV look (neither Classic nor Off).</summary>
+        internal static bool IsFullLook(Settings settings) => settings.legacy < 0.5f && settings.passthrough < 0.5f;
+
+        /// <summary>Turns one shader keyword on or off, doing nothing when it is already so.</summary>
+        internal static void SetKeyword(Material material, string keyword, bool enabled)
+        {
+            if (material == null || material.IsKeywordEnabled(keyword) == enabled) return;
+            if (enabled) material.EnableKeyword(keyword);
+            else material.DisableKeyword(keyword);
+        }
+
+        /// <summary>
+        /// The two mip levels Full TV's halation reads (near, far) instead of eight spread taps. The taps sit 3 and 7
+        /// virtual texels out, which is a blur of about 2 and 7 virtual texels; one mip level of the picture, read
+        /// bilinearly, blurs by about 0.41 of its texel size, and a virtual texel is 1/virtualScale of a real one.
+        /// Whole levels, because the picture's mips are filtered bilinear (nearest level). Never level 0 (that would
+        /// add an unblurred copy) and never past level 5.
+        /// </summary>
+        internal static Vector2 CalculateGlowLods(float virtualScale)
+        {
+            float scale = Mathf.Max(1f, virtualScale);
+            float near = Mathf.Round(Mathf.Log(5.1f / scale, 2f));
+            float far = Mathf.Round(Mathf.Log(17f / scale, 2f));
+            return new Vector2(Mathf.Clamp(near, 1f, 5f), Mathf.Clamp(far, 2f, 5f));
+        }
+
         /// <summary>Writes the settings to a CRT material.</summary>
         internal static void ApplySettings(Material material, Settings settings)
         {
             if (material == null) return;
+            SetKeyword(material, CleanKeyword, settings.passthrough >= 0.5f);
+            SetKeyword(material, ClassicKeyword, settings.passthrough < 0.5f && settings.legacy >= 0.5f);
             material.SetFloat(CurvatureId, settings.curvature);
             material.SetFloat(CornerRadiusId, Mathf.Max(0.001f, settings.cornerRadius));
             material.SetFloat(SharpnessId, settings.sharpness);
@@ -285,13 +320,13 @@ namespace TrashTD.UI
         internal static void UpdateFrame(Material material, Settings settings, int width, int height, int virtualHeight = 0)
         {
             if (material == null) return;
-            bool fullLook = settings.legacy < 0.5f && settings.passthrough < 0.5f;
-            float virtualScale = fullLook && virtualHeight > height ? virtualHeight / (float)Mathf.Max(1, height) : 1f;
+            float virtualScale = IsFullLook(settings) && virtualHeight > height ? virtualHeight / (float)Mathf.Max(1, height) : 1f;
             float lines = height * virtualScale;
 
             material.SetFloat(TimeId, Time.unscaledTime);
             material.SetVector(ResolutionId, new Vector4(width, height, 0f, 0f));
             material.SetFloat(VirtualScaleId, virtualScale);
+            material.SetVector(GlowLodId, CalculateGlowLods(virtualScale));
             float period = settings.scanlinePeriod > 0f
                 ? settings.scanlinePeriod * virtualScale
                 : Mathf.Clamp(Mathf.Round(lines / 270f), 2f, 8f);

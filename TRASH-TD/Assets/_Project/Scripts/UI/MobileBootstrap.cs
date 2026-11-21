@@ -26,6 +26,7 @@ namespace TrashTD.UI
             MobileSettings.Changed += ApplyFrameRate;
 
             TouchTargets.Create();
+            MobileRenderRate.Create();
         }
 
         /// <summary>Caps the frame rate at the player's choice (30, 60 or 90).</summary>
